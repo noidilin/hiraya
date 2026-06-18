@@ -20,13 +20,13 @@ variable "repositories" {
   description = "Durable ECR repositories preserved outside the disposable EKS stack."
   type        = list(string)
   default = [
-    "frontend",
-    "gateway",
-    "auth",
-    "order-service",
-    "orders",
-    "product-service",
-    "user-service"
+    "hiraya-frontend",
+    "hiraya-gateway",
+    "hiraya-auth",
+    "hiraya-order-service",
+    "hiraya-orders",
+    "hiraya-product-service",
+    "hiraya-user-service"
   ]
 }
 

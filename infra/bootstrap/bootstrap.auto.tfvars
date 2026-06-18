@@ -8,13 +8,13 @@ environment  = "dev"
 github_repository = "noidilin/hiraya"
 
 repositories = [
-  "frontend",
-  "gateway",
-  "auth",
-  "order-service",
-  "orders",
-  "product-service",
-  "user-service"
+  "hiraya-frontend",
+  "hiraya-gateway",
+  "hiraya-auth",
+  "hiraya-order-service",
+  "hiraya-orders",
+  "hiraya-product-service",
+  "hiraya-user-service"
 ]
 
 tags = {}
