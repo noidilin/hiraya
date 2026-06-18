@@ -22,6 +22,7 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 .terraform/
+backend.hcl
 
 # Kubernetes
 *.kubeconfig
