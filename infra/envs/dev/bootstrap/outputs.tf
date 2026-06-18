@@ -1,6 +1,6 @@
 output "state_bucket" {
-  description = "S3 bucket name for Terraform remote state."
-  value       = aws_s3_bucket.terraform_state.bucket
+  description = "Externally managed S3 bucket name for Terraform remote state."
+  value       = var.state_bucket_name
 }
 
 output "ecr_urls" {
@@ -19,10 +19,10 @@ output "github_image_push_role_arn" {
 }
 
 output "backend_config" {
-  description = "Backend config values for ../backend.hcl."
+  description = "Backend config values for ../platform/backend.hcl."
   value = {
-    bucket       = aws_s3_bucket.terraform_state.bucket
-    key          = "devops-hiraya-dev/infra/terraform.tfstate"
+    bucket       = var.state_bucket_name
+    key          = "devops-hiraya-dev/dev/platform/terraform.tfstate"
     region       = var.aws_region
     use_lockfile = true
     encrypt      = true

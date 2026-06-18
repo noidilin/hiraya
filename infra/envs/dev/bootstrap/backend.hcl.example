@@ -1,0 +1,9 @@
+# Copy to backend.hcl and set bucket for your AWS account before `terraform init -backend-config=backend.hcl`.
+# Do not commit backend.hcl; it is intentionally account-specific.
+# The bucket is externally managed, not created by Terraform.
+
+bucket       = "devops-hiraya-dev-tf-state"
+key          = "devops-hiraya-dev/dev/bootstrap/terraform.tfstate"
+region       = "ap-northeast-1"
+use_lockfile = true
+encrypt      = true

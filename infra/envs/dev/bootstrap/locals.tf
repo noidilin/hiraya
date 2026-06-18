@@ -1,6 +1,5 @@
 locals {
   name_prefix          = "devops-${var.project_name}-${var.environment}"
-  state_bucket         = "${local.name_prefix}-tf-state"
   runtime_boundary_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
 
   common_tags = merge(var.tags, {
