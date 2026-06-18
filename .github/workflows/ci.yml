@@ -1,0 +1,158 @@
+name: Hiraya Image CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app/microservices/**"
+      - "gitops/k8s/**"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-image-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Single-account dev deployment values. Keep these aligned with infra/envs/dev/bootstrap/*.tfvars.
+  AWS_REGION: ap-northeast-1
+  AWS_ACCOUNT_ID: "549475122024"
+  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_PUSH_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-image-push
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth
+            repository: hiraya-auth
+          - service: gateway
+            repository: hiraya-gateway
+          - service: orders
+            repository: hiraya-orders
+          - service: order-service
+            repository: hiraya-order-service
+          - service: product-service
+            repository: hiraya-product-service
+          - service: user-service
+            repository: hiraya-user-service
+          - service: frontend
+            repository: hiraya-frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.IMAGE_PUSH_ROLE_ARN }}
+          role-session-name: hiraya-image-ci-${{ github.run_id }}-${{ matrix.service }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve ECR repository
+        id: ecr
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPOSITORY_URI=$(aws ecr describe-repositories \
+            --repository-names "${{ matrix.repository }}" \
+            --query 'repositories[0].repositoryUri' \
+            --output text)
+          echo "repository_uri=${REPOSITORY_URI}" >> "$GITHUB_OUTPUT"
+          echo "registry=${REPOSITORY_URI%/*}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to Amazon ECR
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecr get-login-password --region "${AWS_REGION}" | \
+            docker login --username AWS --password-stdin "${{ steps.ecr.outputs.registry }}"
+
+      - name: Build Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVICE="${{ matrix.service }}"
+          REPOSITORY_URI="${{ steps.ecr.outputs.repository_uri }}"
+
+          if [ "$SERVICE" = "frontend" ]; then
+            BUILD_PATH="app/microservices/frontend"
+          else
+            BUILD_PATH="app/microservices/backend/services/$SERVICE"
+          fi
+
+          echo "Building $SERVICE from $BUILD_PATH for $REPOSITORY_URI:$IMAGE_TAG"
+          docker build -t "${REPOSITORY_URI}:${IMAGE_TAG}" "$BUILD_PATH"
+
+      - name: Push Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push "${{ steps.ecr.outputs.repository_uri }}:${IMAGE_TAG}"
+
+  update-manifests:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Update image tags in Kubernetes manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEW_TAG="${IMAGE_TAG}"
+          ACCOUNT="${AWS_ACCOUNT_ID}"
+          REGION="${AWS_REGION}"
+
+          declare -A IMAGE_REPOSITORIES=(
+            [auth]="hiraya-auth"
+            [gateway]="hiraya-gateway"
+            [orders]="hiraya-orders"
+            [order-service]="hiraya-order-service"
+            [product-service]="hiraya-product-service"
+            [user-service]="hiraya-user-service"
+            [frontend]="hiraya-frontend"
+          )
+
+          declare -A MANIFESTS=(
+            [auth]="gitops/k8s/backend/auth.yml"
+            [gateway]="gitops/k8s/backend/gateway.yml"
+            [orders]="gitops/k8s/backend/orders.yml"
+            [order-service]="gitops/k8s/backend/order-service.yml"
+            [product-service]="gitops/k8s/backend/product-service.yml"
+            [user-service]="gitops/k8s/backend/user-service.yml"
+            [frontend]="gitops/k8s/frontend/deployment.yml"
+          )
+
+          for SERVICE in auth gateway orders order-service product-service user-service frontend; do
+            REPOSITORY="${IMAGE_REPOSITORIES[$SERVICE]}"
+            MANIFEST="${MANIFESTS[$SERVICE]}"
+            sed -i "s|\(image: \).*|\1${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPOSITORY}:${NEW_TAG}|g" "$MANIFEST"
+          done
+
+      - name: Commit and push updated manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gitops/k8s/
+          git diff --staged --quiet || git commit -m "ci: update image tags to ${IMAGE_TAG}"
+          git push
