@@ -5,5 +5,5 @@ output "namespace" {
 
 output "gitops_application_name" {
   description = "Name of the bootstrap Argo CD Application."
-  value       = var.gitops_application_enabled ? var.gitops_application_name : null
+  value       = var.gitops_application_enabled ? local.gitops_application.metadata.name : null
 }

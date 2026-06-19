@@ -1,0 +1,26 @@
+# Terraform reads this manifest and injects it into the Argo CD Helm release.
+# This is the root GitOps Application for the dev cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vintage
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: argocd
+    meta.helm.sh/release-namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/noidilin/hiraya.git"
+    targetRevision: main
+    path: gitops
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: vintage
+  # syncPolicy: {} # disable manual sync after pipeline stable
+  syncPolicy:
+    automated:
+      prune: true # delete resources removed from git
+      selfHeal: true # re-sync if someone manually changes the cluster

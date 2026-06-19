@@ -4,31 +4,8 @@ variable "gitops_application_enabled" {
   default     = true
 }
 
-variable "gitops_application_name" {
-  description = "Name of the Argo CD Application that bootstraps application GitOps."
+variable "gitops_application_manifest_path" {
+  description = "Path to the Argo CD Application manifest injected into the Argo CD Helm release. Defaults to infra/modules/argocd/application.yml."
   type        = string
-  default     = "vintage"
-}
-
-variable "gitops_repo_url" {
-  description = "Git repository URL watched by the bootstrap Argo CD Application."
-  type        = string
-}
-
-variable "gitops_target_revision" {
-  description = "Git revision watched by the bootstrap Argo CD Application."
-  type        = string
-  default     = "main"
-}
-
-variable "gitops_path" {
-  description = "Repository path containing the Kustomize application manifests."
-  type        = string
-  default     = "gitops"
-}
-
-variable "gitops_destination_namespace" {
-  description = "Kubernetes namespace where the bootstrap Argo CD Application deploys workloads."
-  type        = string
-  default     = "vintage"
+  default     = null
 }

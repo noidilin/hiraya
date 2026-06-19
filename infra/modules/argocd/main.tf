@@ -16,39 +16,8 @@ resource "kubernetes_namespace_v1" "argocd" {
 }
 
 locals {
-  gitops_application = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = var.gitops_application_name
-      namespace = kubernetes_namespace_v1.argocd.metadata[0].name
-      labels = {
-        "app.kubernetes.io/managed-by" = "Helm"
-      }
-      annotations = {
-        "meta.helm.sh/release-name"      = "argocd"
-        "meta.helm.sh/release-namespace" = kubernetes_namespace_v1.argocd.metadata[0].name
-      }
-    }
-    spec = {
-      project = "default"
-      source = {
-        repoURL        = var.gitops_repo_url
-        targetRevision = var.gitops_target_revision
-        path           = var.gitops_path
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = var.gitops_destination_namespace
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-      }
-    }
-  }
+  gitops_application_manifest_path = coalesce(var.gitops_application_manifest_path, "${path.module}/application.yml")
+  gitops_application               = yamldecode(file(local.gitops_application_manifest_path))
 }
 
 resource "helm_release" "argocd" {
