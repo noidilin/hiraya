@@ -63,9 +63,38 @@ provider "helm" {
   }
 }
 
+module "fluent_bit" {
+  source = "../../../modules/fluent-bit"
+
+  providers = {
+    aws        = aws
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  cluster_name       = var.cluster_name
+  region             = var.region
+  oidc_provider_arn  = module.eks.oidc_provider_arn
+  oidc_issuer_url    = module.eks.oidc_issuer_url
+  log_group_name     = var.pod_log_group_name
+  log_retention_days = var.pod_log_retention_days
+
+  depends_on = [module.eks]
+}
 
 module "argocd" {
   source = "../../../modules/argocd"
+
+  providers = {
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  depends_on = [module.eks]
+}
+
+module "monitoring" {
+  source = "../../../modules/monitoring"
 
   providers = {
     kubernetes = kubernetes.eks

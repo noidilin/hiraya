@@ -79,3 +79,15 @@ variable "bootstrap_state_region" {
   type        = string
   default     = "ap-northeast-1"
 }
+
+variable "pod_log_group_name" {
+  description = "CloudWatch Logs log group for Kubernetes pod logs."
+  type        = string
+  default     = "/eks/vintage/pods"
+}
+
+variable "pod_log_retention_days" {
+  description = "Retention period in days for Kubernetes pod logs in CloudWatch Logs."
+  type        = number
+  default     = 14
+}
