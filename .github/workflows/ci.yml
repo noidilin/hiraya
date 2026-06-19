@@ -112,6 +112,7 @@ jobs:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
+      actions: write
       contents: read
       id-token: write
 
@@ -181,38 +182,13 @@ jobs:
           set -euo pipefail
           docker push "${{ steps.ecr.outputs.repository_uri }}:${IMAGE_TAG}"
 
-  update-manifests:
-    runs-on: ubuntu-latest
-    needs: [detect-changes, build-and-push]
-    if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-
-      - name: Update image tags in Kubernetes manifests
+      - name: Trigger GitOps manifest update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          NEW_TAG="${IMAGE_TAG}"
-          ACCOUNT="${AWS_ACCOUNT_ID}"
-          REGION="${AWS_REGION}"
-          MATRIX='${{ needs.detect-changes.outputs.matrix }}'
-
-          jq -r '.include[] | [.repository, .manifest] | @tsv' <<< "$MATRIX" | \
-            while IFS=$'\t' read -r REPOSITORY MANIFEST; do
-              echo "Updating ${MANIFEST} -> ${REPOSITORY}:${NEW_TAG}"
-              sed -i "s|\(image: \).*|\1${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPOSITORY}:${NEW_TAG}|g" "$MANIFEST"
-            done
-
-      - name: Commit and push updated manifests
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gitops/k8s/
-          git diff --staged --quiet || git commit -m "ci: update changed image tags to ${IMAGE_TAG} [skip ci]"
-          git push
+          gh workflow run update-gitops-manifests.yml \
+            --ref main \
+            -f service="${{ matrix.service }}" \
+            -f version="${IMAGE_TAG}"
