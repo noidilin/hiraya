@@ -3,6 +3,8 @@ kind: Job
 metadata:
   name: vintage-db-restore
   namespace: vintage
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: 3
   template:
