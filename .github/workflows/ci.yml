@@ -6,8 +6,8 @@ on:
     branches: [main]
     paths:
       - "app/microservices/**"
-      - "gitops/k8s/**"
       - ".github/workflows/ci.yml"
+      - ".github/utils/file-filters.yml"
 
 permissions:
   contents: read
@@ -24,30 +24,100 @@ env:
   IMAGE_PUSH_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-image-push
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.service-matrix.outputs.matrix }}
+      has_changes: ${{ steps.service-matrix.outputs.has_changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Detect changed services
+        id: filter
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/utils/file-filters.yml
+
+      - name: Build service matrix
+        id: service-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            services='["auth","gateway","orders","order-service","product-service","user-service","frontend"]'
+          else
+            services='${{ steps.filter.outputs.changes }}'
+          fi
+
+          matrix=$(jq -cn --argjson services "$services" '
+            def repository($service): {
+              "auth": "hiraya-auth",
+              "gateway": "hiraya-gateway",
+              "orders": "hiraya-orders",
+              "order-service": "hiraya-order-service",
+              "product-service": "hiraya-product-service",
+              "user-service": "hiraya-user-service",
+              "frontend": "hiraya-frontend"
+            }[$service];
+
+            def build_path($service):
+              if $service == "frontend" then
+                "app/microservices/frontend"
+              else
+                "app/microservices/backend/services/\($service)"
+              end;
+
+            def manifest($service): {
+              "auth": "gitops/k8s/backend/auth.yml",
+              "gateway": "gitops/k8s/backend/gateway.yml",
+              "orders": "gitops/k8s/backend/orders.yml",
+              "order-service": "gitops/k8s/backend/order-service.yml",
+              "product-service": "gitops/k8s/backend/product-service.yml",
+              "user-service": "gitops/k8s/backend/user-service.yml",
+              "frontend": "gitops/k8s/frontend/deployment.yml"
+            }[$service];
+
+            {
+              include: [
+                $services[]
+                | {
+                    service: .,
+                    repository: repository(.),
+                    build_path: build_path(.),
+                    manifest: manifest(.)
+                  }
+              ]
+            }
+          ')
+
+          count=$(jq -r '.include | length' <<< "$matrix")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          if [[ "$count" -gt 0 ]]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Selected services: $services"
+          echo "Matrix: $matrix"
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
       contents: read
       id-token: write
 
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - service: auth
-            repository: hiraya-auth
-          - service: gateway
-            repository: hiraya-gateway
-          - service: orders
-            repository: hiraya-orders
-          - service: order-service
-            repository: hiraya-order-service
-          - service: product-service
-            repository: hiraya-product-service
-          - service: user-service
-            repository: hiraya-user-service
-          - service: frontend
-            repository: hiraya-frontend
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
       - name: Checkout code
@@ -85,17 +155,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SERVICE="${{ matrix.service }}"
-          REPOSITORY_URI="${{ steps.ecr.outputs.repository_uri }}"
-
-          if [ "$SERVICE" = "frontend" ]; then
-            BUILD_PATH="app/microservices/frontend"
-          else
-            BUILD_PATH="app/microservices/backend/services/$SERVICE"
-          fi
-
-          echo "Building $SERVICE from $BUILD_PATH for $REPOSITORY_URI:$IMAGE_TAG"
-          docker build -t "${REPOSITORY_URI}:${IMAGE_TAG}" "$BUILD_PATH"
+          echo "Building ${{ matrix.service }} from ${{ matrix.build_path }} for ${{ steps.ecr.outputs.repository_uri }}:${IMAGE_TAG}"
+          docker build -t "${{ steps.ecr.outputs.repository_uri }}:${IMAGE_TAG}" "${{ matrix.build_path }}"
 
       - name: Push Docker image
         shell: bash
@@ -105,7 +166,8 @@ jobs:
 
   update-manifests:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [detect-changes, build-and-push]
+    if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
       contents: write
 
@@ -120,32 +182,13 @@ jobs:
           NEW_TAG="${IMAGE_TAG}"
           ACCOUNT="${AWS_ACCOUNT_ID}"
           REGION="${AWS_REGION}"
+          MATRIX='${{ needs.detect-changes.outputs.matrix }}'
 
-          declare -A IMAGE_REPOSITORIES=(
-            [auth]="hiraya-auth"
-            [gateway]="hiraya-gateway"
-            [orders]="hiraya-orders"
-            [order-service]="hiraya-order-service"
-            [product-service]="hiraya-product-service"
-            [user-service]="hiraya-user-service"
-            [frontend]="hiraya-frontend"
-          )
-
-          declare -A MANIFESTS=(
-            [auth]="gitops/k8s/backend/auth.yml"
-            [gateway]="gitops/k8s/backend/gateway.yml"
-            [orders]="gitops/k8s/backend/orders.yml"
-            [order-service]="gitops/k8s/backend/order-service.yml"
-            [product-service]="gitops/k8s/backend/product-service.yml"
-            [user-service]="gitops/k8s/backend/user-service.yml"
-            [frontend]="gitops/k8s/frontend/deployment.yml"
-          )
-
-          for SERVICE in auth gateway orders order-service product-service user-service frontend; do
-            REPOSITORY="${IMAGE_REPOSITORIES[$SERVICE]}"
-            MANIFEST="${MANIFESTS[$SERVICE]}"
-            sed -i "s|\(image: \).*|\1${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPOSITORY}:${NEW_TAG}|g" "$MANIFEST"
-          done
+          jq -r '.include[] | [.repository, .manifest] | @tsv' <<< "$MATRIX" | \
+            while IFS=$'\t' read -r REPOSITORY MANIFEST; do
+              echo "Updating ${MANIFEST} -> ${REPOSITORY}:${NEW_TAG}"
+              sed -i "s|\(image: \).*|\1${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${REPOSITORY}:${NEW_TAG}|g" "$MANIFEST"
+            done
 
       - name: Commit and push updated manifests
         shell: bash
@@ -154,5 +197,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add gitops/k8s/
-          git diff --staged --quiet || git commit -m "ci: update image tags to ${IMAGE_TAG}"
+          git diff --staged --quiet || git commit -m "ci: update changed image tags to ${IMAGE_TAG} [skip ci]"
           git push
