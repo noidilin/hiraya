@@ -82,17 +82,6 @@ module "fluent_bit" {
   depends_on = [module.eks]
 }
 
-module "argocd" {
-  source = "../../../modules/argocd"
-
-  providers = {
-    kubernetes = kubernetes.eks
-    helm       = helm.eks
-  }
-
-  depends_on = [module.eks]
-}
-
 module "monitoring" {
   source = "../../../modules/monitoring"
 
@@ -102,5 +91,25 @@ module "monitoring" {
   }
 
   depends_on = [module.eks]
+}
+
+module "argocd" {
+  source = "../../../modules/argocd"
+
+  providers = {
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  gitops_application_enabled   = var.gitops_application_enabled
+  gitops_application_name      = var.gitops_application_name
+  gitops_repo_url              = var.gitops_repo_url
+  gitops_target_revision       = var.gitops_target_revision
+  gitops_path                  = var.gitops_path
+  gitops_destination_namespace = var.gitops_destination_namespace
+
+  # The GitOps app includes a ServiceMonitor, whose CRD is installed by kube-prometheus-stack.
+  # Wait for monitoring before creating the Argo CD Application object.
+  depends_on = [module.eks, module.monitoring]
 }
 

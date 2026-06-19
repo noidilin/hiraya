@@ -21,3 +21,11 @@ output "fluent_bit_role_arn" {
 output "monitoring_namespace" {
   value = module.monitoring.namespace
 }
+
+output "argocd_namespace" {
+  value = module.argocd.namespace
+}
+
+output "argocd_application_name" {
+  value = module.argocd.gitops_application_name
+}

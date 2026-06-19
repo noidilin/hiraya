@@ -91,3 +91,39 @@ variable "pod_log_retention_days" {
   type        = number
   default     = 14
 }
+
+variable "gitops_application_enabled" {
+  description = "Whether Terraform should bootstrap the root Argo CD Application during platform provisioning."
+  type        = bool
+  default     = true
+}
+
+variable "gitops_application_name" {
+  description = "Name of the Argo CD Application that watches this repository."
+  type        = string
+  default     = "vintage"
+}
+
+variable "gitops_repo_url" {
+  description = "Git repository URL watched by Argo CD."
+  type        = string
+  default     = "https://github.com/noidilin/hiraya.git"
+}
+
+variable "gitops_target_revision" {
+  description = "Git revision watched by Argo CD."
+  type        = string
+  default     = "main"
+}
+
+variable "gitops_path" {
+  description = "Repository path containing the Kustomize manifests watched by Argo CD."
+  type        = string
+  default     = "gitops"
+}
+
+variable "gitops_destination_namespace" {
+  description = "Kubernetes namespace where Argo CD deploys the GitOps application."
+  type        = string
+  default     = "vintage"
+}
