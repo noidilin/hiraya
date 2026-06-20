@@ -96,6 +96,29 @@ module "aws_load_balancer_controller" {
   depends_on = [module.eks]
 }
 
+module "external_dns" {
+  source = "../../../modules/external-dns"
+
+  providers = {
+    aws        = aws
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  cluster_name             = var.cluster_name
+  oidc_provider_arn        = module.eks.oidc_provider_arn
+  oidc_issuer_url          = module.eks.oidc_issuer_url
+  hosted_zone_name         = var.public_zone_name
+  managed_domain           = var.public_domain_name
+  txt_owner_id             = var.external_dns_txt_owner_id
+  permissions_boundary_arn = local.runtime_boundary_arn
+
+  depends_on = [
+    module.eks,
+    module.aws_load_balancer_controller
+  ]
+}
+
 module "edge_gateway" {
   source = "../../../modules/edge-gateway"
 
@@ -114,7 +137,8 @@ module "edge_gateway" {
 
   depends_on = [
     module.aws_load_balancer_controller,
-    module.edge_certificate
+    module.edge_certificate,
+    module.external_dns
   ]
 }
 

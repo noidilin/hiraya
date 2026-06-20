@@ -162,3 +162,9 @@ variable "public_gateway_access_label_value" {
   type        = string
   default     = "true"
 }
+
+variable "external_dns_txt_owner_id" {
+  description = "TXT registry owner ID used by ExternalDNS for Route 53 record ownership."
+  type        = string
+  default     = "hiraya-dev-eks"
+}

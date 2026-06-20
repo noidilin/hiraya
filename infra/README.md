@@ -55,6 +55,8 @@ The broad `0.0.0.0/0` public EKS API CIDR in dev is temporary workstation access
 
 The platform stack also installs cluster add-ons as separate modules:
 
+- AWS Load Balancer Controller and Gateway API CRDs for the shared public edge
+- ExternalDNS in `external-dns`, using IRSA, Route 53 permissions scoped to `noidilin.dev`, `gateway-httproute` sources, `sync` policy, and TXT registry ownership
 - `kube-prometheus-stack` in `monitoring`
 - Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
 - `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
@@ -68,3 +70,14 @@ The platform stack reads bootstrap outputs from:
 ```text
 devops-hiraya-dev/dev/bootstrap/terraform.tfstate
 ```
+
+After apply, validate app DNS automation and frontend routing with:
+
+```bash
+kubectl get httproute -n vintage frontend -o yaml
+kubectl logs -n external-dns deploy/external-dns
+curl -I https://hiraya.noidilin.dev
+curl -I https://hiraya.noidilin.dev/api
+```
+
+The `frontend` and `gateway` Kubernetes Services should remain `ClusterIP`; public app access should flow through the shared Gateway/ALB to the frontend service, and frontend `/api` requests should continue to use the existing nginx proxy to the in-cluster gateway service.
