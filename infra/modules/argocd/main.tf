@@ -28,6 +28,7 @@ resource "helm_release" "argocd" {
   version    = "6.7.0"
 
   create_namespace = false
+  timeout          = 600
 
   values = [
     yamlencode({
@@ -41,7 +42,26 @@ resource "helm_release" "argocd" {
           "server.insecure" = true
         }
       }
-      extraObjects = var.gitops_application_enabled ? [local.gitops_application] : []
     })
+  ]
+}
+
+resource "helm_release" "gitops_application" {
+  count = var.gitops_application_enabled ? 1 : 0
+
+  name      = "argocd-gitops-application"
+  namespace = kubernetes_namespace_v1.argocd.metadata[0].name
+  chart     = "${path.module}/gitops-application"
+
+  create_namespace = false
+
+  values = [
+    yamlencode({
+      application = local.gitops_application
+    })
+  ]
+
+  depends_on = [
+    helm_release.argocd
   ]
 }

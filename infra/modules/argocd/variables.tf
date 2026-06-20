@@ -1,5 +1,5 @@
 variable "gitops_application_enabled" {
-  description = "Whether the Argo CD Helm release should bootstrap the root GitOps Application."
+  description = "Whether Terraform should bootstrap the root GitOps Application after Argo CD is installed."
   type        = bool
   default     = true
 }

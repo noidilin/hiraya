@@ -43,12 +43,12 @@ terraform plan
 The platform stack also installs cluster add-ons as separate modules:
 
 - `kube-prometheus-stack` in `monitoring`
-- Argo CD in `argocd`, including the bootstrap `vintage` Application from `infra/modules/argocd/application.yml` that syncs `gitops/`
+- Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
 - `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
 
-Argo CD is installed after the monitoring module so the `ServiceMonitor` CRD from `kube-prometheus-stack` exists before the bootstrap Application syncs `gitops/`.
+Argo CD is installed after the monitoring module so the `ServiceMonitor` CRD from `kube-prometheus-stack` exists before the bootstrap Application syncs `gitops/`. The bootstrap Application is intentionally installed as a second Helm release after the main Argo CD chart, because the `Application` CRD must exist before Helm can render and apply an `Application` resource.
 
-If an older dev cluster already has a manually created `Application/vintage`, apply `infra/modules/argocd/application.yml` once before the Terraform upgrade so the object has Helm ownership metadata, or delete the Application and let Terraform recreate it. New platform provisioning does not need this handoff.
+If an older dev cluster already has a manually created `Application/vintage`, delete it before the Terraform upgrade and let Terraform recreate it through the `argocd-gitops-application` Helm release. New platform provisioning does not need this handoff.
 
 The platform stack reads bootstrap outputs from:
 
