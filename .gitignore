@@ -35,3 +35,9 @@ backend.hcl
 
 # Environment variables
 .env
+
+# project
+aiops/
+
+# AI
+AGENTS.md
