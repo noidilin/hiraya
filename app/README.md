@@ -1,22 +1,48 @@
 # Vintage Microservices — Deployment Guide
 
-Shutdown the lab:
+## Shutdown the lab safely
+
+The normal lab shutdown destroys only the disposable platform stack in `infra/envs/dev/platform`: EKS, worker nodes, VPC, NAT Gateway, ALB/Gateway resources, ExternalDNS, Argo CD, monitoring/Grafana/Prometheus, Fluent Bit, and platform-managed DNS/certificate records.
+
+Do **not** destroy `infra/envs/dev/bootstrap` for routine lab shutdown. Bootstrap owns durable/shared resources such as ECR repositories, GitHub image-push IAM/OIDC resources, and remote-state dependencies.
 
 ```sh
+# Confirm AWS identity before destructive work
+aws sts get-caller-identity
+
+# Connect kubectl to the dev cluster
 aws eks update-kubeconfig \
   --region ap-northeast-1 \
   --name devops-hiraya-dev-eks
-# stop Argo CD from healing the app
-kubectl delete application vintage -n argocd
-# delete app namespace/PVCs safely
-kubectl delete namespace vintage --wait=true --timeout=10m
+kubectl config current-context
 
-# destroy terraform platform
-cd infra/envs/dev/platform
-terraform init -backend-config=backend.hcl
-terraform plan -destroy
-terraform destroy
+# Optional: back up current app database data before deleting PVCs
+kubectl -n vintage exec statefulset/vintage-postgres -- \
+  pg_dumpall -U postgres > /tmp/vintage-backup.sql
+
+# Stop Argo CD from healing the app while it is being removed
+kubectl delete application vintage -n argocd --ignore-not-found
+
+# Delete app namespace and PVCs safely
+kubectl delete namespace vintage --wait=true --timeout=10m --ignore-not-found
+
+# Review and apply the Terraform destroy plan for the disposable platform only
+terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl
+terraform -chdir=infra/envs/dev/platform plan \
+  -destroy \
+  -out=/tmp/hiraya-platform-destroy.tfplan
+terraform -chdir=infra/envs/dev/platform apply /tmp/hiraya-platform-destroy.tfplan
 ```
+
+After shutdown, verify the EKS cluster is gone:
+
+```sh
+aws eks describe-cluster \
+  --region ap-northeast-1 \
+  --name devops-hiraya-dev-eks
+```
+
+Expected result: AWS returns `ResourceNotFoundException`.
 
 ## Local Development with Docker
 
