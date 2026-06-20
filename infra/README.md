@@ -62,18 +62,27 @@ The platform stack also installs cluster add-ons as separate modules:
 - Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
 - `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
 
-Gateway API core CRDs are pinned to vendored upstream manifests under `infra/modules/gateway-api-crds/chart/crds/`, split one CRD per file for reviewable diffs. Non-CRD upstream validation resources are rendered from that module's chart templates and can be disabled with `enable_validation_resources` if a future EKS/Gateway API combination needs isolation. AWS Load Balancer Controller owns its AWS-specific CRDs through the controller chart (`skip_crds = false`); do not reintroduce a runtime `kubectl` Job or GitHub manifest download for Gateway API prerequisites.
+Gateway API CRD ownership is intentionally split:
+
+- Terraform owns upstream Gateway API core CRDs through the vendored `infra/modules/gateway-api-crds` module. Those CRDs are pinned under `infra/modules/gateway-api-crds/chart/crds/`, split one CRD per file for reviewable diffs.
+- Terraform also owns the optional upstream Gateway API validation resources rendered from that module's chart templates; disable them with `enable_validation_resources` only when isolating EKS/Gateway API compatibility issues.
+- The AWS Load Balancer Controller Helm chart owns AWS-specific Gateway CRDs such as `LoadBalancerConfiguration`, `TargetGroupConfiguration`, and `ListenerRuleConfiguration` with `skip_crds = false`.
+- Terraform owns platform controllers, the shared `edge/public` Gateway, `GatewayClass`, AWS Gateway policy resources, and admin HTTPRoutes. GitOps owns application manifests and the `vintage/frontend` app HTTPRoute.
+
+This ownership split must not change the accepted public ingress path: public app, Argo CD, and Grafana traffic still flows through Route 53/ExternalDNS to the shared public ALB created from Gateway API resources, while backend Services remain private `ClusterIP` Services. Do not reintroduce a runtime `kubectl` Job or GitHub manifest download for Gateway API prerequisites.
+
+Helm does not automatically upgrade or delete CRDs from chart `crds/` directories. This applies to the vendored Gateway API CRD chart and to AWS Load Balancer Controller chart CRDs. Treat every CRD version bump as a deliberate reviewed platform change rather than an incidental Helm chart upgrade.
 
 To upgrade Gateway API core CRDs:
 
 1. Download the target release `standard-install.yaml`.
 2. Split CRDs into `infra/modules/gateway-api-crds/chart/crds/` and keep non-CRD validation resources in `chart/templates/`.
-3. Review YAML diffs carefully.
-4. Run `helm lint infra/modules/gateway-api-crds/chart` and render with `helm template gateway-api-crds infra/modules/gateway-api-crds/chart --namespace kube-system --include-crds`.
-5. Run Terraform formatting, module tests, validation, and a platform plan.
-6. For dev-only breaking CRD schema changes, prefer recreating the disposable platform over complex CRD migration.
-
-Helm does not automatically upgrade or delete CRDs from chart `crds/` directories. Treat CRD upgrades as deliberate reviewed platform changes.
+3. Review YAML diffs carefully, especially schema changes, conversion settings, stored versions, and validation policy changes.
+4. Run `helm lint infra/modules/gateway-api-crds/chart`.
+5. Render with CRDs included: `helm template gateway-api-crds infra/modules/gateway-api-crds/chart --namespace kube-system --include-crds > /tmp/gateway-api-crds.yaml`.
+6. Validate the rendered manifests before touching the cluster: `kubectl apply --dry-run=client -f /tmp/gateway-api-crds.yaml`.
+7. Run Terraform formatting, module tests, `terraform validate`, and a platform `terraform plan`.
+8. For dev-only breaking CRD schema changes, prefer recreating the disposable platform over complex CRD migration.
 
 For existing dev state that previously tracked `module.aws_load_balancer_controller.helm_release.gateway_api_crds`, the platform stack includes a Terraform `moved` block to transfer ownership to `module.gateway_api_crds.helm_release.this`. If local state is disposable or the Helm release conflicts during manual recovery, prefer a clean dev reset or uninstall only the old `gateway-api-crds` release before re-applying the platform stack.
 
