@@ -8,9 +8,11 @@ Depends on: GitHub issue #1 / [`docs/plan/network-improvement.md`](./network-imp
 
 Replace the local Streamlit AIOps prototype with a portfolio-grade, operator-only web UI for Kira while keeping the EKS network redesign clean. The new AIOps slice uses a static React frontend on CloudFront/S3, a Cognito-protected API Gateway HTTP API, a Lambda chat proxy, and a Terraform-managed Bedrock Agent.
 
+The shared ALB remains the only public ingress path into EKS. CloudFront is allowed here only as the public edge for the external static AIOps UI; it must not expose cluster services or replace the Gateway API/ALB path for EKS workloads.
+
 Kira diagnoses the dev EKS platform through AWS-native observability surfaces:
 
-- CloudWatch Logs for pod and cluster logs.
+- CloudWatch Logs for pod logs, plus cluster control-plane logs only if the platform explicitly enables them.
 - CloudWatch Metrics for selected EKS/application health and performance signals exported by ADOT.
 - EKS read APIs for cluster and managed node group health.
 
@@ -65,13 +67,15 @@ Prometheus/Grafana
 
 This AIOps UI/API work is a separate slice after the EKS network redesign in issue #1. CloudFront remains out of scope for issue #1 and belongs to this later AIOps slice.
 
-### Public hostname
+### Public hostname and DNS ownership
 
 The canonical AIOps UI hostname is:
 
 ```text
 aiops.hiraya.noidilin.dev
 ```
+
+The AIOps Terraform stack owns the Route 53 alias record for this hostname because it points to CloudFront, not the EKS shared ALB. Do not create an EKS `HTTPRoute` for `aiops.hiraya.noidilin.dev`; ExternalDNS remains responsible only for Gateway API hostnames served by the shared ALB.
 
 ### Authentication and access
 
@@ -207,10 +211,9 @@ Initial deployed allowlist:
 
 ```text
 /eks/vintage/pods
-/aws/eks/devops-hiraya-dev-eks/cluster
 ```
 
-Synthetic `/app/production` can remain local/demo-only, but should not be included in deployed Terraform by default.
+The EKS control-plane log group `/aws/eks/devops-hiraya-dev-eks/cluster` should be added only if the platform stack explicitly enables EKS control-plane logging and exports the log group name. Synthetic `/app/production` can remain local/demo-only, but should not be included in deployed Terraform by default.
 
 ### Metrics scope
 
@@ -235,7 +238,7 @@ Do not call the Kubernetes API directly from Lambda in the first slice.
 
 ### ADOT and metric export
 
-ADOT belongs to the platform stack, not the AIOps stack.
+ADOT belongs to the platform stack, not the AIOps stack. The ADOT Collector should use a Prometheus receiver to scrape selected in-cluster `/metrics` endpoints directly; it should not query the Prometheus server.
 
 Add a focused Terraform module:
 
@@ -340,7 +343,7 @@ infra/envs/dev/aiops/
   - S3 React hosting bucket
   - CloudFront distribution
   - CloudFront ACM certificate in us-east-1
-  - Route 53 record for aiops.hiraya.noidilin.dev
+  - Terraform-owned Route 53 alias record for aiops.hiraya.noidilin.dev pointing to CloudFront
   - Cognito User Pool and app client/domain
   - API Gateway HTTP API
   - chat proxy Lambda
@@ -349,7 +352,7 @@ infra/envs/dev/aiops/
   - AIOps IAM roles and Lambda permissions
 ```
 
-AIOps stack reads platform remote state outputs. It should not duplicate core platform values manually.
+AIOps stack reads platform remote state outputs. It should not duplicate core platform values manually and should not use Kubernetes or Helm providers. This keeps the AIOps stack independent of EKS API endpoint reachability if the platform later moves to private-only API access.
 
 Expected platform outputs:
 
@@ -357,12 +360,12 @@ Expected platform outputs:
 cluster_name
 region
 pod_log_group_name
-eks_cluster_log_group_name, if control plane logging is enabled
+eks_cluster_log_group_name, only if control-plane logging is enabled
 aiops_metric_namespace = "Hiraya/AIOps"
 aiops_allowed_namespaces = ["vintage"]
 ```
 
-Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC subnet outputs for Lambda networking.
+Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC subnet outputs for Lambda networking. Do not consume the optional control-plane log group unless the platform output exists.
 
 ## Implementation phases
 
@@ -379,8 +382,9 @@ Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC s
 - Create `adot` namespace.
 - Create ADOT IRSA role with CloudWatch metric/log publishing permissions scoped as tightly as practical.
 - Install ADOT Collector with Helm.
-- Configure selected Prometheus scraping from backend services and Kubernetes health sources.
+- Configure the ADOT Collector Prometheus receiver to scrape selected in-cluster `/metrics` endpoints from backend services and Kubernetes health sources directly.
 - Export only the selected AIOps metric set to `Hiraya/AIOps`.
+- Validate that private-node ADOT pods can reach required AWS APIs through the accepted dev egress path: private subnets -> single NAT Gateway -> CloudWatch/STS endpoints.
 - Add platform outputs consumed by the AIOps stack.
 
 ### Phase 3: Refactor AIOps tool Lambdas
@@ -412,7 +416,7 @@ Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC s
 - Create `app/aiops/frontend` focused chat UI.
 - Add Cognito login flow.
 - Load `/config.json` at runtime.
-- Create S3 bucket, CloudFront distribution, CloudFront ACM cert in `us-east-1`, and Route 53 alias.
+- Create S3 bucket, CloudFront distribution, CloudFront ACM cert in `us-east-1`, and Terraform-owned Route 53 alias.
 - Deploy built static assets manually/Terraform-local for first slice.
 
 ### Phase 7: Documentation cleanup
@@ -479,6 +483,7 @@ Functional checks:
 - Authenticated `POST /chat` returns a Kira response.
 - Browser can load `https://aiops.hiraya.noidilin.dev/config.json`.
 - CloudFront serves React UI with valid TLS.
+- `aiops.hiraya.noidilin.dev` is a Terraform-owned CloudFront alias, not an ExternalDNS-owned ALB record.
 - Lambda logs contain metadata only, not full prompts/responses.
 - `fetch_logs` rejects unapproved log groups.
 - `fetch_metrics` rejects unknown metric names or unapproved namespaces.
