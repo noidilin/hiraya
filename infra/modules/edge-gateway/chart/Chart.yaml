@@ -1,0 +1,6 @@
+apiVersion: v2
+name: edge-gateway
+description: Shared public HTTPS Gateway for Hiraya dev EKS.
+type: application
+version: 0.1.0
+appVersion: 0.1.0

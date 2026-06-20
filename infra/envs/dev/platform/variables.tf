@@ -126,3 +126,39 @@ variable "gitops_application_enabled" {
   type        = bool
   default     = true
 }
+
+variable "public_zone_name" {
+  description = "Public Route 53 hosted zone used for shared edge DNS validation."
+  type        = string
+  default     = "noidilin.dev"
+}
+
+variable "public_domain_name" {
+  description = "Root public domain served by the shared HTTPS Gateway."
+  type        = string
+  default     = "hiraya.noidilin.dev"
+}
+
+variable "edge_gateway_namespace" {
+  description = "Namespace for shared Gateway edge resources."
+  type        = string
+  default     = "edge"
+}
+
+variable "edge_gateway_name" {
+  description = "Name of the shared public Gateway."
+  type        = string
+  default     = "public"
+}
+
+variable "public_gateway_access_label_key" {
+  description = "Namespace label key required for public route attachment."
+  type        = string
+  default     = "hiraya.noidilin.dev/public-gateway-access"
+}
+
+variable "public_gateway_access_label_value" {
+  description = "Namespace label value required for public route attachment."
+  type        = string
+  default     = "true"
+}

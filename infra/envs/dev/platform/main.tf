@@ -2,6 +2,7 @@ data "aws_caller_identity" "current" {}
 
 locals {
   bootstrap_state_bucket = coalesce(var.bootstrap_state_bucket, "devops-hiraya-dev-tf-state")
+  runtime_boundary_arn   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
 }
 
 data "terraform_remote_state" "bootstrap" {
@@ -47,6 +48,14 @@ module "eks" {
   depends_on                   = [module.vpc]
 }
 
+module "edge_certificate" {
+  source = "../../../modules/acm-public-cert"
+
+  zone_name                 = var.public_zone_name
+  domain_name               = var.public_domain_name
+  subject_alternative_names = ["*.${var.public_domain_name}"]
+}
+
 data "aws_eks_cluster_auth" "eks" {
   name = module.eks.cluster_name
 }
@@ -66,6 +75,47 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.eks.token
   }
+}
+
+module "aws_load_balancer_controller" {
+  source = "../../../modules/aws-load-balancer-controller"
+
+  providers = {
+    aws        = aws
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  cluster_name             = var.cluster_name
+  region                   = var.region
+  vpc_id                   = module.vpc.vpc_id
+  oidc_provider_arn        = module.eks.oidc_provider_arn
+  oidc_issuer_url          = module.eks.oidc_issuer_url
+  permissions_boundary_arn = local.runtime_boundary_arn
+
+  depends_on = [module.eks]
+}
+
+module "edge_gateway" {
+  source = "../../../modules/edge-gateway"
+
+  providers = {
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  namespace                     = var.edge_gateway_namespace
+  gateway_name                  = var.edge_gateway_name
+  load_balancer_name            = "hiraya-dev-public"
+  certificate_arn               = module.edge_certificate.certificate_arn
+  domain_name                   = var.public_domain_name
+  allowed_namespace_label_key   = var.public_gateway_access_label_key
+  allowed_namespace_label_value = var.public_gateway_access_label_value
+
+  depends_on = [
+    module.aws_load_balancer_controller,
+    module.edge_certificate
+  ]
 }
 
 module "fluent_bit" {
