@@ -1,2 +1,2 @@
 gatewayApiVersion: v1.5.0
-kubectlImage: bitnami/kubectl:1.34
+kubectlImage: registry.k8s.io/kubectl:v1.34.3
