@@ -31,6 +31,17 @@ variable "domain_name" {
   type        = string
 }
 
+variable "target_group_target_type" {
+  description = "ALB target group target type for Gateway backends. Use ip so ClusterIP services can stay private behind the shared Gateway."
+  type        = string
+  default     = "ip"
+
+  validation {
+    condition     = contains(["ip", "instance"], var.target_group_target_type)
+    error_message = "target_group_target_type must be either ip or instance."
+  }
+}
+
 variable "allowed_namespace_label_key" {
   description = "Namespace label key required to attach public HTTPRoutes to the shared Gateway."
   type        = string

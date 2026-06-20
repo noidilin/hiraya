@@ -6,6 +6,8 @@ metadata:
 spec:
   loadBalancerName: {{ .Values.loadBalancer.name | quote }}
   scheme: internet-facing
+  defaultTargetGroupConfiguration:
+    name: {{ .Values.gateway.name }}-target-group
   listenerConfigurations:
     - protocolPort: HTTPS:443
       defaultCertificate: {{ .Values.loadBalancer.certificateArn | quote }}

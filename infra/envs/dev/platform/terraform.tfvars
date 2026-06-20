@@ -35,8 +35,10 @@ node_group_name = "devops-hiraya-dev-node-group"
 instance_types = ["t3.medium"]
 capacity_type  = "SPOT"
 
-desired_size = 2
-min_size     = 1
-max_size     = 2
+# Three t3.medium nodes are required after platform add-ons move behind the
+# shared Gateway; two nodes hit the ENI pod-density limit before all app pods fit.
+desired_size = 3
+min_size     = 2
+max_size     = 3
 
 disk_size = 20

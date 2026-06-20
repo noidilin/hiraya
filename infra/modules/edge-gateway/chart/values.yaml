@@ -4,6 +4,8 @@ gateway:
 loadBalancer:
   name: hiraya-dev-public
   certificateArn: ""
+targetGroup:
+  targetType: ip
 domains:
   root: hiraya.noidilin.dev
   wildcard: "*.hiraya.noidilin.dev"

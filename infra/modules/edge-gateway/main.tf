@@ -37,6 +37,9 @@ resource "helm_release" "edge_gateway" {
         name           = var.load_balancer_name
         certificateArn = var.certificate_arn
       }
+      targetGroup = {
+        targetType = var.target_group_target_type
+      }
       domains = {
         root     = var.domain_name
         wildcard = "*.${var.domain_name}"
