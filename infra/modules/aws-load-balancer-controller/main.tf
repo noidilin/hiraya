@@ -68,6 +68,7 @@ data "aws_iam_policy_document" "controller" {
       "ec2:GetCoipPoolUsage",
       "ec2:GetSecurityGroupsForVpc",
       "elasticloadbalancing:DescribeListenerAttributes",
+      "elasticloadbalancing:DescribeListenerCertificates",
       "elasticloadbalancing:DescribeListeners",
       "elasticloadbalancing:DescribeLoadBalancerAttributes",
       "elasticloadbalancing:DescribeLoadBalancers",

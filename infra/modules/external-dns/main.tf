@@ -121,7 +121,8 @@ resource "helm_release" "external_dns" {
       txtOwnerId    = var.txt_owner_id
       domainFilters = [var.managed_domain]
       extraArgs = {
-        "aws-zone-type" = "public"
+        "aws-zone-type"          = "public"
+        "aws-zone-match-parent" = null
       }
       triggerLoopOnEvent = true
       serviceAccount = {
