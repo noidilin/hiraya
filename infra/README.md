@@ -75,6 +75,8 @@ To upgrade Gateway API core CRDs:
 
 Helm does not automatically upgrade or delete CRDs from chart `crds/` directories. Treat CRD upgrades as deliberate reviewed platform changes.
 
+For existing dev state that previously tracked `module.aws_load_balancer_controller.helm_release.gateway_api_crds`, the platform stack includes a Terraform `moved` block to transfer ownership to `module.gateway_api_crds.helm_release.this`. If local state is disposable or the Helm release conflicts during manual recovery, prefer a clean dev reset or uninstall only the old `gateway-api-crds` release before re-applying the platform stack.
+
 Argo CD is installed after the monitoring module so the `ServiceMonitor` CRD from `kube-prometheus-stack` exists before the bootstrap Application syncs `gitops/`. The bootstrap Application is intentionally installed as a second Helm release after the main Argo CD chart, because the `Application` CRD must exist before Helm can render and apply an `Application` resource.
 
 If an older dev cluster already has a manually created `Application/vintage`, delete it before the Terraform upgrade and let Terraform recreate it through the `argocd-gitops-application` Helm release. New platform provisioning does not need this handoff.
