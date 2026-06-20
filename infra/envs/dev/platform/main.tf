@@ -180,10 +180,15 @@ module "argocd" {
     helm       = helm.eks
   }
 
-  gitops_application_enabled = var.gitops_application_enabled
+  gitops_application_enabled        = var.gitops_application_enabled
+  admin_hostname                    = "argocd.${var.public_domain_name}"
+  gateway_name                      = module.edge_gateway.gateway_name
+  gateway_namespace                 = module.edge_gateway.namespace
+  public_gateway_access_label_key   = var.public_gateway_access_label_key
+  public_gateway_access_label_value = var.public_gateway_access_label_value
 
   # The GitOps app includes a ServiceMonitor, whose CRD is installed by kube-prometheus-stack.
   # Wait for monitoring before creating the Argo CD Application object.
-  depends_on = [module.eks, module.monitoring]
+  depends_on = [module.eks, module.monitoring, module.edge_gateway]
 }
 

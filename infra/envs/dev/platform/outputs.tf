@@ -41,3 +41,12 @@ output "argocd_namespace" {
 output "argocd_application_name" {
   value = module.argocd.gitops_application_name
 }
+
+output "argocd_admin_hostname" {
+  value = module.argocd.admin_hostname
+}
+
+output "argocd_admin_password" {
+  value     = module.argocd.admin_password
+  sensitive = true
+}

@@ -6,13 +6,26 @@ terraform {
     helm = {
       source = "hashicorp/helm"
     }
+    random = {
+      source = "hashicorp/random"
+    }
   }
 }
 
 resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
+
+    labels = {
+      (var.public_gateway_access_label_key) = var.public_gateway_access_label_value
+    }
   }
+}
+
+resource "random_password" "argocd_admin" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 locals {
@@ -41,8 +54,41 @@ resource "helm_release" "argocd" {
         params = {
           "server.insecure" = true
         }
+        secret = {
+          argocdServerAdminPassword      = random_password.argocd_admin.bcrypt_hash
+          argocdServerAdminPasswordMtime = var.admin_password_mtime
+        }
       }
     })
+  ]
+}
+
+resource "helm_release" "admin_route" {
+  name      = "argocd-admin-route"
+  namespace = kubernetes_namespace_v1.argocd.metadata[0].name
+  chart     = "${path.module}/admin-route"
+
+  create_namespace = false
+
+  values = [
+    yamlencode({
+      route = {
+        name     = var.admin_route_name
+        hostname = var.admin_hostname
+      }
+      gateway = {
+        name      = var.gateway_name
+        namespace = var.gateway_namespace
+      }
+      service = {
+        name = "argocd-server"
+        port = 80
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.argocd
   ]
 }
 

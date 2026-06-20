@@ -81,3 +81,18 @@ curl -I https://hiraya.noidilin.dev/api
 ```
 
 The `frontend` and `gateway` Kubernetes Services should remain `ClusterIP`; public app access should flow through the shared Gateway/ALB to the frontend service, and frontend `/api` requests should continue to use the existing nginx proxy to the in-cluster gateway service.
+
+Validate public Argo CD routing after apply with:
+
+```bash
+kubectl get namespace argocd --show-labels
+kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
+kubectl get httproute -n argocd argocd -o yaml
+kubectl describe httproute -n argocd argocd
+kubectl logs -n external-dns deploy/external-dns
+terraform output -raw argocd_admin_hostname
+terraform output -raw argocd_admin_password
+curl -I https://argocd.hiraya.noidilin.dev
+```
+
+The Argo CD login page should be reachable over HTTPS at `argocd.hiraya.noidilin.dev`, while `argocd-server` remains a `ClusterIP` Service behind the shared Gateway/ALB. The generated admin password is stored only in Terraform state and exposed as a sensitive Terraform output for operator retrieval.
