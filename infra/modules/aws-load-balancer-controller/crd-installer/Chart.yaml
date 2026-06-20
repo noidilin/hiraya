@@ -1,6 +1,0 @@
-apiVersion: v2
-name: gateway-api-crd-installer
-description: Installs Gateway API and AWS Load Balancer Controller Gateway CRDs before Gateway resources are rendered.
-type: application
-version: 0.1.0
-appVersion: 0.1.0

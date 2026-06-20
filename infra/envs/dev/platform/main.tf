@@ -77,6 +77,16 @@ provider "helm" {
   }
 }
 
+module "gateway_api_crds" {
+  source = "../../../modules/gateway-api-crds"
+
+  providers = {
+    helm = helm.eks
+  }
+
+  depends_on = [module.eks]
+}
+
 module "aws_load_balancer_controller" {
   source = "../../../modules/aws-load-balancer-controller"
 
@@ -93,7 +103,10 @@ module "aws_load_balancer_controller" {
   oidc_issuer_url          = module.eks.oidc_issuer_url
   permissions_boundary_arn = local.runtime_boundary_arn
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    module.gateway_api_crds
+  ]
 }
 
 module "external_dns" {

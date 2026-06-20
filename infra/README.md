@@ -55,11 +55,25 @@ The broad `0.0.0.0/0` public EKS API CIDR in dev is temporary workstation access
 
 The platform stack also installs cluster add-ons as separate modules:
 
-- AWS Load Balancer Controller and Gateway API CRDs for the shared public edge
+- vendored upstream Gateway API core CRDs from `infra/modules/gateway-api-crds`, with optional Gateway API validation resources
+- AWS Load Balancer Controller for the shared public edge, with AWS-specific CRDs installed by its Helm chart
 - ExternalDNS in `external-dns`, using IRSA, Route 53 permissions scoped to `noidilin.dev`, `gateway-httproute` sources, `sync` policy, and TXT registry ownership
 - `kube-prometheus-stack` in `monitoring`
 - Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
 - `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
+
+Gateway API core CRDs are pinned to vendored upstream manifests under `infra/modules/gateway-api-crds/chart/crds/`, split one CRD per file for reviewable diffs. Non-CRD upstream validation resources are rendered from that module's chart templates and can be disabled with `enable_validation_resources` if a future EKS/Gateway API combination needs isolation. AWS Load Balancer Controller owns its AWS-specific CRDs through the controller chart (`skip_crds = false`); do not reintroduce a runtime `kubectl` Job or GitHub manifest download for Gateway API prerequisites.
+
+To upgrade Gateway API core CRDs:
+
+1. Download the target release `standard-install.yaml`.
+2. Split CRDs into `infra/modules/gateway-api-crds/chart/crds/` and keep non-CRD validation resources in `chart/templates/`.
+3. Review YAML diffs carefully.
+4. Run `helm lint infra/modules/gateway-api-crds/chart` and render with `helm template gateway-api-crds infra/modules/gateway-api-crds/chart --namespace kube-system --include-crds`.
+5. Run Terraform formatting, module tests, validation, and a platform plan.
+6. For dev-only breaking CRD schema changes, prefer recreating the disposable platform over complex CRD migration.
+
+Helm does not automatically upgrade or delete CRDs from chart `crds/` directories. Treat CRD upgrades as deliberate reviewed platform changes.
 
 Argo CD is installed after the monitoring module so the `ServiceMonitor` CRD from `kube-prometheus-stack` exists before the bootstrap Application syncs `gitops/`. The bootstrap Application is intentionally installed as a second Helm release after the main Argo CD chart, because the `Application` CRD must exist before Helm can render and apply an `Application` resource.
 

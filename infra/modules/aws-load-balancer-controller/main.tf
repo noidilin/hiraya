@@ -185,29 +185,14 @@ resource "aws_iam_role_policy_attachment" "controller" {
   policy_arn = aws_iam_policy.controller.arn
 }
 
-resource "helm_release" "gateway_api_crds" {
-  name      = "gateway-api-crds"
-  namespace = local.namespace
-  chart     = "${path.module}/crd-installer"
-
-  wait          = true
-  wait_for_jobs = true
-  timeout       = 300
-
-  values = [
-    yamlencode({
-      gatewayApiVersion                = var.gateway_api_version
-      awsLoadBalancerControllerVersion = "v${var.chart_version}"
-    })
-  ]
-}
-
 resource "helm_release" "controller" {
   name       = "aws-load-balancer-controller"
   namespace  = local.namespace
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   version    = var.chart_version
+
+  skip_crds = false
 
   wait    = true
   timeout = 600
@@ -231,7 +216,6 @@ resource "helm_release" "controller" {
   ]
 
   depends_on = [
-    aws_iam_role_policy_attachment.controller,
-    helm_release.gateway_api_crds
+    aws_iam_role_policy_attachment.controller
   ]
 }

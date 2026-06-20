@@ -29,12 +29,6 @@ variable "chart_version" {
   default     = "3.4.0"
 }
 
-variable "gateway_api_version" {
-  description = "Gateway API CRD release required by the AWS Load Balancer Controller."
-  type        = string
-  default     = "v1.5.0"
-}
-
 variable "permissions_boundary_arn" {
   description = "Optional IAM permissions boundary for the controller IRSA role."
   type        = string
