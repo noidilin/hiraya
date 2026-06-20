@@ -3,6 +3,8 @@ kind: StatefulSet
 metadata:
   name: vintage-postgres
   namespace: vintage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   serviceName: vintage-postgres
   replicas: 1
