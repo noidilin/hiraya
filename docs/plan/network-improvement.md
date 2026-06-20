@@ -684,8 +684,8 @@ Render local Helm charts if added:
 
 ```bash
 helm template edge-gateway infra/modules/edge-gateway/chart
-helm template argocd-route infra/modules/argocd/<route-chart-path>
-helm template grafana-route infra/modules/monitoring/<route-chart-path>
+helm template argocd-route infra/modules/argocd/admin-route
+helm template grafana-route infra/modules/monitoring/admin-route
 ```
 
 ### Post-apply checks
@@ -727,6 +727,7 @@ curl -I http://hiraya.noidilin.dev
 curl -I https://hiraya.noidilin.dev
 curl -I https://argocd.hiraya.noidilin.dev
 curl -I https://grafana.hiraya.noidilin.dev
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
 Expected:
@@ -735,8 +736,8 @@ Expected:
 - HTTPS returns valid certificate.
 - App loads and `/api` calls work through frontend nginx to gateway.
 - Argo CD login page is reachable.
-- Grafana login page is reachable.
-- Prometheus has no public DNS route.
+- Grafana login page is reachable over HTTPS through the shared Gateway/ALB and requires the Terraform-generated admin password.
+- Prometheus has no public DNS route or HTTPRoute and is reachable only through private cluster access such as `kubectl port-forward`.
 
 Check EKS endpoint posture:
 

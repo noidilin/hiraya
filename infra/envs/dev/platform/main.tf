@@ -169,7 +169,13 @@ module "monitoring" {
     helm       = helm.eks
   }
 
-  depends_on = [module.eks]
+  grafana_hostname                  = "grafana.${var.public_domain_name}"
+  gateway_name                      = module.edge_gateway.gateway_name
+  gateway_namespace                 = module.edge_gateway.namespace
+  public_gateway_access_label_key   = var.public_gateway_access_label_key
+  public_gateway_access_label_value = var.public_gateway_access_label_value
+
+  depends_on = [module.eks, module.edge_gateway]
 }
 
 module "argocd" {
