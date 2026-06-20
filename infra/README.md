@@ -96,3 +96,19 @@ curl -I https://argocd.hiraya.noidilin.dev
 ```
 
 The Argo CD login page should be reachable over HTTPS at `argocd.hiraya.noidilin.dev`, while `argocd-server` remains a `ClusterIP` Service behind the shared Gateway/ALB. The generated admin password is stored only in Terraform state and exposed as a sensitive Terraform output for operator retrieval.
+
+Validate public Grafana routing after apply with:
+
+```bash
+kubectl get namespace monitoring --show-labels
+kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.spec.type}{"\n"}'
+kubectl get httproute -n monitoring grafana -o yaml
+kubectl describe httproute -n monitoring grafana
+kubectl logs -n external-dns deploy/external-dns
+terraform output -raw grafana_admin_password
+curl -I https://grafana.hiraya.noidilin.dev
+```
+
+Grafana's admin username is `admin`. The generated admin password is stored in Terraform state, exposed as a sensitive Terraform output for operator retrieval, and also materialized by the Helm chart into the `monitoring/kube-prometheus-stack-grafana` Kubernetes Secret.
+
+Future improvement: move both Argo CD and Grafana generated credentials into AWS Secrets Manager with a dedicated KMS key, least-privilege read access for operators, and rotation/lifecycle guidance. Terraform outputs should then expose only secret ARNs/names, not plaintext passwords.

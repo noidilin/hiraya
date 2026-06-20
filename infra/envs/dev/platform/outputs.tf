@@ -34,6 +34,11 @@ output "monitoring_namespace" {
   value = module.monitoring.namespace
 }
 
+output "grafana_admin_password" {
+  value     = module.monitoring.grafana_admin_password
+  sensitive = true
+}
+
 output "argocd_namespace" {
   value = module.argocd.namespace
 }
