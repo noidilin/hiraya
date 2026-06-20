@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 0001 — Trace Gateway API to AWS ALB</title>
+  <style>
+    :root { --ink:#111827; --muted:#6b7280; --line:#d1d5db; --soft:#f9fafb; --accent:#2563eb; --ok:#047857; --bad:#b91c1c; }
+    body { margin:0; color:var(--ink); background:#fff; font:17px/1.6 ui-serif, Georgia, Cambria, "Times New Roman", serif; }
+    main { max-width:860px; margin:48px auto; padding:0 28px 72px; }
+    h1 { font-size:2.25rem; line-height:1.08; margin:0 0 8px; letter-spacing:-.03em; }
+    h2 { font-size:1.25rem; margin:34px 0 10px; border-top:1px solid var(--line); padding-top:18px; }
+    p, li { max-width:72ch; }
+    a { color:var(--accent); }
+    code, pre, input, button { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code { background:#eef2ff; border-radius:5px; padding:.1rem .28rem; }
+    pre { background:#0f172a; color:#e5e7eb; padding:16px; border-radius:14px; overflow:auto; }
+    .subtitle { color:var(--muted); margin:0 0 28px; }
+    .goal { border-left:4px solid var(--accent); background:#eff6ff; padding:12px 16px; }
+    .flow { display:grid; gap:8px; margin:18px 0; }
+    .step { border:1px solid var(--line); background:var(--soft); border-radius:14px; padding:12px 14px; }
+    .arrow { text-align:center; color:var(--muted); font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table { border-collapse:collapse; width:100%; margin:14px 0; font-size:.96rem; }
+    th, td { border-bottom:1px solid var(--line); padding:9px 8px; text-align:left; vertical-align:top; }
+    th { background:#f3f4f6; }
+    .quiz { border:1px solid var(--line); border-radius:16px; padding:16px; background:#fff; margin-top:14px; }
+    .q { display:grid; grid-template-columns:1fr minmax(130px,190px); gap:10px; align-items:center; margin:10px 0; }
+    input { font-size:1rem; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
+    button { font-size:.95rem; padding:9px 12px; border:0; border-radius:10px; background:var(--accent); color:white; cursor:pointer; }
+    .feedback { margin-top:10px; font-weight:600; }
+    .ok { color:var(--ok); } .bad { color:var(--bad); }
+    .small { color:var(--muted); font-size:.94rem; }
+    @media print { main { margin:20px auto; } button, input { display:none; } a { color:inherit; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Trace Gateway API to AWS ALB</h1>
+  <p class="subtitle">Lesson 0001 · A five-minute map for the Hiraya EKS edge.</p>
+
+  <section class="goal">
+    <strong>Tangible win:</strong> after this lesson, you should be able to say which component handles each part of public traffic: Kubernetes routing intent, AWS load balancer creation, DNS, frontend routing, and backend API aggregation.
+  </section>
+
+  <h2>1. The smallest correct model</h2>
+  <p>
+    <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a> is Kubernetes' role-oriented API for L4/L7 service networking. It gives you resources such as <code>GatewayClass</code>, <code>Gateway</code>, and <code>HTTPRoute</code>. Kubernetes itself does not magically create an AWS ALB from these objects; an implementation must reconcile them.
+  </p>
+  <p>
+    In Hiraya, that implementation is <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/gateway/gateway/">AWS Load Balancer Controller</a>. Its Gateway API support maps L7 <code>HTTPRoute</code>/<code>GRPCRoute</code> traffic to an AWS ALB.
+  </p>
+
+  <div class="flow" aria-label="Gateway API to AWS ALB flow">
+    <div class="step"><strong>1. Terraform</strong> installs Gateway API CRDs, AWS Load Balancer Controller, ExternalDNS, and the shared <code>edge/public</code> Gateway.</div>
+    <div class="arrow">↓</div>
+    <div class="step"><strong>2. GitOps</strong> applies the app <code>HTTPRoute</code>: <code>hiraya.noidilin.dev → vintage/frontend:3000</code>.</div>
+    <div class="arrow">↓</div>
+    <div class="step"><strong>3. AWS Load Balancer Controller</strong> reconciles Gateway API objects into an internet-facing AWS ALB.</div>
+    <div class="arrow">↓</div>
+    <div class="step"><strong>4. ExternalDNS</strong> reads HTTPRoute hostnames and writes Route 53 records pointing to the ALB.</div>
+  </div>
+
+  <h2>2. Where the app gateway fits</h2>
+  <p>
+    The app's <code>gateway</code> microservice is not Gateway API. It is a Node/Express backend service that proxies app API paths such as <code>/api/auth</code>, <code>/api/products</code>, <code>/api/orders</code>, and <code>/api/users</code> to internal microservices.
+  </p>
+
+  <pre><code>Internet user
+  → Route 53
+  → AWS ALB created from Gateway API
+  → HTTPRoute vintage/frontend
+  → frontend Service
+  → frontend nginx /api proxy
+  → gateway Service
+  → Express gateway microservice
+  → backend domain services</code></pre>
+
+  <h2>3. Ownership rule</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>Owner</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Platform intent</td><td>Terraform</td><td>Gateway API CRDs, <code>edge/public</code>, AWS Load Balancer Controller</td></tr>
+      <tr><td>App route intent</td><td>GitOps</td><td><code>vintage/frontend</code> <code>HTTPRoute</code></td></tr>
+      <tr><td>AWS runtime</td><td>Controller</td><td>ALB, listeners, target groups, security-group changes</td></tr>
+      <tr><td>DNS runtime</td><td>ExternalDNS</td><td>Route 53 ALIAS/TXT records from <code>HTTPRoute.hostnames</code></td></tr>
+      <tr><td>Backend API aggregation</td><td>Application</td><td>Node/Express <code>gateway</code> service</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Retrieval practice</h2>
+  <p class="small">Type one word for each owner: <code>terraform</code>, <code>gitops</code>, <code>controller</code>, <code>externaldns</code>, or <code>application</code>.</p>
+  <div class="quiz">
+    <div class="q"><label for="a1">Who owns the shared <code>edge/public</code> Gateway?</label><input id="a1" autocomplete="off" /></div>
+    <div class="q"><label for="a2">Who owns the app <code>HTTPRoute</code> for <code>hiraya.noidilin.dev</code>?</label><input id="a2" autocomplete="off" /></div>
+    <div class="q"><label for="a3">Who creates/reconciles the AWS ALB at runtime?</label><input id="a3" autocomplete="off" /></div>
+    <div class="q"><label for="a4">Who writes Route 53 records from HTTPRoute hostnames?</label><input id="a4" autocomplete="off" /></div>
+    <div class="q"><label for="a5">Who owns <code>/api/products → product-service</code> routing?</label><input id="a5" autocomplete="off" /></div>
+    <button type="button" onclick="check()">Check answers</button>
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+  </div>
+
+  <h2>5. Keep nearby</h2>
+  <ul>
+    <li>Reference: <a href="../reference/gateway-api-aws-cheatsheet.html">Gateway API on AWS EKS — Hiraya Cheat Sheet</a></li>
+    <li>Project ADR: <a href="../../docs/adr/0001-eks-network-redesign.md">EKS network redesign</a></li>
+    <li>Primary source to read next: <a href="https://kubernetes.io/docs/concepts/services-networking/gateway/">Kubernetes Gateway API documentation</a></li>
+  </ul>
+
+  <p class="small">If any step in the trace feels fuzzy, ask the agent to quiz you or to walk the flow using live <code>kubectl</code> output.</p>
+</main>
+<script>
+function norm(v) { return v.trim().toLowerCase().replace(/[-_\s]/g, ''); }
+function check() {
+  const expected = ['terraform', 'gitops', 'controller', 'externaldns', 'application'];
+  const got = [1,2,3,4,5].map(n => norm(document.getElementById('a'+n).value));
+  let correct = 0;
+  got.forEach((v, i) => { if (v === expected[i]) correct++; });
+  const el = document.getElementById('feedback');
+  if (correct === expected.length) {
+    el.className = 'feedback ok';
+    el.textContent = 'Correct. You can now trace ownership from hostname to backend API route.';
+  } else {
+    el.className = 'feedback bad';
+    el.textContent = `${correct}/${expected.length} correct. Hint: platform, app route, AWS runtime, DNS runtime, app logic.`;
+  }
+}
+</script>
+</body>
+</html>
