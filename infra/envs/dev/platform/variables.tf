@@ -13,13 +13,42 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "subnets" {
-  description = "List of subnets"
-  type = list(object({
-    name              = string
-    cidr_block        = string
-    availability_zone = string
-  }))
+variable "availability_zones" {
+  description = "Availability zones used for public edge and private workload subnet groups."
+  type        = list(string)
+}
+
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public edge subnets across availability_zones."
+  type        = list(string)
+}
+
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for private workload subnets across availability_zones."
+  type        = list(string)
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs for network debugging. Disabled by default to avoid dev log ingestion cost."
+  type        = bool
+  default     = false
+}
+
+variable "eks_endpoint_public_access" {
+  description = "Temporary dev toggle for the public EKS API endpoint."
+  type        = bool
+  default     = true
+}
+
+variable "eks_endpoint_private_access" {
+  description = "Enable private EKS API endpoint access from inside the VPC."
+  type        = bool
+  default     = true
+}
+
+variable "eks_endpoint_public_access_cidrs" {
+  description = "Explicit temporary dev CIDRs allowed to reach the public EKS API endpoint. Prefer workstation /32 CIDRs over broad access."
+  type        = list(string)
 }
 
 

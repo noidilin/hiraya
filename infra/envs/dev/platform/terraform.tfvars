@@ -2,24 +2,32 @@ region   = "ap-northeast-1"
 vpc_name = "devops-hiraya-dev-vpc"
 vpc_cidr = "10.1.0.0/16"
 
-subnets = [
-  {
-    name              = "subnet-1"
-    cidr_block        = "10.1.1.0/24"
-    availability_zone = "ap-northeast-1a"
-  },
-
-  {
-    name              = "subnet-2",
-    cidr_block        = "10.1.2.0/24",
-    availability_zone = "ap-northeast-1c"
-  },
-  {
-    name              = "subnet-3",
-    cidr_block        = "10.1.3.0/24",
-    availability_zone = "ap-northeast-1d"
-  }
+availability_zones = [
+  "ap-northeast-1a",
+  "ap-northeast-1c",
+  "ap-northeast-1d",
 ]
+
+public_subnet_cidrs = [
+  "10.1.1.0/24",
+  "10.1.2.0/24",
+  "10.1.3.0/24",
+]
+
+private_subnet_cidrs = [
+  "10.1.11.0/24",
+  "10.1.12.0/24",
+  "10.1.13.0/24",
+]
+
+# Disabled by default to avoid dev log ingestion cost; enable when debugging network traffic.
+enable_vpc_flow_logs = false
+
+# Temporary dev access: broad public EKS API access remains explicit while the
+# platform is reachable from a changing workstation IP. Replace with /32 CIDRs.
+eks_endpoint_public_access       = true
+eks_endpoint_private_access      = true
+eks_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
 cluster_name    = "devops-hiraya-dev-eks"
 node_group_name = "devops-hiraya-dev-node-group"

@@ -40,6 +40,19 @@ terraform init -backend-config=backend.hcl
 terraform plan
 ```
 
+The platform stack creates a disposable dev EKS network foundation with:
+
+- three public edge subnets tagged for external load balancers
+- three private workload subnets tagged for internal load balancers
+- one NAT Gateway in a public subnet for private subnet outbound internet egress
+- an S3 Gateway VPC endpoint associated with private route tables
+- EKS cluster networking and managed node groups attached to private subnet IDs only
+- EKS private endpoint access enabled
+- explicit public EKS API CIDRs in `terraform.tfvars`
+- VPC Flow Logs support available through `enable_vpc_flow_logs`, disabled by default to avoid dev logging cost
+
+The broad `0.0.0.0/0` public EKS API CIDR in dev is temporary workstation access, not a secure default. Replace it with workstation `/32` CIDRs when the IP is stable. Because subnet topology and node placement are disruptive, recreate the disposable platform stack for this redesign instead of attempting an in-place migration.
+
 The platform stack also installs cluster add-ons as separate modules:
 
 - `kube-prometheus-stack` in `monitoring`

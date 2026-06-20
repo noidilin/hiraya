@@ -1,6 +1,6 @@
 # EKS Network Improvement Plan
 
-Status: planned
+Status: in progress
 Related ADR: [`docs/adr/0001-eks-network-redesign.md`](../adr/0001-eks-network-redesign.md)
 
 ## Goal
@@ -19,17 +19,21 @@ The target design is:
 
 ## Current observed state
 
-The current repo still has the older simple network pattern:
+The repo has landed the private-node network foundation slice:
 
 - `infra/modules/vpc/main.tf`
   - one VPC
-  - only public subnets
-  - `map_public_ip_on_launch = true`
+  - separate public edge and private workload subnet groups across three AZs
+  - public subnets map public IPs and are tagged for external load balancers
+  - private subnets do not map public IPs and are tagged for internal load balancers
   - one public route table to an Internet Gateway
+  - private route tables default to one shared NAT Gateway
+  - an S3 Gateway endpoint is associated with private route tables
+  - optional VPC Flow Logs are configurable and disabled by default
 - `infra/modules/eks/main.tf`
-  - EKS API endpoint public access enabled
-  - EKS API private access disabled
-  - managed node group receives the same public subnet IDs
+  - EKS API private access enabled
+  - public API access is still enabled for dev but CIDRs are explicit in `terraform.tfvars`
+  - managed node group receives private subnet IDs only
 - `gitops/`
   - app services are `ClusterIP`
   - frontend nginx already proxies `/api` to the in-cluster `gateway` service

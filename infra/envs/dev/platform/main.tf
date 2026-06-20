@@ -17,11 +17,13 @@ data "terraform_remote_state" "bootstrap" {
 module "vpc" {
   source = "../../../modules/vpc"
 
-  vpc_name           = var.vpc_name
-  cidr_block         = var.vpc_cidr
-  subnet_cidrs       = [for s in var.subnets : s.cidr_block]
-  availability_zones = [for s in var.subnets : s.availability_zone]
-  cluster_name       = var.cluster_name
+  vpc_name             = var.vpc_name
+  cidr_block           = var.vpc_cidr
+  availability_zones   = var.availability_zones
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
+  cluster_name         = var.cluster_name
+  enable_flow_logs     = var.enable_vpc_flow_logs
 }
 
 
@@ -38,8 +40,11 @@ module "eks" {
   desired_size   = var.desired_size
   max_size       = var.max_size
 
-  subnet_ids = module.vpc.subnet_ids
-  depends_on = [module.vpc]
+  subnet_ids                   = module.vpc.private_subnet_ids
+  endpoint_private_access      = var.eks_endpoint_private_access
+  endpoint_public_access       = var.eks_endpoint_public_access
+  endpoint_public_access_cidrs = var.eks_endpoint_public_access_cidrs
+  depends_on                   = [module.vpc]
 }
 
 data "aws_eks_cluster_auth" "eks" {

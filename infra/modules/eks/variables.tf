@@ -4,7 +4,24 @@ variable "cluster_name" {
 }
 
 variable "subnet_ids" {
-  description = "List of subnet IDs where nodes will be deployed"
+  description = "Private subnet IDs for EKS cluster networking and managed node groups."
+  type        = list(string)
+}
+
+variable "endpoint_private_access" {
+  description = "Whether the EKS private API endpoint is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "endpoint_public_access" {
+  description = "Whether the EKS public API endpoint remains enabled for dev workstation access."
+  type        = bool
+  default     = true
+}
+
+variable "endpoint_public_access_cidrs" {
+  description = "Explicit temporary dev CIDRs allowed to reach the public EKS API endpoint. Replace broad access with workstation /32 CIDRs when possible."
   type        = list(string)
 }
 
