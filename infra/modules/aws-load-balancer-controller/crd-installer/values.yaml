@@ -1,2 +1,3 @@
 gatewayApiVersion: v1.5.0
+awsLoadBalancerControllerVersion: v3.4.0
 kubectlImage: registry.k8s.io/kubectl:v1.34.3

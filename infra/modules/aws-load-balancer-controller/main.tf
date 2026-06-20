@@ -195,7 +195,8 @@ resource "helm_release" "gateway_api_crds" {
 
   values = [
     yamlencode({
-      gatewayApiVersion = var.gateway_api_version
+      gatewayApiVersion                = var.gateway_api_version
+      awsLoadBalancerControllerVersion = "v${var.chart_version}"
     })
   ]
 }
