@@ -1,4 +1,4 @@
-name: Hiraya Infra Deploy
+name: infra-deploy
 
 on:
   workflow_dispatch:
