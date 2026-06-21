@@ -100,7 +100,7 @@ kubectl logs -n vintage -l job-name=vintage-db-restore
 
 ## Setting Up the CI/CD Pipeline
 
-- The GitHub Actions pipeline (`.github/workflows/ci.yml`) automatically builds Docker images and pushes them to ECR on every push to `main`.
+- The GitHub Actions pipeline (`.github/workflows/image-ci.yml`) automatically builds Docker images and pushes them to ECR on every push to `main`.
 - It then updates the image tags in the k8s manifests so ArgoCD can sync the new version.
 
 ---

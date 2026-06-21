@@ -8,7 +8,7 @@
         "repository": "hiraya-auth"
       },
       "build": {
-        "context": "app/microservices/backend/services/auth",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/auth/Dockerfile"
       },
       "manifest": {
@@ -35,7 +35,7 @@
         "repository": "hiraya-gateway"
       },
       "build": {
-        "context": "app/microservices/backend/services/gateway",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/gateway/Dockerfile"
       },
       "manifest": {
@@ -62,7 +62,7 @@
         "repository": "hiraya-orders"
       },
       "build": {
-        "context": "app/microservices/backend/services/orders",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/orders/Dockerfile"
       },
       "manifest": {
@@ -89,7 +89,7 @@
         "repository": "hiraya-order-service"
       },
       "build": {
-        "context": "app/microservices/backend/services/order-service",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/order-service/Dockerfile"
       },
       "manifest": {
@@ -116,7 +116,7 @@
         "repository": "hiraya-product-service"
       },
       "build": {
-        "context": "app/microservices/backend/services/product-service",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/product-service/Dockerfile"
       },
       "manifest": {
@@ -143,7 +143,7 @@
         "repository": "hiraya-user-service"
       },
       "build": {
-        "context": "app/microservices/backend/services/user-service",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/backend/services/user-service/Dockerfile"
       },
       "manifest": {
@@ -170,7 +170,7 @@
         "repository": "hiraya-frontend"
       },
       "build": {
-        "context": "app/microservices/frontend",
+        "context": "app/microservices",
         "dockerfile": "app/microservices/frontend/Dockerfile"
       },
       "manifest": {

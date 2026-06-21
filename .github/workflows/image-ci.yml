@@ -1,4 +1,4 @@
-name: Hiraya Image CI
+name: image-ci
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - "app/microservices/**"
-      - ".github/workflows/ci.yml"
+      - ".github/workflows/image-ci.yml"
       - ".github/utils/file-filters.yml"
 
 permissions:
@@ -66,11 +66,11 @@ jobs:
               "frontend": "hiraya-frontend"
             }[$service];
 
-            def build_path($service):
+            def dockerfile($service):
               if $service == "frontend" then
-                "app/microservices/frontend"
+                "app/microservices/frontend/Dockerfile"
               else
-                "app/microservices/backend/services/\($service)"
+                "app/microservices/backend/services/\($service)/Dockerfile"
               end;
 
             def manifest($service): {
@@ -89,7 +89,8 @@ jobs:
                 | {
                     service: .,
                     repository: repository(.),
-                    build_path: build_path(.),
+                    build_context: "app/microservices",
+                    dockerfile: dockerfile(.),
                     manifest: manifest(.)
                   }
               ]
@@ -157,7 +158,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e # v6.18.0
         with:
-          context: ${{ matrix.build_path }}
+          context: ${{ matrix.build_context }}
+          file: ${{ matrix.dockerfile }}
           load: true
           tags: ${{ steps.ecr.outputs.repository_uri }}:${{ env.IMAGE_TAG }}
           platforms: linux/amd64
@@ -221,7 +223,7 @@ jobs:
     needs:
       - detect-changes
       - build-and-push
-    if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
+    if: ${{ github.ref == 'refs/heads/main' && needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
       contents: write
 
@@ -230,6 +232,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: main
+          persist-credentials: false
 
       - name: Update image tags
         env:
@@ -244,7 +247,12 @@ jobs:
             image_uri="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${repository}:${IMAGE_TAG}"
 
             echo "Updating ${manifest} -> ${image_uri}"
-            sed -i "s|\(image: \).*|\1${image_uri}|g" "$manifest"
+            image_line_count=$(grep -Ec '^[[:space:]]*image: ' "$manifest" || true)
+            if [[ "$image_line_count" -ne 1 ]]; then
+              echo "Expected exactly one image field in ${manifest}, found ${image_line_count}." >&2
+              exit 1
+            fi
+            sed -i -E "s|^([[:space:]]*image: ).*|\1${image_uri}|" "$manifest"
           done
 
           git --no-pager diff -- gitops/
@@ -256,6 +264,8 @@ jobs:
           kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
 
       - name: Commit and push manifest updates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -273,10 +283,10 @@ jobs:
           max_retries=5
           attempt=1
           while [[ "$attempt" -le "$max_retries" ]]; do
-            git fetch origin main
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer ${GITHUB_TOKEN}" fetch origin main
 
             if git rebase origin/main; then
-              if git push origin HEAD:main; then
+              if git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer ${GITHUB_TOKEN}" push origin HEAD:main; then
                 echo "Push succeeded on attempt ${attempt}."
                 exit 0
               fi

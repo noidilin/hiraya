@@ -98,7 +98,7 @@ ECR 設定包含：
 - **image_tag_mutability = MUTABLE**：目前允許覆寫 tag；正式環境建議改為 immutable tag，以提高供應鏈可追蹤性。
 - **force_delete = true**：便於教學清理，但正式環境需謹慎使用。
 
-GitHub Actions pipeline 位於 `.github/workflows/ci.yml`：
+GitHub Actions pipeline 位於 `.github/workflows/image-ci.yml`：
 
 - 目前觸發方式為 `workflow_dispatch`，也就是手動觸發。
 - Matrix 同時建置 7 個服務映像。
