@@ -40,6 +40,58 @@ export function createStorefrontEnvelopeSchema(dataSchema) {
 const moneyStringSchema = z.string().regex(/^\d+\.\d{2}$/);
 const timestampStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
+export const authenticatedUserWireSchema = z
+  .object({
+    id: z.string().uuid(),
+    email: z.string().email(),
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    role: z.enum(['customer', 'admin']),
+    createdAt: timestampStringSchema.optional(),
+    updatedAt: timestampStringSchema.optional(),
+  })
+  .strict();
+
+export const authTokenDataSchema = z
+  .object({
+    user: authenticatedUserWireSchema,
+    token: z.string().min(1),
+  })
+  .strict();
+
+export const authenticatedUserEnvelopeSchema = createStorefrontSuccessEnvelopeSchema(authenticatedUserWireSchema);
+export const authSuccessEnvelopeSchema = createStorefrontSuccessEnvelopeSchema(authTokenDataSchema);
+export const authFailureEnvelopeSchema = storefrontFailureEnvelopeSchema;
+
+export const authenticatedUserWireFixture = Object.freeze({
+  id: 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6',
+  email: 'demo@hirayavintage.test',
+  firstName: 'Demo',
+  lastName: 'User',
+  role: 'customer',
+  createdAt: '2026-02-07T13:04:03.836Z',
+  updatedAt: '2026-02-07T13:04:03.836Z',
+});
+
+export const authSuccessEnvelopeFixture = Object.freeze({
+  success: true,
+  data: {
+    user: authenticatedUserWireFixture,
+    token: 'demo-access-token',
+  },
+  message: 'Demo login successful',
+});
+
+export const authenticatedUserEnvelopeFixture = Object.freeze({
+  success: true,
+  data: authenticatedUserWireFixture,
+});
+
+export const authFailureEnvelopeFixture = Object.freeze({
+  success: false,
+  error: 'Invalid credentials',
+});
+
 export const productWireSchema = z
   .object({
     id: z.string().uuid(),
