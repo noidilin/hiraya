@@ -30,8 +30,8 @@ export function getServicesFromEnv(): GatewayServices {
   return {
     auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3002',
     products: process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003',
-    orders: process.env.ORDERS_SERVICE_URL || 'http://localhost:3004',
-    users: process.env.USERS_SERVICE_URL || 'http://localhost:3005',
+    orders: process.env.ORDERS_SERVICE_URL || 'http://localhost:3005',
+    users: process.env.USERS_SERVICE_URL || 'http://localhost:3006',
   };
 }
 
@@ -72,12 +72,12 @@ export function createApp(options: GatewayAppOptions = {}): express.Express {
   }));
 
   app.use((req, res) => {
-    res.status(404).json({ error: 'Service not found' });
+    res.status(404).json({ success: false, error: 'Service not found' });
   });
 
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err.stack);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   });
 
   return app;
