@@ -63,8 +63,8 @@ services:
   # API Gateway
   gateway:
     build:
-      context: ./backend/services/gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/gateway/Dockerfile
     container_name: vintage-gateway
     ports:
       - "3001:3001"
@@ -86,8 +86,8 @@ services:
   # Auth Service
   auth:
     build:
-      context: ./backend/services/auth
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/auth/Dockerfile
     container_name: vintage-auth
     ports:
       - "3002:3002"
@@ -105,8 +105,8 @@ services:
   # Product Service
   product-service:
     build:
-      context: ./backend/services/product-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/product-service/Dockerfile
     container_name: vintage-products
     ports:
       - "3003:3003"
@@ -124,8 +124,8 @@ services:
   # Order Service
   order-service:
     build:
-      context: ./backend/services/order-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/order-service/Dockerfile
     container_name: vintage-orders
     ports:
       - "3004:3004"
@@ -149,8 +149,8 @@ services:
   # Orders Service (Order Management)
   orders:
     build:
-      context: ./backend/services/orders
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/orders/Dockerfile
     container_name: vintage-order-management
     ports:
       - "3005:3005"
@@ -168,8 +168,8 @@ services:
   # User Service
   user-service:
     build:
-      context: ./backend/services/user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/services/user-service/Dockerfile
     container_name: vintage-users
     ports:
       - "3006:3006"
@@ -187,8 +187,8 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         REACT_APP_API_URL: /api
     container_name: vintage-frontend
