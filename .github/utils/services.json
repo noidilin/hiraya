@@ -16,7 +16,11 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/auth/**",
-        "app/microservices/backend/shared/**"
+        "app/microservices/backend/shared/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
         "active": true,
@@ -39,7 +43,11 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/gateway/**",
-        "app/microservices/backend/shared/**"
+        "app/microservices/backend/shared/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
         "active": true,
@@ -62,7 +70,11 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/orders/**",
-        "app/microservices/backend/shared/**"
+        "app/microservices/backend/shared/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
         "active": true,
@@ -84,7 +96,12 @@
         "path": "gitops/k8s/backend/order-service.yml"
       },
       "pathOwnership": [
-        "app/microservices/backend/services/order-service/**"
+        "app/microservices/backend/services/order-service/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json",
+        "app/microservices/backend/shared/**"
       ],
       "vintageStorefrontBaseline": {
         "active": false,
@@ -107,7 +124,11 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/product-service/**",
-        "app/microservices/backend/shared/**"
+        "app/microservices/backend/shared/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
         "active": true,
@@ -130,7 +151,11 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/user-service/**",
-        "app/microservices/backend/shared/**"
+        "app/microservices/backend/shared/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml",
+        "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
         "active": false,
@@ -152,7 +177,10 @@
         "path": "gitops/k8s/frontend/deployment.yml"
       },
       "pathOwnership": [
-        "app/microservices/frontend/**"
+        "app/microservices/frontend/**",
+        "app/microservices/package.json",
+        "app/microservices/pnpm-lock.yaml",
+        "app/microservices/pnpm-workspace.yaml"
       ],
       "vintageStorefrontBaseline": {
         "active": true,
