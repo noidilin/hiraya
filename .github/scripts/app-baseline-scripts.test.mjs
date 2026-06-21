@@ -27,6 +27,7 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:baseline',
     'app:test:catalog',
     'app:test:contract',
+    'app:test:backend-contract',
     'app:test:browser',
   ]) {
     assert.equal(typeof scripts[scriptName], 'string', `${scriptName} should be documented as a package script`);
@@ -46,6 +47,27 @@ test('implemented contract baseline command runs shared validation while future 
 
   assert.match(scripts['app:test:browser'], /not implemented/i, 'app:test:browser should explain that the slice is not implemented yet');
   assert.match(scripts['app:test:browser'], /exit\(1\)|exit 1/, 'app:test:browser should fail until implemented');
+});
+
+test('backend contract baseline command names and gates each active Storefront suite', async () => {
+  const [scripts, readme] = await Promise.all([
+    readWorkspaceScripts(),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  assert.match(
+    scripts['app:test:backend-contract'],
+    /@hiraya\/storefront-contracts test:backend-contract/,
+    'app:test:backend-contract should run the dedicated backend contract baseline',
+  );
+  assert.match(
+    scripts['app:baseline'],
+    /app:test:backend-contract/,
+    'app:baseline should reuse the backend contract gate for later PR checks',
+  );
+  assert.match(readme, /gateway, auth, product, and orders contract suites/i);
+  assert.match(readme, /mocked database and upstream boundaries/i);
+  assert.match(readme, /AWS credentials, PostgreSQL, Kubernetes, or real backend services/i);
 });
 
 test('legacy path-filter metadata is documented as transitional', async () => {
