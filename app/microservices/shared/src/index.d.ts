@@ -120,6 +120,16 @@ export declare const orderWireFixtureSet: readonly OrderWire[];
 export declare const orderHistoryEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderHistoryData>>;
 export declare const orderDetailEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderWire>>;
 
+export declare const storefrontContractPaths: Readonly<{
+  productList: '/api/products';
+  productDetailFixture: string;
+  authLogin: '/api/auth/login';
+  authMe: '/api/auth/me';
+  orderCreate: '/api/orders';
+  orderHistory: '/api/orders/my-orders';
+  orderDetailFixture: string;
+}>;
+
 export declare const storefrontContractSchemas: Readonly<{
   storefrontSuccessEnvelope: z.ZodType<StorefrontSuccessEnvelope>;
   storefrontFailureEnvelope: z.ZodType<StorefrontFailureEnvelope>;

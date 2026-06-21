@@ -9,6 +9,7 @@ Import schemas and representative wire fixtures from the package root only:
 ```js
 import {
   storefrontContractFixtures,
+  storefrontContractPaths,
   storefrontContractSchemas,
   productListEnvelopeSchema,
   productListEnvelopeFixture,
@@ -32,7 +33,7 @@ expect(result.success).toBe(true);
 Use the same fixtures for mocked `/api` responses:
 
 ```js
-await page.route('/api/products', async (route) => {
+await page.route(storefrontContractPaths.productList, async (route) => {
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -43,6 +44,8 @@ await page.route('/api/products', async (route) => {
 
 Keep frontend/domain normalization outside these fixtures; they preserve backend wire names such as `image_url`, `compare_price`, and `inventory_quantity`.
 
+Use `storefrontContractPaths` for mocked route registration so browser tests follow the current Storefront routes. Order creation uses `/api/orders`; order history uses `/api/orders/my-orders`, matching the existing UI service while the intended response contract remains the shared `orderHistoryEnvelope` shape.
+
 ## Validation command
 
 From `app/microservices` run:
@@ -51,4 +54,4 @@ From `app/microservices` run:
 corepack pnpm@11.8.0 run app:test:contract
 ```
 
-`app:baseline` also runs this shared contract validation and consumer smoke suite.
+`app:baseline` also runs this Vitest shared contract validation and consumer smoke suite.

@@ -17,6 +17,7 @@
       "pathOwnership": [
         "app/microservices/backend/services/auth/**",
         "app/microservices/backend/shared/**",
+        "app/microservices/shared/**",
         "app/microservices/package.json",
         "app/microservices/pnpm-lock.yaml",
         "app/microservices/pnpm-workspace.yaml",
@@ -44,6 +45,7 @@
       "pathOwnership": [
         "app/microservices/backend/services/gateway/**",
         "app/microservices/backend/shared/**",
+        "app/microservices/shared/**",
         "app/microservices/package.json",
         "app/microservices/pnpm-lock.yaml",
         "app/microservices/pnpm-workspace.yaml",
@@ -71,6 +73,7 @@
       "pathOwnership": [
         "app/microservices/backend/services/orders/**",
         "app/microservices/backend/shared/**",
+        "app/microservices/shared/**",
         "app/microservices/package.json",
         "app/microservices/pnpm-lock.yaml",
         "app/microservices/pnpm-workspace.yaml",
@@ -125,6 +128,7 @@
       "pathOwnership": [
         "app/microservices/backend/services/product-service/**",
         "app/microservices/backend/shared/**",
+        "app/microservices/shared/**",
         "app/microservices/package.json",
         "app/microservices/pnpm-lock.yaml",
         "app/microservices/pnpm-workspace.yaml",
@@ -178,6 +182,7 @@
       },
       "pathOwnership": [
         "app/microservices/frontend/**",
+        "app/microservices/shared/**",
         "app/microservices/package.json",
         "app/microservices/pnpm-lock.yaml",
         "app/microservices/pnpm-workspace.yaml"

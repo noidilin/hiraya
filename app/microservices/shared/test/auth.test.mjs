@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 
 import {
   authFailureEnvelopeFixture,
@@ -15,17 +14,17 @@ import {
 
 describe('Vintage Storefront auth and user wire contracts', () => {
   it('validate representative auth and authenticated-user success envelopes', () => {
-    assert.equal(authSuccessEnvelopeSchema.safeParse(authSuccessEnvelopeFixture).success, true);
-    assert.equal(authenticatedUserEnvelopeSchema.safeParse(authenticatedUserEnvelopeFixture).success, true);
+    expect(authSuccessEnvelopeSchema.safeParse(authSuccessEnvelopeFixture).success).toBe(true);
+    expect(authenticatedUserEnvelopeSchema.safeParse(authenticatedUserEnvelopeFixture).success).toBe(true);
   });
 
   it('validate authenticated user identity and token data through shared schemas', () => {
-    assert.equal(authenticatedUserWireSchema.safeParse(authenticatedUserWireFixture).success, true);
-    assert.equal(authTokenDataSchema.safeParse(authSuccessEnvelopeFixture.data).success, true);
+    expect(authenticatedUserWireSchema.safeParse(authenticatedUserWireFixture).success).toBe(true);
+    expect(authTokenDataSchema.safeParse(authSuccessEnvelopeFixture.data).success).toBe(true);
   });
 
   it('validate a representative auth failure envelope', () => {
-    assert.equal(authFailureEnvelopeSchema.safeParse(authFailureEnvelopeFixture).success, true);
+    expect(authFailureEnvelopeSchema.safeParse(authFailureEnvelopeFixture).success).toBe(true);
   });
 
   it('reject malformed auth and authenticated-user payloads', () => {
@@ -43,11 +42,11 @@ describe('Vintage Storefront auth and user wire contracts', () => {
     ];
 
     for (const user of invalidUsers) {
-      assert.equal(authenticatedUserWireSchema.safeParse(user).success, false, 'invalid authenticated user should fail');
+      expect(authenticatedUserWireSchema.safeParse(user).success, 'invalid authenticated user should fail').toBe(false);
     }
 
     for (const response of invalidAuthResponses) {
-      assert.equal(authSuccessEnvelopeSchema.safeParse(response).success, false, 'invalid auth response should fail');
+      expect(authSuccessEnvelopeSchema.safeParse(response).success, 'invalid auth response should fail').toBe(false);
     }
   });
 });
