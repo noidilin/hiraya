@@ -21,6 +21,8 @@
     "node": ">=24.0.0 <25.0.0"
   },
   "devDependencies": {
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
     "vitest": "^4.1.9"
   }
 }

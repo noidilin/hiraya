@@ -1,4 +1,5 @@
 import express from 'express';
+import type { RequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -7,57 +8,92 @@ import { metricsMiddleware, setupMetrics } from './metrics';
 
 dotenv.config();
 
-const app = express();
-const PORT: number = Number(process.env.GATEWAY_PORT) || 3001;
+export interface GatewayServices {
+  auth: string;
+  products: string;
+  orders: string;
+  users: string;
+}
 
-app.use(helmet());
-app.use(cors());
+type ProxyFactory = (options: {
+  target: string;
+  changeOrigin: boolean;
+  pathRewrite: Record<string, string>;
+}) => RequestHandler;
 
-setupMetrics(app, { serviceName: 'gateway', serviceVersion: '1.0.0' });
+export interface GatewayAppOptions {
+  services?: GatewayServices;
+  proxyFactory?: ProxyFactory;
+}
 
-app.use(metricsMiddleware);
+export function getServicesFromEnv(): GatewayServices {
+  return {
+    auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3002',
+    products: process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003',
+    orders: process.env.ORDERS_SERVICE_URL || 'http://localhost:3004',
+    users: process.env.USERS_SERVICE_URL || 'http://localhost:3005',
+  };
+}
 
-const services = {
-  auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3002',
-  products: process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003',
-  orders: process.env.ORDERS_SERVICE_URL || 'http://localhost:3004',
-  users: process.env.USERS_SERVICE_URL || 'http://localhost:3005',
-};
+export function createApp(options: GatewayAppOptions = {}): express.Express {
+  const app = express();
+  const services = options.services ?? getServicesFromEnv();
+  const proxyFactory = options.proxyFactory ?? createProxyMiddleware;
 
-app.use('/api/auth', createProxyMiddleware({
-  target: services.auth,
-  changeOrigin: true,
-  pathRewrite: { '^/api/auth': '' },
-}));
+  app.use(helmet());
+  app.use(cors());
 
-app.use('/api/products', createProxyMiddleware({
-  target: services.products,
-  changeOrigin: true,
-  pathRewrite: { '^/api/products': '' },
-}));
+  setupMetrics(app, { serviceName: 'gateway', serviceVersion: '1.0.0' });
 
-app.use('/api/orders', createProxyMiddleware({
-  target: services.orders,
-  changeOrigin: true,
-  pathRewrite: { '^/api/orders': '' },
-}));
+  app.use(metricsMiddleware);
 
-app.use('/api/users', createProxyMiddleware({
-  target: services.users,
-  changeOrigin: true,
-  pathRewrite: { '^/api/users': '' },
-}));
+  app.use('/api/auth', proxyFactory({
+    target: services.auth,
+    changeOrigin: true,
+    pathRewrite: { '^/api/auth': '' },
+  }));
 
-app.use((req, res) => {
-  res.status(404).json({ error: 'Service not found' });
-});
+  app.use('/api/products', proxyFactory({
+    target: services.products,
+    changeOrigin: true,
+    pathRewrite: { '^/api/products': '' },
+  }));
 
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-});
+  app.use('/api/orders', proxyFactory({
+    target: services.orders,
+    changeOrigin: true,
+    pathRewrite: { '^/api/orders': '' },
+  }));
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API Gateway running on port ${PORT}`);
-  console.log(`Proxying to services:`, services);
-});
+  app.use('/api/users', proxyFactory({
+    target: services.users,
+    changeOrigin: true,
+    pathRewrite: { '^/api/users': '' },
+  }));
+
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Service not found' });
+  });
+
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
+  return app;
+}
+
+export function startGateway() {
+  const app = createApp();
+  const PORT: number = Number(process.env.GATEWAY_PORT) || 3001;
+  const services = getServicesFromEnv();
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`API Gateway running on port ${PORT}`);
+    console.log(`Proxying to services:`, services);
+  });
+}
+
+if (require.main === module) {
+  startGateway();
+}
