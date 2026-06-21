@@ -119,3 +119,36 @@ export declare const orderDetailEnvelopeSchema: z.ZodType<StorefrontSuccessEnvel
 export declare const orderWireFixtureSet: readonly OrderWire[];
 export declare const orderHistoryEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderHistoryData>>;
 export declare const orderDetailEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderWire>>;
+
+export declare const storefrontContractSchemas: Readonly<{
+  storefrontSuccessEnvelope: z.ZodType<StorefrontSuccessEnvelope>;
+  storefrontFailureEnvelope: z.ZodType<StorefrontFailureEnvelope>;
+  storefrontEnvelope: z.ZodType<StorefrontEnvelope>;
+  authenticatedUserWire: z.ZodType<AuthenticatedUserWire>;
+  authTokenData: z.ZodType<AuthTokenData>;
+  authenticatedUserEnvelope: z.ZodType<StorefrontSuccessEnvelope<AuthenticatedUserWire>>;
+  authSuccessEnvelope: z.ZodType<StorefrontSuccessEnvelope<AuthTokenData>>;
+  authFailureEnvelope: z.ZodType<StorefrontFailureEnvelope>;
+  productWire: z.ZodType<ProductWire>;
+  productListData: z.ZodType<ProductListData>;
+  productDetailEnvelope: z.ZodType<StorefrontSuccessEnvelope<ProductWire>>;
+  productListEnvelope: z.ZodType<StorefrontSuccessEnvelope<ProductListData>>;
+  orderLineItemWire: z.ZodType<OrderLineItemWire>;
+  orderWire: z.ZodType<OrderWire>;
+  orderHistoryData: z.ZodType<OrderHistoryData>;
+  orderHistoryEnvelope: z.ZodType<StorefrontSuccessEnvelope<OrderHistoryData>>;
+  orderDetailEnvelope: z.ZodType<StorefrontSuccessEnvelope<OrderWire>>;
+}>;
+
+export declare const storefrontContractFixtures: Readonly<{
+  authenticatedUserWire: Readonly<AuthenticatedUserWire>;
+  authSuccessEnvelope: Readonly<StorefrontSuccessEnvelope<AuthTokenData>>;
+  authenticatedUserEnvelope: Readonly<StorefrontSuccessEnvelope<AuthenticatedUserWire>>;
+  authFailureEnvelope: Readonly<StorefrontFailureEnvelope>;
+  productWireSet: readonly ProductWire[];
+  productListEnvelope: Readonly<StorefrontSuccessEnvelope<ProductListData>>;
+  productDetailEnvelope: Readonly<StorefrontSuccessEnvelope<ProductWire>>;
+  orderWireSet: readonly OrderWire[];
+  orderHistoryEnvelope: Readonly<StorefrontSuccessEnvelope<OrderHistoryData>>;
+  orderDetailEnvelope: Readonly<StorefrontSuccessEnvelope<OrderWire>>;
+}>;
