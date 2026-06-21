@@ -1,3 +1,6 @@
+# Manual single-service GitOps escape hatch.
+# Normal image CI batches manifest updates in .github/workflows/ci.yml
+# so one CI run creates one GitOps commit after all images are pushed.
 name: gitops-manifest-update
 
 run-name: Update ${{ inputs.service }} to ${{ inputs.version }}
