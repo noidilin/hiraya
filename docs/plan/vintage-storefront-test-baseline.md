@@ -27,8 +27,8 @@ The rewrite can start only after the baseline is green and enforced for PRs, the
 
 - Migrate only `app/microservices` to pnpm for this slice.
 - Commit a deterministic pnpm lockfile.
-- Pin Node 20 for CI and local app tooling.
-- Pin pnpm through the `packageManager` field in `app/microservices/package.json`.
+- Pin Node 24 for CI and local app tooling.
+- Pin pnpm 11 through the `packageManager` field in `app/microservices/package.json`.
 - Add pnpm workspace scripts so local developers can run the same baseline commands as CI.
 
 ## API contract decisions
