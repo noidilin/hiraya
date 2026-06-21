@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dispatch({ type: 'LOGIN_FAILURE', payload: 'Session expired' });
         }
       } else {
-        dispatch({ type: 'LOGIN_SUCCESS', payload: null as any });
+        dispatch({ type: 'LOGOUT' });
       }
     };
 
@@ -76,10 +76,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'LOGIN_START' });
       const response = await authService.login({ email, password });
       localStorage.setItem('accessToken', response.token);
-      localStorage.setItem('refreshToken', response.refreshToken);
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken);
+      } else {
+        localStorage.removeItem('refreshToken');
+      }
       dispatch({ type: 'LOGIN_SUCCESS', payload: response.user });
     } catch (error: any) {
-      dispatch({ type: 'LOGIN_FAILURE', payload: error.response?.data?.message || 'Login failed' });
+      dispatch({ type: 'LOGIN_FAILURE', payload: error.response?.data?.error || error.message || 'Login failed' });
+      throw error;
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -16,6 +16,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +25,7 @@ const Login: React.FC = () => {
     
     try {
       await login(email, password);
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       // Error is handled by the auth context
     }
