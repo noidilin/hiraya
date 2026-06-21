@@ -119,8 +119,14 @@ async function pathExists(root, relativePath) {
     if (path.isAbsolute(relativePath)) {
         return false;
     }
+    const rootPath = path.resolve(root);
+    const resolvedPath = path.resolve(rootPath, relativePath);
+    const relativeFromRoot = path.relative(rootPath, resolvedPath);
+    if (relativeFromRoot === '..' || relativeFromRoot.startsWith(`..${path.sep}`) || path.isAbsolute(relativeFromRoot)) {
+        return false;
+    }
     try {
-        await access(path.join(root, relativePath));
+        await access(resolvedPath);
         return true;
     }
     catch {

@@ -12,7 +12,7 @@
     "app:workspace": "corepack pnpm@9.15.9 run app:install && corepack pnpm@9.15.9 list --recursive --depth -1",
     "scripts:build": "tsc -p ../../.github/scripts/tsconfig.json",
     "app:catalog": "corepack pnpm@9.15.9 run scripts:build && corepack pnpm@9.15.9 run catalog:validate && node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs",
-    "app:changed": "node ../../.github/scripts/dist/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
+    "app:changed": "corepack pnpm@9.15.9 run scripts:build && node ../../.github/scripts/dist/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
     "app:static": "corepack pnpm@9.15.9 run build",
     "app:baseline": "corepack pnpm@9.15.9 run app:workspace && corepack pnpm@9.15.9 run app:catalog && corepack pnpm@9.15.9 run app:changed -- --all && corepack pnpm@9.15.9 run app:static",
     "app:test:catalog": "corepack pnpm@9.15.9 run scripts:build && node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs",
