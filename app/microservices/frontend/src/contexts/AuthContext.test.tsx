@@ -1,18 +1,19 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from './AuthContext';
 import { authService } from '../services/authService';
 
-jest.mock('../services/authService', () => ({
+vi.mock('../services/authService', () => ({
   authService: {
-    login: jest.fn(),
-    logout: jest.fn(),
-    getCurrentUser: jest.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(),
   },
 }));
 
-const mockedAuthService = authService as jest.Mocked<typeof authService>;
+const mockedAuthService = vi.mocked(authService);
 
 const demoUser = {
   id: 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6',
@@ -45,7 +46,7 @@ const renderAuthStatus = () => {
 
 describe('AuthProvider', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
   });
 

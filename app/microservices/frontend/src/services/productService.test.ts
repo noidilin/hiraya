@@ -1,14 +1,15 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from './api';
 import { productService } from './productService';
 
-jest.mock('./api', () => ({
+vi.mock('./api', () => ({
   __esModule: true,
   default: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
 }));
 
-const mockedApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockedApiClient = vi.mocked(apiClient);
 
 const productWire = {
   id: '4ee72b27-86fb-47c1-8212-74fbe0b4a7ae',
@@ -27,7 +28,7 @@ const productWire = {
 
 describe('productService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('unwraps catalog envelopes and normalizes product wire fields for the Storefront UI', async () => {

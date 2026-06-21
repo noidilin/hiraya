@@ -1,15 +1,16 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from './api';
 import { authService } from './authService';
 
-jest.mock('./api', () => ({
+vi.mock('./api', () => ({
   __esModule: true,
   default: {
-    post: jest.fn(),
-    get: jest.fn(),
+    post: vi.fn(),
+    get: vi.fn(),
   },
 }));
 
-const mockedApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockedApiClient = vi.mocked(apiClient);
 
 const demoUser = {
   id: 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6',
@@ -23,7 +24,7 @@ const demoUser = {
 
 describe('authService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('unwraps a successful login envelope', async () => {
