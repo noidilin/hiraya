@@ -147,6 +147,15 @@ test('handles no-change and unknown paths with an empty matrix', async () => {
   assert.deepEqual(detect(catalogPath, root, ['README.md']).include, []);
 });
 
+test('accepts the npm argument separator before detector options', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+
+  assert.deepEqual(
+    serviceNames(detect(catalogPath, root, [], ['--', '--all'])),
+    ['frontend', 'auth', 'orders'],
+  );
+});
+
 test('can read changed paths from stdin and write GitHub outputs', async () => {
   const { root, catalogPath } = await createCatalogFixture();
   const outputPath = path.join(root, 'github-output.txt');

@@ -47,6 +47,8 @@ function parseArgs(argv) {
       options.githubOutput = requireValue(arg, args.shift());
     } else if (arg === '--all') {
       options.all = true;
+    } else if (arg === '--') {
+      continue;
     } else if (arg === '--help' || arg === '-h') {
       console.log(usage());
       process.exit(0);
