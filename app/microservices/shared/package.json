@@ -1,0 +1,23 @@
+{
+  "name": "@hiraya/storefront-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared runtime contracts for the Vintage Storefront API",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.mjs"
+    }
+  },
+  "types": "./src/index.d.ts",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25.0.0"
+  }
+}

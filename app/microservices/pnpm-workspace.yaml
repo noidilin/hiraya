@@ -2,6 +2,7 @@ packages:
   - frontend
   - backend
   - backend/services/*
+  - shared
 
 # pnpm 11 verifies the committed lockfile against supply-chain policy.
 # This exact transitive version was already selected during the Node 24 lock refresh.
