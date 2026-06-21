@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { query } from '../database/connection';
 import { UserProfile, Address, ServiceResponse } from '../types';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret';
 

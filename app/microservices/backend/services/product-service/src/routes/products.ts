@@ -2,7 +2,7 @@ import express from 'express';
 import { query } from '../database/connection';
 import { Product, ServiceResponse, PaginationParams } from '../types';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
