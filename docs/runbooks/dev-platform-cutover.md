@@ -6,9 +6,9 @@ Related: [infra CI/CD PRD #13](https://github.com/noidilin/hiraya/issues/13), [r
 
 This runbook guides a maintainer through adopting the GitHub Actions infrastructure workflow trio for the Hiraya dev platform:
 
-- `Hiraya Infra CI` (`.github/workflows/infra-ci.yml`) for static checks and trusted pull-request Terraform plan comments.
-- `Hiraya Infra Deploy` (`.github/workflows/infra-deploy.yml`) for manual, `dev` Environment-gated platform apply.
-- `Hiraya Infra Destroy` (`.github/workflows/infra-destroy.yml`) for manual, typed-confirmation, `dev` Environment-gated platform destroy.
+- `infra-ci` (`.github/workflows/infra-ci.yml`) for static checks and trusted pull-request Terraform plan comments.
+- `infra-deploy` (`.github/workflows/infra-deploy.yml`) for manual, `dev` Environment-gated platform apply.
+- `infra-destroy` (`.github/workflows/infra-destroy.yml`) for manual, typed-confirmation, `dev` Environment-gated platform destroy.
 
 This is documentation only. Reading or updating this runbook must not perform the live bootstrap apply, platform deploy, or platform destroy.
 
@@ -84,7 +84,7 @@ Do not broaden these roles to administrator access. If first-run workflows hit `
 Use a same-repository pull request that touches `infra/**`, `gitops/**`, `.github/workflows/infra-*.yml`, `.github/scripts/**`, or `.mise.toml`.
 
 1. Open or update the trusted PR.
-2. Wait for `Hiraya Infra CI`.
+2. Wait for `infra-ci`.
 3. Confirm `Static infrastructure checks` runs for the PR.
 4. Confirm `Trusted PR Terraform plan` runs only because the PR branch is in the same repository.
 5. Open the PR conversation and find the sticky Terraform plan comment.
@@ -104,9 +104,9 @@ Fork PR expectation: static checks should run, but AWS OIDC and the PR plan comm
 
 ## Run the first manual deploy from `main`
 
-Use `Hiraya Infra Deploy` only from `main`. It is intentionally `workflow_dispatch` only.
+Use `infra-deploy` only from `main`. It is intentionally `workflow_dispatch` only.
 
-1. In GitHub Actions, select `Hiraya Infra Deploy`.
+1. In GitHub Actions, select `infra-deploy`.
 2. Choose branch `main` and run the workflow.
 3. Before approval, review the `Pre-approval platform plan` job:
    - It assumes the infra plan role.
@@ -190,9 +190,9 @@ Expected: Argo CD and Grafana are reachable through approved public routes; serv
 
 ## Run the first manual destroy from `main`
 
-Use `Hiraya Infra Destroy` only when dev platform deletion is approved. The workflow destroys only `infra/envs/dev/platform` and preserves durable bootstrap resources.
+Use `infra-destroy` only when dev platform deletion is approved. The workflow destroys only `infra/envs/dev/platform` and preserves durable bootstrap resources.
 
-1. In GitHub Actions, select `Hiraya Infra Destroy`.
+1. In GitHub Actions, select `infra-destroy`.
 2. Choose branch `main`.
 3. Enter the exact confirmation phrase:
 
@@ -267,7 +267,7 @@ If the existing EKS cluster was created by a different local principal, the GitH
 
 Safe rollout options:
 
-1. Preferred for this disposable dev environment: destroy the existing platform locally, then let `Hiraya Infra Deploy` recreate it so the GitHub apply role becomes the consistent platform owner.
+1. Preferred for this disposable dev environment: destroy the existing platform locally, then let `infra-deploy` recreate it so the GitHub apply role becomes the consistent platform owner.
 2. Alternatively, grant the apply role one-time cluster admin access through an EKS access entry or equivalent mapping before GitHub Actions manages the existing cluster.
 
 After GitHub creates the platform, use the workflow path consistently for deploy/destroy.
