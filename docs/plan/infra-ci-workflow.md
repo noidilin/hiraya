@@ -23,7 +23,7 @@ Do not include these yet:
 
 - PR image checks that build/test/smoke application containers.
 - Local container smoke before ECR push.
-- Reworking `.github/workflows/ci.yml` service metadata.
+- Reworking `.github/workflows/image-ci.yml` service metadata.
 - Batching GitOps manifest updates.
 - Making Trivy blocking.
 
@@ -58,7 +58,7 @@ Those belong to the later image/GitOps CI/CD stabilization phase.
 Important current files:
 
 ```text
-.github/workflows/ci.yml
+.github/workflows/image-ci.yml
 .github/workflows/update-gitops-manifests.yml
 .github/utils/file-filters.yml
 infra/envs/dev/bootstrap/

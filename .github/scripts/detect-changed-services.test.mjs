@@ -160,7 +160,7 @@ test('fans out workflow, script, and catalog changes to all catalog services', a
     ['frontend', 'auth', 'orders'],
   );
   assert.deepEqual(
-    serviceNames(detect(catalogPath, root, ['.github/workflows/ci.yml'])),
+    serviceNames(detect(catalogPath, root, ['.github/workflows/image-ci.yml'])),
     ['frontend', 'auth', 'orders'],
   );
 });
