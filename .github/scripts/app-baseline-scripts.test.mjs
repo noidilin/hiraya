@@ -6,11 +6,17 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workspacePackagePath = path.join(repoRoot, 'app/microservices/package.json');
+const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/package.json');
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
 
 async function readWorkspaceScripts() {
   const packageJson = JSON.parse(await readFile(workspacePackagePath, 'utf8'));
+  return packageJson.scripts ?? {};
+}
+
+async function readFrontendScripts() {
+  const packageJson = JSON.parse(await readFile(frontendPackagePath, 'utf8'));
   return packageJson.scripts ?? {};
 }
 
@@ -24,6 +30,10 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:catalog',
     'app:changed',
     'app:static',
+    'storefront:build',
+    'storefront:typecheck',
+    'storefront:lint',
+    'storefront:static',
     'app:baseline',
     'app:test:catalog',
     'app:test:contract',
@@ -33,6 +43,26 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     assert.equal(typeof scripts[scriptName], 'string', `${scriptName} should be documented as a package script`);
     assert.notEqual(scripts[scriptName].trim(), '', `${scriptName} should not be empty`);
   }
+});
+
+test('Storefront exposes explicit reusable static check commands', async () => {
+  const [workspaceScripts, frontendScripts, readme] = await Promise.all([
+    readWorkspaceScripts(),
+    readFrontendScripts(),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  for (const scriptName of ['build', 'typecheck', 'lint']) {
+    assert.equal(typeof frontendScripts[scriptName], 'string', `frontend ${scriptName} script should exist`);
+    assert.notEqual(frontendScripts[scriptName].trim(), '', `frontend ${scriptName} script should not be empty`);
+  }
+
+  assert.match(frontendScripts.typecheck, /tsc\b.*--noEmit|--noEmit.*tsc\b/, 'typecheck should run TypeScript without emitting files');
+  assert.match(frontendScripts.lint, /eslint\b/, 'lint should run eslint explicitly');
+  assert.doesNotMatch(frontendScripts.lint, /--max-warnings\s+0/, 'lint warnings should remain allowed initially');
+  assert.match(workspaceScripts['app:static'], /storefront:(build|static)/, 'app:static should reuse explicit Storefront static scripts');
+  assert.match(readme, /Storefront build, typecheck, and lint/i);
+  assert.match(readme, /lint errors block while warnings remain allowed/i);
 });
 
 test('implemented contract baseline command runs shared validation while future browser command fails clearly', async () => {
