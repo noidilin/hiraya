@@ -1,5 +1,10 @@
-# Service path filters for dorny/paths-filter.
-# Keys match Hiraya service names used by the image build matrix.
+# Transitional legacy service path filters for dorny/paths-filter.
+# Superseded for new app baseline work by .github/utils/services.json and
+# .github/scripts/detect-changed-services.mjs, which are the canonical service
+# metadata and changed-service detection path.
+# Keep this file only for existing image CI compatibility until that workflow is
+# migrated. During the transition, update services.json first; update this file
+# too only when the legacy image workflow must keep recognizing the same paths.
 
 auth:
   - "app/microservices/backend/services/auth/**"

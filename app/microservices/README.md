@@ -19,3 +19,15 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@9.1
 | `pnpm run app:test:browser` | Fails clearly until the browser behavior baseline slice is implemented. |
 
 Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` delegate to this `app:*` surface for compatibility.
+
+## Service metadata source of truth
+
+`.github/utils/services.json` is the canonical service catalog for app service metadata: package names, image repositories, build contexts, manifest targets, path ownership, and Vintage Storefront baseline criticality. New app baseline work should update this catalog and verify changes through `pnpm run app:catalog` or `pnpm run app:changed -- <files...>`.
+
+The verified changed-service detector is `.github/scripts/detect-changed-services.mjs`; future PR checks and image workflows should consume its matrix output instead of duplicating service mappings.
+
+`.github/utils/file-filters.yml` is legacy path-filter metadata kept only as a transitional compatibility layer for the existing image workflow. During the transition:
+
+- Update `services.json` first for any service metadata or ownership change.
+- Update `file-filters.yml` too only when the current legacy image workflow must keep matching those paths before it is migrated to the catalog-driven detector.
+- Do not add new duplicated service metadata elsewhere.
