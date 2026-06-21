@@ -1,162 +1,177 @@
 import express from 'express';
-import { query } from '../database/connection';
-import { Product, ServiceResponse, PaginationParams } from '../types';
+import { query as defaultQuery } from '../database/connection';
+import { ServiceResponse } from '../types';
 
-const router: express.Router = express.Router();
+export type QueryFn = (text: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number }>;
 
-router.get('/', async (req, res) => {
-  try {
-    const {
-      page = '1',
-      limit = '12',
-      sortBy = 'created_at',
-      category,
-      search,
-      minPrice,
-      maxPrice
-    } = req.query;
+export interface ProductRouteDependencies {
+  database?: {
+    query: QueryFn;
+  };
+}
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
+function failure(res: express.Response, status: number, error: string) {
+  return res.status(status).json({ success: false, error });
+}
 
-let whereClause = 'WHERE 1=1';
-    const filterParams: any[] = [];
-    let paramIndex = 1;
+export function createProductRoutes(dependencies: ProductRouteDependencies = {}): express.Router {
+  const router: express.Router = express.Router();
+  const dbQuery = dependencies.database?.query ?? defaultQuery;
 
-    if (category) {
-      whereClause += ' AND c.name = $' + paramIndex;
-      filterParams.push(category);
-      paramIndex++;
-    }
+  router.get('/', async (req, res) => {
+    try {
+      const {
+        page = '1',
+        limit = '12',
+        sortBy = 'created_at',
+        category,
+        search,
+        minPrice,
+        maxPrice,
+      } = req.query;
 
-    if (search) {
-      whereClause += ' AND (p.name ILIKE $' + paramIndex + ' OR p.description ILIKE $' + (paramIndex + 1) + ')';
-      filterParams.push(`%${search}%`, `%${search}%`);
-      paramIndex += 2;
-    }
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
 
-    if (minPrice) {
-      whereClause += ' AND p.price >= $' + paramIndex;
-      filterParams.push(minPrice);
-      paramIndex++;
-    }
+      let whereClause = 'WHERE 1=1';
+      const filterParams: any[] = [];
+      let paramIndex = 1;
 
-    if (maxPrice) {
-      whereClause += ' AND p.price <= $' + paramIndex;
-      filterParams.push(maxPrice);
-      paramIndex++;
-    }
-
-    const countQuery = `SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id ${whereClause}`;
-    const productsQuery = `
-      SELECT p.id, p.name, p.description, p.price, p.compare_price, 
-             p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
-             COALESCE(c.name, 'Uncategorized') as category,
-             CASE 
-               WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
-               WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
-               WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
-               WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
-               WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
-               ELSE '/product-images/placeholder.jpg'
-             END as image_url
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      ${whereClause}
-      ORDER BY p.${sortBy}
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-
-    const allParams = [...filterParams, limitNum, offset];
-    
-    const [countResult, productsResult] = await Promise.all([
-      query(countQuery, filterParams),
-      query(productsQuery, allParams)
-    ]);
-
-    const total = parseInt(countResult.rows[0].total);
-    const totalPages = Math.ceil(total / limitNum);
-
-    const response = {
-      success: true,
-      data: {
-        products: productsResult.rows,
-        pagination: {
-          currentPage: pageNum,
-          totalPages,
-          total,
-          hasNext: pageNum < totalPages,
-          hasPrev: pageNum > 1
-        }
+      if (category) {
+        whereClause += ' AND c.name = $' + paramIndex;
+        filterParams.push(category);
+        paramIndex++;
       }
-    };
 
-    res.json(response);
-  } catch (error: any) {
-    console.error('Get products error:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    res.status(500).json({ success: false, error: 'Failed to get products', details: error.message });
-  }
-});
+      if (search) {
+        whereClause += ' AND (p.name ILIKE $' + paramIndex + ' OR p.description ILIKE $' + (paramIndex + 1) + ')';
+        filterParams.push(`%${search}%`, `%${search}%`);
+        paramIndex += 2;
+      }
 
-router.get('/categories', async (req, res) => {
-  try {
-    const result = await query(`
-      SELECT c.*, COUNT(p.id) as product_count 
-      FROM categories c 
-      LEFT JOIN products p ON p.category_id = c.id 
-      GROUP BY c.id, c.name, c.description, c.image_url
-      ORDER BY c.name
-    `);
+      if (minPrice) {
+        whereClause += ' AND p.price >= $' + paramIndex;
+        filterParams.push(minPrice);
+        paramIndex++;
+      }
 
-    const response: ServiceResponse<any[]> = {
-      success: true,
-      data: result.rows
-    };
+      if (maxPrice) {
+        whereClause += ' AND p.price <= $' + paramIndex;
+        filterParams.push(maxPrice);
+        paramIndex++;
+      }
 
-    res.json(response);
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get categories' });
-  }
-});
+      const countQuery = `SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id ${whereClause}`;
+      const productsQuery = `
+        SELECT p.id, p.name, p.description, p.price, p.compare_price, 
+               p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
+               COALESCE(c.name, 'Uncategorized') as category,
+               CASE 
+                 WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
+                 WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
+                 WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
+                 WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
+                 WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
+                 ELSE '/product-images/placeholder.jpg'
+               END as image_url
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+        ORDER BY p.${sortBy}
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
 
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await query(`
-      SELECT p.id, p.name, p.description, p.price, p.compare_price, 
-             p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
-             COALESCE(c.name, 'Uncategorized') as category,
-             CASE 
-               WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
-               WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
-               WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
-               WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
-               WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
-               ELSE '/product-images/placeholder.jpg'
-             END as image_url
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = $1
-    `, [id]);
+      const allParams = [...filterParams, limitNum, offset];
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Product not found' });
+      const [countResult, productsResult] = await Promise.all([
+        dbQuery(countQuery, filterParams),
+        dbQuery(productsQuery, allParams),
+      ]);
+
+      const total = parseInt(countResult.rows[0].total);
+      const totalPages = Math.ceil(total / limitNum);
+
+      const response = {
+        success: true,
+        data: {
+          products: productsResult.rows,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            total,
+            hasNext: pageNum < totalPages,
+            hasPrev: pageNum > 1,
+          },
+        },
+      };
+
+      res.json(response);
+    } catch (error: any) {
+      console.error('Get products error:', error);
+      failure(res, 500, 'Failed to get products');
     }
+  });
 
-    const response = {
-      success: true,
-      data: result.rows[0]
-    };
+  router.get('/categories', async (req, res) => {
+    try {
+      const result = await dbQuery(`
+        SELECT c.*, COUNT(p.id) as product_count 
+        FROM categories c 
+        LEFT JOIN products p ON p.category_id = c.id 
+        GROUP BY c.id, c.name, c.description, c.image_url
+        ORDER BY c.name
+      `);
 
-    res.json(response);
-  } catch (error) {
-    console.error('Get product error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get product' });
-  }
-});
+      const response: ServiceResponse<any[]> = {
+        success: true,
+        data: result.rows,
+      };
 
+      res.json(response);
+    } catch (error) {
+      console.error('Get categories error:', error);
+      failure(res, 500, 'Failed to get categories');
+    }
+  });
 
-export { router as productRoutes };
+  router.get('/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await dbQuery(`
+        SELECT p.id, p.name, p.description, p.price, p.compare_price, 
+               p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
+               COALESCE(c.name, 'Uncategorized') as category,
+               CASE 
+                 WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
+                 WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
+                 WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
+                 WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
+                 WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
+                 ELSE '/product-images/placeholder.jpg'
+               END as image_url
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = $1
+      `, [id]);
+
+      if (result.rows.length === 0) {
+        return failure(res, 404, 'Product not found');
+      }
+
+      const response = {
+        success: true,
+        data: result.rows[0],
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Get product error:', error);
+      failure(res, 500, 'Failed to get product');
+    }
+  });
+
+  return router;
+}
+
+export const productRoutes = createProductRoutes();
