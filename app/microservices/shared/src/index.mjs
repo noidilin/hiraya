@@ -218,3 +218,78 @@ export const productDetailEnvelopeFixture = Object.freeze({
   success: true,
   data: productWireFixtureSet[0],
 });
+
+export const orderLineItemWireSchema = z
+  .object({
+    id: z.string().uuid(),
+    orderId: z.string().uuid(),
+    productId: z.string().uuid(),
+    quantity: z.number().int().positive(),
+    price: moneyStringSchema,
+    product: productWireSchema,
+  })
+  .strict();
+
+export const orderWireSchema = z
+  .object({
+    id: z.string().uuid(),
+    userId: z.string().uuid(),
+    status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled']),
+    totalAmount: moneyStringSchema,
+    paymentStatus: z.enum(['pending', 'paid', 'failed', 'refunded']),
+    createdAt: timestampStringSchema,
+    updatedAt: timestampStringSchema,
+    items: z.array(orderLineItemWireSchema).min(1),
+  })
+  .strict();
+
+export const orderHistoryDataSchema = z
+  .object({
+    orders: z.array(orderWireSchema),
+  })
+  .strict();
+
+export const orderHistoryEnvelopeSchema = createStorefrontSuccessEnvelopeSchema(orderHistoryDataSchema);
+export const orderDetailEnvelopeSchema = createStorefrontSuccessEnvelopeSchema(orderWireSchema);
+
+export const orderWireFixtureSet = Object.freeze([
+  {
+    id: '8d46347c-43db-4f01-b6c7-d5d3288f0ecb',
+    userId: authenticatedUserWireFixture.id,
+    status: 'delivered',
+    totalAmount: '402.00',
+    paymentStatus: 'paid',
+    createdAt: '2026-02-14T10:22:31.000Z',
+    updatedAt: '2026-02-16T15:12:04.000Z',
+    items: [
+      {
+        id: 'b9460644-95f4-47ac-853d-9579ac793f0b',
+        orderId: '8d46347c-43db-4f01-b6c7-d5d3288f0ecb',
+        productId: productWireFixtureSet[0].id,
+        quantity: 2,
+        price: productWireFixtureSet[0].price,
+        product: productWireFixtureSet[0],
+      },
+      {
+        id: '3fa1ac0a-4d34-4e0c-8a5d-7f83f3633c8d',
+        orderId: '8d46347c-43db-4f01-b6c7-d5d3288f0ecb',
+        productId: productWireFixtureSet[1].id,
+        quantity: 1,
+        price: productWireFixtureSet[1].price,
+        product: productWireFixtureSet[1],
+      },
+    ],
+  },
+]);
+
+export const orderHistoryEnvelopeFixture = Object.freeze({
+  success: true,
+  data: {
+    orders: orderWireFixtureSet,
+  },
+});
+
+export const orderDetailEnvelopeFixture = Object.freeze({
+  success: true,
+  data: orderWireFixtureSet[0],
+});

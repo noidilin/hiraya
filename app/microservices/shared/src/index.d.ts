@@ -83,3 +83,39 @@ export declare const productListEnvelopeSchema: z.ZodType<StorefrontSuccessEnvel
 export declare const productWireFixtureSet: readonly ProductWire[];
 export declare const productListEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<ProductListData>>;
 export declare const productDetailEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<ProductWire>>;
+
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+
+export type OrderLineItemWire = {
+  id: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  price: string;
+  product: ProductWire;
+};
+
+export type OrderWire = {
+  id: string;
+  userId: string;
+  status: OrderStatus;
+  totalAmount: string;
+  paymentStatus: PaymentStatus;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderLineItemWire[];
+};
+
+export type OrderHistoryData = {
+  orders: OrderWire[];
+};
+
+export declare const orderLineItemWireSchema: z.ZodType<OrderLineItemWire>;
+export declare const orderWireSchema: z.ZodType<OrderWire>;
+export declare const orderHistoryDataSchema: z.ZodType<OrderHistoryData>;
+export declare const orderHistoryEnvelopeSchema: z.ZodType<StorefrontSuccessEnvelope<OrderHistoryData>>;
+export declare const orderDetailEnvelopeSchema: z.ZodType<StorefrontSuccessEnvelope<OrderWire>>;
+export declare const orderWireFixtureSet: readonly OrderWire[];
+export declare const orderHistoryEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderHistoryData>>;
+export declare const orderDetailEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<OrderWire>>;
