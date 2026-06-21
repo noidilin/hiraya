@@ -1,0 +1,163 @@
+{
+  "services": [
+    {
+      "name": "auth",
+      "packageName": "auth-service",
+      "workspace": "app/microservices/backend/services/auth",
+      "image": {
+        "repository": "hiraya-auth"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/auth",
+        "dockerfile": "app/microservices/backend/services/auth/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/auth.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/auth/**",
+        "app/microservices/backend/shared/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": true,
+        "critical": true
+      }
+    },
+    {
+      "name": "gateway",
+      "packageName": "gateway-service",
+      "workspace": "app/microservices/backend/services/gateway",
+      "image": {
+        "repository": "hiraya-gateway"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/gateway",
+        "dockerfile": "app/microservices/backend/services/gateway/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/gateway.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/gateway/**",
+        "app/microservices/backend/shared/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": true,
+        "critical": true
+      }
+    },
+    {
+      "name": "orders",
+      "packageName": "orders-service",
+      "workspace": "app/microservices/backend/services/orders",
+      "image": {
+        "repository": "hiraya-orders"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/orders",
+        "dockerfile": "app/microservices/backend/services/orders/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/orders.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/orders/**",
+        "app/microservices/backend/shared/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": true,
+        "critical": true
+      }
+    },
+    {
+      "name": "order-service",
+      "packageName": "order-service",
+      "workspace": "app/microservices/backend/services/order-service",
+      "image": {
+        "repository": "hiraya-order-service"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/order-service",
+        "dockerfile": "app/microservices/backend/services/order-service/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/order-service.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/order-service/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": false,
+        "critical": false
+      }
+    },
+    {
+      "name": "product-service",
+      "packageName": "product-service",
+      "workspace": "app/microservices/backend/services/product-service",
+      "image": {
+        "repository": "hiraya-product-service"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/product-service",
+        "dockerfile": "app/microservices/backend/services/product-service/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/product-service.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/product-service/**",
+        "app/microservices/backend/shared/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": true,
+        "critical": true
+      }
+    },
+    {
+      "name": "user-service",
+      "packageName": "user-service",
+      "workspace": "app/microservices/backend/services/user-service",
+      "image": {
+        "repository": "hiraya-user-service"
+      },
+      "build": {
+        "context": "app/microservices/backend/services/user-service",
+        "dockerfile": "app/microservices/backend/services/user-service/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/backend/user-service.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/backend/services/user-service/**",
+        "app/microservices/backend/shared/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": false,
+        "critical": false
+      }
+    },
+    {
+      "name": "frontend",
+      "packageName": "frontend",
+      "workspace": "app/microservices/frontend",
+      "image": {
+        "repository": "hiraya-frontend"
+      },
+      "build": {
+        "context": "app/microservices/frontend",
+        "dockerfile": "app/microservices/frontend/Dockerfile"
+      },
+      "manifest": {
+        "path": "gitops/k8s/frontend/deployment.yml"
+      },
+      "pathOwnership": [
+        "app/microservices/frontend/**"
+      ],
+      "vintageStorefrontBaseline": {
+        "active": true,
+        "critical": true
+      }
+    }
+  ]
+}
