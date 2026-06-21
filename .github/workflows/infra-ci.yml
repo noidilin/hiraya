@@ -1,0 +1,88 @@
+name: Hiraya Infra CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "gitops/**"
+      - ".github/workflows/infra-ci.yml"
+      - ".github/workflows/infra-deploy.yml"
+      - ".github/workflows/infra-destroy.yml"
+      - ".github/scripts/**"
+      - ".mise.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-infra-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-checks:
+    name: Static infrastructure checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install toolchain
+        uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+        with:
+          install: true
+          cache: true
+
+      - name: Check Terraform formatting
+        shell: bash
+        run: terraform fmt -check -recursive infra
+
+      - name: Validate Terraform root stacks without backend credentials
+        env:
+          AWS_EC2_METADATA_DISABLED: "true"
+          TF_VAR_skip_aws_credentials_validation: "true"
+        shell: bash
+        run: |
+          set -euo pipefail
+          for stack in infra/envs/dev/bootstrap infra/envs/dev/platform; do
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate -no-color
+          done
+
+      - name: Run Terraform module contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for module in \
+            infra/modules/vpc \
+            infra/modules/edge-gateway \
+            infra/modules/gateway-api-crds \
+            infra/modules/monitoring; do
+            terraform -chdir="$module" init -backend=false -input=false
+            terraform -chdir="$module" test -no-color
+          done
+
+      - name: Render GitOps manifests
+        shell: bash
+        run: kubectl kustomize gitops >/tmp/hiraya-gitops.yaml
+
+      - name: Render local Helm charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          found_chart=false
+          while IFS= read -r -d '' chart_file; do
+            found_chart=true
+            chart=$(dirname "$chart_file")
+            echo "Rendering ${chart}"
+            output="/tmp/$(echo "$chart" | tr '/ ' '--')-helm.yaml"
+            helm template smoke "$chart" >"$output"
+          done < <(find infra/modules -path '*/Chart.yaml' -print0)
+
+          if [[ "$found_chart" == "false" ]]; then
+            echo "No local Helm charts found under infra/modules."
+          fi

@@ -168,3 +168,9 @@ variable "external_dns_txt_owner_id" {
   type        = string
   default     = "hiraya-dev-eks"
 }
+
+variable "skip_aws_credentials_validation" {
+  description = "Skip AWS provider credential validation for static CI checks that must not request AWS credentials."
+  type        = bool
+  default     = false
+}

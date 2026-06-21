@@ -47,3 +47,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "skip_aws_credentials_validation" {
+  description = "Skip AWS provider credential validation for static CI checks that must not request AWS credentials."
+  type        = bool
+  default     = false
+}
