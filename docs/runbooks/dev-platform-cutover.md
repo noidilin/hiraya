@@ -1,311 +1,288 @@
-# Dev platform cutover runbook
+# Dev platform infra workflow cutover runbook
 
-Related: [PRD #1](https://github.com/noidilin/hiraya/issues/1), [issue #7](https://github.com/noidilin/hiraya/issues/7), [ADR 0001](../adr/0001-eks-network-redesign.md), [network improvement plan](../plan/network-improvement.md), [infra README](../../infra/README.md).
+Related: [infra CI/CD PRD #13](https://github.com/noidilin/hiraya/issues/13), [runbook issue #19](https://github.com/noidilin/hiraya/issues/19), [ADR 0001: EKS network redesign](../adr/0001-eks-network-redesign.md), [infra workflow implementation plan](../plan/infra-ci-workflow.md), [infra README](../../infra/README.md).
 
 ## Purpose
 
-This runbook documents the human-approved cutover for the dev EKS network redesign. It is intentionally written as a future deployment checklist: preparing this document must not perform the live destroy/apply.
+This runbook guides a maintainer through adopting the GitHub Actions infrastructure workflow trio for the Hiraya dev platform:
 
-## Safety warning
+- `Hiraya Infra CI` (`.github/workflows/infra-ci.yml`) for static checks and trusted pull-request Terraform plan comments.
+- `Hiraya Infra Deploy` (`.github/workflows/infra-deploy.yml`) for manual, `dev` Environment-gated platform apply.
+- `Hiraya Infra Destroy` (`.github/workflows/infra-destroy.yml`) for manual, typed-confirmation, `dev` Environment-gated platform destroy.
 
-**Destructive operation:** the approved migration model is to destroy and recreate the disposable dev platform stack. Running `terraform destroy` in `infra/envs/dev/platform` deletes the dev EKS cluster, node group, VPC, NAT Gateway, ALB/Gateway resources, platform add-ons, Terraform-managed ACM validation records for the platform certificate, and Kubernetes workloads in the cluster.
+This is documentation only. Reading or updating this runbook must not perform the live bootstrap apply, platform deploy, or platform destroy.
 
-Do not execute the cutover unless all of these are true:
+## Ownership boundary
 
-- The maintainer has explicitly approved dev downtime and disposable platform deletion for this session.
-- The current branch/commit to deploy has been reviewed.
-- Bootstrap and platform Terraform state backends are reachable.
-- No one is relying on the current dev cluster, Argo CD, Grafana, or app URL.
-- The operator understands this runbook recreates dev infrastructure; it is not an in-place migration.
+### Durable bootstrap: preserve
 
-## Resource ownership boundary
+The durable layer supports repeated creation and deletion of the dev platform. It is not part of normal platform deploy/destroy runs.
 
-### Durable bootstrap resources: preserve
+Preserve:
 
-These resources are outside the disposable platform stack and should not be destroyed during this cutover:
-
-- Externally managed Terraform remote-state S3 bucket.
+- Externally managed Terraform remote-state S3 bucket `devops-hiraya-dev-tf-state`.
 - `infra/envs/dev/bootstrap` state and resources.
-- ECR repositories and image-push IAM/OIDC resources created by the bootstrap stack.
-- The Route 53 hosted zone for `noidilin.dev`.
-- GitHub repository, Actions secrets/variables, and GitOps manifests.
+- Durable ECR repositories used by application image workflows.
+- GitHub OIDC roles for image push, infra plan, and infra apply/destroy.
+- GitHub repository settings, including the `dev` Environment gate.
+- Route 53 hosted zone for `noidilin.dev`.
 
-Use the bootstrap stack only for read-only verification unless a separate bootstrap change is approved.
+Bootstrap changes require their own reviewed Terraform run. The new infra workflows expect the bootstrap stack to have already created the plan/apply roles.
 
-### Disposable platform stack: recreate
+### Disposable platform: deploy or destroy
 
-The cutover operates only on `infra/envs/dev/platform`, which owns the dev platform:
+The workflow trio manages only `infra/envs/dev/platform`, including:
 
 - VPC, public/private subnets, route tables, Internet Gateway, NAT Gateway, and S3 Gateway VPC endpoint.
-- EKS cluster, private managed node group, OIDC provider, and Kubernetes providers.
-- ACM certificate for `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`, including DNS validation records.
-- AWS Load Balancer Controller, Gateway API CRDs, ExternalDNS, edge Gateway, Argo CD, monitoring/Grafana/Prometheus, and Fluent Bit.
-- Terraform-owned admin routes and generated Argo CD/Grafana credentials stored in Terraform state.
+- EKS cluster, private managed node group, EKS OIDC provider, and Terraform-managed Kubernetes/Helm resources.
+- ACM certificate and DNS validation records for `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`.
+- AWS Load Balancer Controller, Gateway API CRDs, ExternalDNS, shared `edge/public` Gateway, Argo CD, monitoring/Grafana/Prometheus, and Fluent Bit.
+- Terraform-owned admin HTTPRoutes and generated Argo CD/Grafana credentials stored in Terraform state.
 
-## Pre-cutover checks
+This disposable boundary follows [ADR 0001](../adr/0001-eks-network-redesign.md): dev platform recreation is acceptable; bootstrap resources must survive.
 
-Run these before requesting final approval:
+## Prerequisites
+
+Before the first workflow cutover, confirm all of the following:
+
+1. The target workflow code has been merged to `main`.
+2. The one-time bootstrap Terraform apply has been completed from `infra/envs/dev/bootstrap`, creating the GitHub infra plan/apply roles.
+3. The repository has a GitHub Environment named `dev` with required reviewers or equivalent approval controls.
+4. GitHub Actions OIDC is enabled through the bootstrap trust policies; no long-lived AWS access keys are required.
+5. The default backend values are correct or supplied through workflow environment variables:
+   - `TF_STATE_BUCKET=devops-hiraya-dev-tf-state`
+   - `TF_PLATFORM_STATE_KEY=devops-hiraya-dev/dev/platform/terraform.tfstate`
+   - `AWS_REGION=ap-northeast-1`
+6. The maintainer has access to workflow artifacts, job summaries, AWS console/CLI evidence, and Kubernetes route checks.
+7. Generated Argo CD and Grafana credentials are treated as secrets. Do not print them into workflow logs, issue comments, screenshots, or documentation.
+
+## One-time bootstrap apply
+
+Run this only when bootstrap code for the infra workflow roles has been reviewed.
 
 ```bash
-git status --short
-terraform -chdir=infra/envs/dev/platform fmt -check -recursive
-terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl
-terraform -chdir=infra/envs/dev/platform validate
-terraform -chdir=infra/envs/dev/platform plan
-kubectl kustomize gitops
-helm template edge-gateway infra/modules/edge-gateway/chart
-helm template argocd-route infra/modules/argocd/admin-route
-helm template grafana-route infra/modules/monitoring/admin-route
+cd infra/envs/dev/bootstrap
+cp backend.hcl.example backend.hcl # if backend.hcl is not already present locally
+terraform init -backend-config=backend.hcl
+terraform fmt -check -recursive
+terraform validate
+terraform plan
+terraform apply
 ```
 
-Confirm the platform plan shows the expected private-node redesign, including public/private subnets, single NAT Gateway, S3 Gateway endpoint, EKS private endpoint access, explicit public endpoint CIDRs, AWS Load Balancer Controller, ExternalDNS, Gateway resources, admin routes, and no public Prometheus route.
+Expected evidence to capture:
 
-## Approved cutover procedure
+- Bootstrap `terraform plan` summary.
+- Bootstrap `terraform apply` completion.
+- Terraform outputs for the GitHub infra plan/apply role ARNs, without exposing unrelated secrets.
+- AWS IAM view or CLI output confirming the roles exist and have OIDC trust policies scoped to this repository.
 
-Only run this section after explicit human approval in the deployment session.
+Do not broaden these roles to administrator access. If first-run workflows hit `AccessDenied`, add the smallest missing action/resource scope based on the exact denied API call.
 
-1. Announce dev downtime.
-2. Confirm the target commit and Terraform workspace/state backend.
-3. Destroy only the disposable platform stack:
+## Validate the trusted PR plan comment
 
-   ```bash
-   cd infra/envs/dev/platform
-   terraform destroy
-   ```
+Use a same-repository pull request that touches `infra/**`, `gitops/**`, `.github/workflows/infra-*.yml`, `.github/scripts/**`, or `.mise.toml`.
 
-4. Recreate the platform from the approved commit:
+1. Open or update the trusted PR.
+2. Wait for `Hiraya Infra CI`.
+3. Confirm `Static infrastructure checks` runs for the PR.
+4. Confirm `Trusted PR Terraform plan` runs only because the PR branch is in the same repository.
+5. Open the PR conversation and find the sticky Terraform plan comment.
+6. Confirm the comment includes:
+   - Hidden sticky marker behavior, visible as one updated bot comment rather than repeated duplicate comments.
+   - Stack label `Disposable dev platform`, corresponding to `infra/envs/dev/platform`.
+   - Commit SHA.
+   - Fast PR mode using `-refresh=false -lock=false`.
+   - Plan summary such as `Plan: X to add, Y to change, Z to destroy.` or `No changes.`
+   - A destroy warning when destroy count is greater than zero.
+   - A collapsible fenced code block using `terraform` syntax highlighting.
+   - Full plan artifact name.
+7. Re-run the workflow and confirm the same comment is updated in place.
+8. Download the plan artifact and confirm it contains the full text plan.
 
-   ```bash
-   terraform apply
-   ```
+Fork PR expectation: static checks should run, but AWS OIDC and the PR plan comment should not run.
 
-5. Update kubeconfig for the recreated cluster if needed:
+## Run the first manual deploy from `main`
 
-   ```bash
-   aws eks update-kubeconfig --region ap-northeast-1 --name hiraya-dev
-   ```
+Use `Hiraya Infra Deploy` only from `main`. It is intentionally `workflow_dispatch` only.
 
-6. Run the post-apply checklist below before declaring cutover complete.
+1. In GitHub Actions, select `Hiraya Infra Deploy`.
+2. Choose branch `main` and run the workflow.
+3. Before approval, review the `Pre-approval platform plan` job:
+   - It assumes the infra plan role.
+   - It initializes and validates `infra/envs/dev/platform`.
+   - It runs a full refreshed Terraform plan.
+   - It uploads `terraform-preflight-plan-dev-platform-<sha>`.
+   - It writes a summary to the workflow step summary.
+4. Capture evidence before approval:
+   - Commit SHA.
+   - Preflight plan summary.
+   - Uploaded preflight plan artifact name.
+   - Any destructive changes you intend to approve.
+5. Approve the `dev` GitHub Environment gate only after reviewing the plan.
+6. Confirm the `Apply disposable dev platform` job:
+   - Assumes the infra apply role through OIDC.
+   - Creates a fresh post-approval binary plan.
+   - Applies that exact local binary plan.
+   - Runs `.github/scripts/platform-route-smoke.sh`.
+7. Capture evidence after approval:
+   - Apply job result.
+   - Route-health smoke output showing EKS/node visibility, Gateway/HTTPRoute visibility, namespace visibility, and route checks.
+   - Workflow summary result.
 
-## Post-apply verification checklist
+Sensitive credential warning: route smoke and summaries must not retrieve or print Argo CD or Grafana admin passwords.
 
-### Terraform outputs
+## Post-deploy checklist
+
+Use workflow smoke output first, then run local checks if extra evidence is needed.
+
+### EKS reachability
 
 ```bash
-terraform -chdir=infra/envs/dev/platform output
-terraform -chdir=infra/envs/dev/platform output -raw argocd_admin_hostname
-terraform -chdir=infra/envs/dev/platform output -raw argocd_admin_password
-```
-
-Expected: outputs are present; sensitive admin password retrieval works for the operator and is not committed to Git. Retrieve Grafana credentials using the Terraform output if exposed by the platform stack, or from Terraform state in the deployment session without writing the secret to disk.
-
-### Private node placement
-
-```bash
+aws eks update-kubeconfig --region ap-northeast-1 --name hiraya-dev
 kubectl get nodes -o wide
-aws ec2 describe-instances \
-  --filters "Name=tag:eks:cluster-name,Values=hiraya-dev" "Name=instance-state-name,Values=running" \
-  --query 'Reservations[].Instances[].{InstanceId:InstanceId,SubnetId:SubnetId,PrivateIp:PrivateIpAddress,PublicIp:PublicIpAddress}' \
-  --output table
+kubectl get pods -A
+aws eks describe-cluster --name hiraya-dev --region ap-northeast-1 \
+  --query 'cluster.resourcesVpcConfig.{Private:endpointPrivateAccess,Public:endpointPublicAccess,PublicCidrs:publicAccessCidrs}'
 ```
 
-Expected: worker nodes are registered and have private IPs only; `PublicIp` is empty; node subnets match Terraform private subnet outputs.
+Expected: EKS API is reachable, nodes are registered, private endpoint access is enabled, and any public API access is the explicit temporary dev setting.
 
-### EKS endpoint posture
-
-```bash
-aws eks describe-cluster --name hiraya-dev \
-  --query 'cluster.resourcesVpcConfig.{Private:endpointPrivateAccess,Public:endpointPublicAccess,PublicCidrs:publicAccessCidrs,SubnetIds:subnetIds}'
-```
-
-Expected: private endpoint access is `true`; public endpoint access is enabled only as the explicit dev setting; public CIDRs match `infra/envs/dev/platform/terraform.tfvars` and are recognized as temporary dev access.
-
-### NAT and S3 egress
-
-```bash
-VPC_ID=$(aws eks describe-cluster --name hiraya-dev --query 'cluster.resourcesVpcConfig.vpcId' --output text)
-aws ec2 describe-route-tables --filters "Name=vpc-id,Values=${VPC_ID}"
-kubectl run egress-check --rm -i --restart=Never --image=curlimages/curl -- https://github.com
-kubectl run s3-check --rm -i --restart=Never --image=amazon/aws-cli -- s3 ls
-```
-
-Expected: private route tables point default outbound traffic to the single NAT Gateway; S3 Gateway endpoint is associated with private route tables; test pods can reach required internet/AWS endpoints.
-
-### Controller health
-
-```bash
-kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
-kubectl logs -n kube-system deploy/aws-load-balancer-controller --tail=100
-kubectl get pods -n external-dns
-kubectl logs -n external-dns deploy/external-dns --tail=100
-```
-
-Expected: AWS Load Balancer Controller and ExternalDNS pods are running without repeated reconciliation errors.
-
-### Gateway readiness and route attachment
+### Gateway and HTTPRoute visibility
 
 ```bash
 kubectl get gateway -A
-kubectl describe gateway -n edge public
 kubectl get httproute -A
+kubectl describe gateway -n edge public
 kubectl describe httproute -n vintage frontend
 kubectl describe httproute -n argocd argocd
 kubectl describe httproute -n monitoring grafana
-kubectl get namespace vintage argocd monitoring --show-labels
 ```
 
-Expected: the shared `edge/public` Gateway is accepted and programmed; app, Argo CD, and Grafana HTTPRoutes are accepted and attached; allowed namespaces carry `hiraya.noidilin.dev/public-gateway-access=true`; Prometheus has no HTTPRoute.
+Expected: shared `edge/public` Gateway is accepted/programmed; Vintage Storefront, Argo CD, and Grafana HTTPRoutes are accepted and attached.
 
-### DNS records
-
-```bash
-dig +short hiraya.noidilin.dev
-dig +short argocd.hiraya.noidilin.dev
-dig +short grafana.hiraya.noidilin.dev
-aws route53 list-resource-record-sets --hosted-zone-id <NOIDILIN_DEV_ZONE_ID> \
-  --query "ResourceRecordSets[?contains(Name, 'hiraya.noidilin.dev')]"
-```
-
-Expected: ExternalDNS-created public records and TXT ownership records exist for app, Argo CD, and Grafana; records target the shared public ALB.
-
-### TLS and HTTP redirect
+### Public route health
 
 ```bash
-curl -I http://hiraya.noidilin.dev
 curl -I https://hiraya.noidilin.dev
 curl -I https://argocd.hiraya.noidilin.dev
 curl -I https://grafana.hiraya.noidilin.dev
-openssl s_client -connect hiraya.noidilin.dev:443 -servername hiraya.noidilin.dev </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -dates
 ```
 
-Expected: HTTP redirects to HTTPS; HTTPS uses a valid ACM certificate covering `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`.
+Expected:
 
-### App and `/api` behavior
+- Vintage Storefront route responds successfully.
+- Argo CD route reaches the login/protected service.
+- Grafana route reaches the login/protected service.
+- HTTPS uses the expected ACM-backed certificate.
 
-```bash
-curl -fsS https://hiraya.noidilin.dev >/tmp/hiraya-home.html
-curl -I https://hiraya.noidilin.dev/api
-kubectl get svc -n vintage frontend gateway -o wide
-kubectl logs -n vintage deploy/frontend --tail=100
-```
-
-Expected: frontend loads publicly through the Gateway/ALB; `/api` continues to flow through the frontend nginx proxy to the in-cluster `gateway` service; frontend and gateway Services remain `ClusterIP`.
-
-### Argo CD
+### GitOps and admin service posture
 
 ```bash
 kubectl get pods -n argocd
 kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
-curl -I https://argocd.hiraya.noidilin.dev
-```
-
-Expected: Argo CD pods are healthy; `argocd-server` remains `ClusterIP`; login page is reachable over HTTPS with Terraform-generated credentials.
-
-### Grafana and Prometheus-private behavior
-
-```bash
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring | grep -E 'grafana|prometheus'
-curl -I https://grafana.hiraya.noidilin.dev
 kubectl get httproute -A | grep -i prometheus || true
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
-Expected: Grafana is reachable only through the approved public hostname and requires Terraform-generated credentials; Prometheus has no public DNS record/HTTPRoute and is reachable through `kubectl port-forward` only.
+Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only.
 
-## Rollback guidance
+## Run the first manual destroy from `main`
 
-If post-apply verification fails and cannot be fixed quickly:
+Use `Hiraya Infra Destroy` only when dev platform deletion is approved. The workflow destroys only `infra/envs/dev/platform` and preserves durable bootstrap resources.
 
-1. Preserve evidence first: Terraform plan/apply output, controller logs, Gateway and HTTPRoute descriptions, ExternalDNS logs, and relevant AWS console screenshots.
-2. Revert the network redesign implementation to the previous known-good commit/branch.
-3. From `infra/envs/dev/platform`, run a fresh `terraform plan` against the reverted code.
-4. After human approval, destroy the failed disposable platform stack and recreate from the previous known-good code:
+1. In GitHub Actions, select `Hiraya Infra Destroy`.
+2. Choose branch `main`.
+3. Enter the exact confirmation phrase:
 
-   ```bash
-   terraform destroy
-   terraform apply
+   ```text
+   destroy dev platform
    ```
 
-5. Re-run the previous platform's known-good smoke tests.
+4. Start the workflow.
+5. Confirm the `Validate destroy request` job fails before AWS credentials if:
+   - The branch is not `main`, or
+   - The confirmation does not exactly match `destroy dev platform`.
+6. Approve the `dev` GitHub Environment gate only after confirming deletion is intended.
+7. Confirm the destroy job:
+   - Assumes the infra apply role through OIDC.
+   - Captures `cluster_name`, `vpc_id`, and `edge_load_balancer_name` from Terraform outputs before destroy.
+   - Runs `terraform -chdir=infra/envs/dev/platform destroy -input=false -auto-approve`.
+   - Runs `.github/scripts/platform-destroy-verify.sh`.
 
-Temporary mitigations while debugging:
+Evidence to capture:
 
-- Remove or disable only the broken HTTPRoute if a single hostname is failing.
-- Use `kubectl port-forward` for Argo CD, Grafana, or Prometheus operator access.
-- Keep Prometheus private; do not add an emergency public route for it.
+- Confirmation preflight result.
+- Environment approval record.
+- Terraform destroy completion.
+- Verification that EKS/VPC/ALB are absent or inactive.
+- Verification that the state bucket and ECR repositories remain accessible.
 
-## Troubleshooting notes
+## Post-destroy checklist
 
-### AWS Load Balancer Controller
-
-Symptoms: Gateway not programmed, no ALB, HTTPRoutes unattached, or repeated controller errors.
-
-Checks:
-
-```bash
-kubectl logs -n kube-system deploy/aws-load-balancer-controller
-kubectl describe gateway -n edge public
-kubectl get events -A --sort-by=.lastTimestamp | tail -50
-aws elbv2 describe-load-balancers --names hiraya-dev-public
-```
-
-Common causes: missing Gateway API CRDs, invalid Gateway annotations/listeners, IRSA trust or permission boundary mismatch, subnet discovery tags missing, ACM certificate ARN invalid, or AWS quota limits.
-
-### ExternalDNS
-
-Symptoms: DNS records missing, stale, or not targeting the ALB.
-
-Checks:
+### Disposable platform absence
 
 ```bash
-kubectl logs -n external-dns deploy/external-dns
-kubectl get httproute -A -o yaml | grep -A3 hostnames
-aws route53 list-resource-record-sets --hosted-zone-id <NOIDILIN_DEV_ZONE_ID>
+aws eks describe-cluster --region ap-northeast-1 --name hiraya-dev || true
+aws ec2 describe-vpcs --region ap-northeast-1 --vpc-ids <captured-vpc-id> || true
+aws elbv2 describe-load-balancers --region ap-northeast-1 --names hiraya-dev-public || true
 ```
 
-Common causes: unsupported/incorrect `gateway-httproute` source configuration, missing route attachment, hosted-zone IAM scope mismatch, TXT owner ID conflict, or Route 53 propagation delay.
+Expected: EKS cluster is gone or not `ACTIVE`; captured VPC is deleted; shared public ALB is deleted.
 
-### ACM certificate
-
-Symptoms: HTTPS listener missing, certificate pending validation, or TLS mismatch.
-
-Checks:
+### Durable bootstrap preservation
 
 ```bash
-aws acm list-certificates
-aws acm describe-certificate --certificate-arn <CERTIFICATE_ARN>
-aws route53 list-resource-record-sets --hosted-zone-id <NOIDILIN_DEV_ZONE_ID> | grep _acme-challenge -A5
+aws s3api head-bucket --bucket devops-hiraya-dev-tf-state
+aws ecr describe-repositories --region ap-northeast-1 --repository-names \
+  hiraya-frontend \
+  hiraya-gateway \
+  hiraya-auth \
+  hiraya-order-service \
+  hiraya-orders \
+  hiraya-product-service \
+  hiraya-user-service
 ```
 
-Common causes: validation records not created, wrong hosted zone, certificate not issued yet, or Gateway referencing the wrong certificate ARN.
+Expected: remote-state bucket remains accessible and durable ECR repositories still exist.
 
-### Route 53 and DNS propagation
+## Known edge cases and response
 
-Symptoms: `dig` returns no records, old ALB, or inconsistent answers.
+### Custom IAM permission gaps
 
-Checks:
+First-run plan/apply/destroy jobs may expose missing custom IAM permissions. Respond by:
 
-```bash
-dig hiraya.noidilin.dev
-dig @8.8.8.8 hiraya.noidilin.dev
-dig TXT hiraya.noidilin.dev
-```
+1. Capturing the exact `AccessDenied` action, resource ARN, and job step.
+2. Deciding whether the action belongs to the plan role or apply role.
+3. Adding the narrowest action/resource scope that unblocks the intended workflow.
+4. Re-running bootstrap `terraform plan/apply` after review.
+5. Re-running the failed workflow.
 
-Common causes: propagation delay, ExternalDNS TXT ownership conflict, records outside the managed domain filter, or cached stale records.
+Do not attach `AdministratorAccess` or broad wildcard `iam:PassRole`. `iam:PassRole` must stay scoped to Hiraya platform roles and required AWS services.
 
-### Gateway API reconciliation
+### Existing-cluster access ownership
 
-Symptoms: `Accepted=False`, `ResolvedRefs=False`, or `Programmed=False` on Gateway/HTTPRoute status.
+If the existing EKS cluster was created by a different local principal, the GitHub apply role may not initially have Kubernetes API admin access for Terraform-managed Helm/Kubernetes resources.
 
-Checks:
+Safe rollout options:
 
-```bash
-kubectl describe gateway -n edge public
-kubectl describe httproute -n vintage frontend
-kubectl describe httproute -n argocd argocd
-kubectl describe httproute -n monitoring grafana
-kubectl get crd | grep gateway.networking.k8s.io
-```
+1. Preferred for this disposable dev environment: destroy the existing platform locally, then let `Hiraya Infra Deploy` recreate it so the GitHub apply role becomes the consistent platform owner.
+2. Alternatively, grant the apply role one-time cluster admin access through an EKS access entry or equivalent mapping before GitHub Actions manages the existing cluster.
 
-Common causes: namespace missing the public Gateway access label, wrong parentRef namespace/name, backend Service name or port mismatch, missing CRDs, or controller version not supporting the configured Gateway API resources.
+After GitHub creates the platform, use the workflow path consistently for deploy/destroy.
+
+### GitHub-hosted runner and EKS API access
+
+GitHub-hosted deploy currently relies on the explicit temporary public EKS API endpoint. If the EKS API becomes private-only before a private-network runner exists, Terraform Helm/Kubernetes operations from GitHub-hosted runners will fail. Move to a VPC-hosted/self-hosted runner before removing public EKS API access.
+
+### Rollback
+
+If deploy fails after approval:
+
+1. Preserve evidence before retrying: plan artifact, apply logs, route-smoke logs, Gateway/HTTPRoute descriptions, ExternalDNS logs, and relevant AWS console screenshots.
+2. If the failure is an IAM gap, patch only the missing scoped bootstrap permission and rerun.
+3. If the platform is partially created and unrecoverable, use the approved destroy workflow, then redeploy from the last known-good `main` commit.
+4. Keep Prometheus private; do not add emergency public routes for debugging.
+
+If destroy fails verification, do not delete bootstrap resources. Investigate residual EKS, VPC, ENI, NAT Gateway, ALB, or Route 53 dependencies and remove only disposable platform leftovers.
