@@ -2,33 +2,41 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import * as dotenv from 'dotenv';
-import { orderRoutes } from './routes/orders';
+import { createOrderRoutes, OrderRouteDependencies } from './routes/orders';
 import { connectDB } from './database/connection';
 import { metricsMiddleware, setupMetrics } from './metrics';
 
 dotenv.config({ path: './.env' });
 
-const app = express();
-const PORT = process.env.PORT || 3005;
+export interface OrdersAppOptions extends OrderRouteDependencies {}
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+export function createApp(options: OrdersAppOptions = {}): express.Express {
+  const app = express();
 
-setupMetrics(app, { serviceName: 'orders', serviceVersion: '1.0.0' });
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json());
 
-app.use(metricsMiddleware);
+  setupMetrics(app, { serviceName: 'orders', serviceVersion: '1.0.0' });
 
-app.use('', orderRoutes);
+  app.use(metricsMiddleware);
 
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-});
+  app.use('', createOrderRoutes(options));
 
-const startServer = async () => {
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  });
+
+  return app;
+}
+
+export async function startServer() {
+  const PORT = process.env.PORT || 3005;
+
   try {
     await connectDB();
+    const app = createApp();
     app.listen(PORT, () => {
       console.log(`Orders service running on port ${PORT}`);
     });
@@ -36,6 +44,8 @@ const startServer = async () => {
     console.error('Failed to start orders service:', error);
     process.exit(1);
   }
-};
+}
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
