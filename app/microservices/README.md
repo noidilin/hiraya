@@ -14,12 +14,19 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run app:catalog` | Compile scripts, validate `.github/utils/services.json`, and run catalog/detector self-tests. |
 | `pnpm run app:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
 | `pnpm run app:static` | Run the currently meaningful build/static checks for the Storefront and backend services. |
-| `pnpm run app:baseline` | Run workspace, catalog, changed-service, and static checks in the same order CI should reuse. |
+| `pnpm run app:baseline` | Run workspace, catalog, backend contract, changed-service, and static checks in the same order CI should reuse. |
 | `pnpm run app:test:catalog` | Run service catalog and changed-service detector tests. |
-| `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, and consumer smoke tests. |
+| `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, backend route, and consumer smoke tests. |
+| `pnpm run app:test:backend-contract` | Run the gateway, auth, product, and orders contract suites together as the reusable backend contract gate. |
 | `pnpm run app:test:browser` | Fails clearly until the browser behavior baseline slice is implemented. |
 
 Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` delegate to this `app:*` surface for compatibility.
+
+## Backend contract baseline
+
+`pnpm run app:test:backend-contract` is the backend API contract baseline for the active Vintage Storefront services. It runs the gateway, auth, product, and orders contract suites in one Vitest invocation with the verbose reporter, so a regression names the failing suite in the output and exits non-zero for local use or later PR-check workflow reuse.
+
+The suite is intentionally isolated from deployed infrastructure with mocked database and upstream boundaries: auth, product, and orders use mocked database boundaries, orders also uses a mocked upstream product lookup boundary, and gateway route tests use mocked proxy handlers. The command runs without AWS credentials, PostgreSQL, Kubernetes, or real backend services.
 
 ## Service metadata source of truth
 

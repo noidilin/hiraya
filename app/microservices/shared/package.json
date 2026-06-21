@@ -12,7 +12,8 @@
   },
   "types": "./src/index.d.ts",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:backend-contract": "vitest run --reporter verbose test/gateway-routing.test.mjs test/auth-api-contract.test.mjs test/product-api-contract.test.mjs test/orders-api-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.1.13"
