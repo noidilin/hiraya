@@ -2,33 +2,41 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import * as dotenv from 'dotenv';
-import { authRoutes } from './routes/auth';
+import { createAuthRoutes, AuthRouteDependencies } from './routes/auth';
 import { connectDB } from './database/connection';
 import { metricsMiddleware, setupMetrics } from './metrics';
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 3002;
+export interface AuthAppOptions extends AuthRouteDependencies {}
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+export function createApp(options: AuthAppOptions = {}): express.Express {
+  const app = express();
 
-setupMetrics(app, { serviceName: 'auth', serviceVersion: '1.0.0' });
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json());
 
-app.use(metricsMiddleware);
+  setupMetrics(app, { serviceName: 'auth', serviceVersion: '1.0.0' });
 
-app.use('', authRoutes);
+  app.use(metricsMiddleware);
 
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-});
+  app.use('', createAuthRoutes(options));
 
-const startServer = async () => {
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  });
+
+  return app;
+}
+
+export async function startServer() {
+  const PORT = process.env.PORT || 3002;
+
   try {
     await connectDB();
+    const app = createApp();
     app.listen(PORT, () => {
       console.log(`Auth service running on port ${PORT}`);
     });
@@ -36,6 +44,8 @@ const startServer = async () => {
     console.error('Failed to start auth service:', error);
     process.exit(1);
   }
-};
+}
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
