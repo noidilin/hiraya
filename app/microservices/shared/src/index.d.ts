@@ -25,6 +25,31 @@ export declare function createStorefrontEnvelopeSchema<T extends z.ZodType>(
   dataSchema: T,
 ): z.ZodType<StorefrontEnvelope<z.infer<T>>>;
 
+export type AuthenticatedUserWire = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'customer' | 'admin';
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AuthTokenData = {
+  user: AuthenticatedUserWire;
+  token: string;
+};
+
+export declare const authenticatedUserWireSchema: z.ZodType<AuthenticatedUserWire>;
+export declare const authTokenDataSchema: z.ZodType<AuthTokenData>;
+export declare const authenticatedUserEnvelopeSchema: z.ZodType<StorefrontSuccessEnvelope<AuthenticatedUserWire>>;
+export declare const authSuccessEnvelopeSchema: z.ZodType<StorefrontSuccessEnvelope<AuthTokenData>>;
+export declare const authFailureEnvelopeSchema: z.ZodType<StorefrontFailureEnvelope>;
+export declare const authenticatedUserWireFixture: Readonly<AuthenticatedUserWire>;
+export declare const authSuccessEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<AuthTokenData>>;
+export declare const authenticatedUserEnvelopeFixture: Readonly<StorefrontSuccessEnvelope<AuthenticatedUserWire>>;
+export declare const authFailureEnvelopeFixture: Readonly<StorefrontFailureEnvelope>;
+
 export type ProductWire = {
   id: string;
   name: string;
