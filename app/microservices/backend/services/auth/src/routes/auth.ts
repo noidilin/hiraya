@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query } from '../database/connection';
 import { User } from '../types';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 // Simple demo authentication without JWT
 let currentUser: any = null;

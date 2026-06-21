@@ -3,7 +3,7 @@ import axios from 'axios';
 import { query } from '../database/connection';
 import { Order, CreateOrderRequest, Address, ServiceResponse } from '../types';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003';
 
 router.post('/', async (req, res) => {
