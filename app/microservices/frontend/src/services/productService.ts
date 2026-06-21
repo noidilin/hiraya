@@ -1,113 +1,94 @@
 import apiClient from './api';
-import { Product } from '../types';
+import { ApiEnvelope, Product } from '../types';
 
-// Helper function to get proper image URL
-const getImageUrl = (product: any): string => {
-  // Backend is now handling image mapping, so just return the image_url as-is
-  if (product.image_url) {
-    return product.image_url;
-  }
-  
-  // Default fallback
-  return '/product-images/placeholder.jpg';
+type ProductListData = {
+  products: ProductWire[];
 };
+
+type ProductWire = {
+  id: string;
+  name: string;
+  description: string;
+  price: string | number;
+  compare_price?: string | number;
+  originalPrice?: string | number;
+  image_url?: string;
+  imageUrl?: string;
+  category?: string;
+  category_id?: string;
+  brand?: string;
+  inventory_quantity?: number;
+  inventory?: number;
+  rating?: number;
+  reviewCount?: number;
+  is_featured?: boolean;
+  new_arrival?: boolean;
+  discountPercentage?: number;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+  images?: Product['images'];
+};
+
+const unwrapEnvelope = <T>(envelope: ApiEnvelope<T>): T => {
+  if (envelope.success) {
+    return envelope.data;
+  }
+
+  throw new Error(envelope.error);
+};
+
+const toNumber = (value: string | number | undefined): number => {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  const parsed = Number.parseFloat(value ?? '0');
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeProduct = (product: ProductWire): Product => ({
+  id: product.id,
+  name: product.name,
+  description: product.description,
+  price: toNumber(product.price),
+  originalPrice: product.compare_price !== undefined
+    ? toNumber(product.compare_price)
+    : product.originalPrice !== undefined
+      ? toNumber(product.originalPrice)
+      : undefined,
+  imageUrl: product.image_url || product.imageUrl || '/product-images/placeholder.jpg',
+  category: product.category || product.category_id || '',
+  brand: product.brand,
+  inventory: product.inventory_quantity ?? product.inventory ?? 0,
+  rating: product.rating,
+  reviewCount: product.reviewCount,
+  isNew: product.is_featured ?? product.new_arrival,
+  discountPercentage: product.discountPercentage,
+  createdAt: product.created_at || product.createdAt || '',
+  updatedAt: product.updated_at || product.updatedAt || '',
+  images: product.images || [],
+});
 
 export const productService = {
   getAll: async (): Promise<Product[]> => {
-    console.log('[ProductService] Fetching products from:', process.env.REACT_APP_API_URL || 'http://localhost:3003');
-    try {
-      const response = await apiClient.get('/products');
-      const apiResponse = response.data;
-      
-      // Transform API response to match frontend types
-      if (apiResponse.success && apiResponse.data?.products) {
-        console.log('[ProductService] Using wrapped response format');
-        return apiResponse.data.products.map((product: any) => {
-          return {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: parseFloat(product.price),
-            originalPrice: product.compare_price ? parseFloat(product.compare_price) : undefined,
-            imageUrl: product.image_url,
-            category: product.category,
-            brand: product.brand,
-            inventory: product.inventory_quantity || 0,
-            rating: product.rating || 4.5,
-            reviewCount: product.reviewCount || Math.floor(Math.random() * 50) + 10,
-            isNew: product.is_featured,
-            discountPercentage: product.discountPercentage,
-            createdAt: product.created_at,
-            updatedAt: product.updated_at,
-          };
-        });
-      }
-      
-      // Fallback for direct array response
-      console.log('[ProductService] Using fallback array format');
-      return Array.isArray(apiResponse) ? apiResponse.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: parseFloat(product.price),
-        originalPrice: product.compare_price ? parseFloat(product.compare_price) : (product.originalPrice ? parseFloat(product.originalPrice) : undefined),
-        imageUrl: getImageUrl(product),
-        category: product.category || product.category_id,
-        brand: product.brand,
-        inventory: product.inventory_quantity || product.inventory || 0,
-        rating: product.rating,
-        reviewCount: product.reviewCount,
-        isNew: product.new_arrival,
-        discountPercentage: product.discountPercentage,
-        createdAt: product.created_at,
-        updatedAt: product.updated_at,
-      })) : [];
-    } catch (error: any) {
-      console.error('[ProductService] Error fetching products:', error);
-      if (error.response) {
-        console.error('[ProductService] Response error:', error.response.status, error.response.data);
-      }
-      throw error;
-    }
+    const response = await apiClient.get<ApiEnvelope<ProductListData>>('/products');
+    return unwrapEnvelope(response.data).products.map(normalizeProduct);
   },
 
   getById: async (id: string): Promise<Product> => {
-    try {
-      const response = await apiClient.get(`/products/${id}`);
-      const product = response.data.data || response.data;
-      
-      // Transform API response to match frontend types
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: parseFloat(product.price),
-        originalPrice: product.compare_price ? parseFloat(product.compare_price) : (product.originalPrice ? parseFloat(product.originalPrice) : undefined),
-        imageUrl: getImageUrl(product),
-        category: product.category || product.category_id,
-        brand: product.brand,
-        inventory: product.inventory_quantity || product.inventory || 0,
-        rating: product.rating,
-        reviewCount: product.reviewCount,
-        isNew: product.new_arrival,
-        discountPercentage: product.discountPercentage,
-        createdAt: product.created_at,
-        updatedAt: product.updated_at,
-        images: product.images || [],
-      };
-    } catch (error: any) {
-      console.error('[ProductService] Error fetching product:', error);
-      throw error;
-    }
+    const response = await apiClient.get<ApiEnvelope<ProductWire>>(`/products/${id}`);
+    return normalizeProduct(unwrapEnvelope(response.data));
   },
 
   getByCategory: async (category: string): Promise<Product[]> => {
-    const response = await apiClient.get(`/products?category=${category}`);
-    return response.data;
+    const response = await apiClient.get<ApiEnvelope<ProductListData>>(`/products?category=${category}`);
+    return unwrapEnvelope(response.data).products.map(normalizeProduct);
   },
 
   search: async (query: string): Promise<Product[]> => {
-    const response = await apiClient.get(`/products/search?q=${query}`);
-    return response.data;
+    const response = await apiClient.get<ApiEnvelope<ProductListData>>(`/products?search=${query}`);
+    return unwrapEnvelope(response.data).products.map(normalizeProduct);
   },
 };
