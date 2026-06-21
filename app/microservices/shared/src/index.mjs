@@ -293,3 +293,36 @@ export const orderDetailEnvelopeFixture = Object.freeze({
   success: true,
   data: orderWireFixtureSet[0],
 });
+
+export const storefrontContractSchemas = Object.freeze({
+  storefrontSuccessEnvelope: storefrontSuccessEnvelopeSchema,
+  storefrontFailureEnvelope: storefrontFailureEnvelopeSchema,
+  storefrontEnvelope: storefrontEnvelopeSchema,
+  authenticatedUserWire: authenticatedUserWireSchema,
+  authTokenData: authTokenDataSchema,
+  authenticatedUserEnvelope: authenticatedUserEnvelopeSchema,
+  authSuccessEnvelope: authSuccessEnvelopeSchema,
+  authFailureEnvelope: authFailureEnvelopeSchema,
+  productWire: productWireSchema,
+  productListData: productListDataSchema,
+  productDetailEnvelope: productDetailEnvelopeSchema,
+  productListEnvelope: productListEnvelopeSchema,
+  orderLineItemWire: orderLineItemWireSchema,
+  orderWire: orderWireSchema,
+  orderHistoryData: orderHistoryDataSchema,
+  orderHistoryEnvelope: orderHistoryEnvelopeSchema,
+  orderDetailEnvelope: orderDetailEnvelopeSchema,
+});
+
+export const storefrontContractFixtures = Object.freeze({
+  authenticatedUserWire: authenticatedUserWireFixture,
+  authSuccessEnvelope: authSuccessEnvelopeFixture,
+  authenticatedUserEnvelope: authenticatedUserEnvelopeFixture,
+  authFailureEnvelope: authFailureEnvelopeFixture,
+  productWireSet: productWireFixtureSet,
+  productListEnvelope: productListEnvelopeFixture,
+  productDetailEnvelope: productDetailEnvelopeFixture,
+  orderWireSet: orderWireFixtureSet,
+  orderHistoryEnvelope: orderHistoryEnvelopeFixture,
+  orderDetailEnvelope: orderDetailEnvelopeFixture,
+});

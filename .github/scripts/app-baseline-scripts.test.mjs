@@ -34,13 +34,18 @@ test('app workspace exposes the reusable baseline command surface', async () => 
   }
 });
 
-test('future-facing baseline test commands fail clearly instead of silently passing', async () => {
+test('implemented contract baseline command runs shared validation while future browser command fails clearly', async () => {
   const scripts = await readWorkspaceScripts();
 
-  for (const scriptName of ['app:test:contract', 'app:test:browser']) {
-    assert.match(scripts[scriptName], /not implemented/i, `${scriptName} should explain that the slice is not implemented yet`);
-    assert.match(scripts[scriptName], /exit\(1\)|exit 1/, `${scriptName} should fail until implemented`);
-  }
+  assert.match(
+    scripts['app:test:contract'],
+    /@hiraya\/storefront-contracts test/,
+    'app:test:contract should run the shared Storefront contract validation and smoke tests',
+  );
+  assert.doesNotMatch(scripts['app:test:contract'], /not implemented|exit\(1\)|exit 1/i);
+
+  assert.match(scripts['app:test:browser'], /not implemented/i, 'app:test:browser should explain that the slice is not implemented yet');
+  assert.match(scripts['app:test:browser'], /exit\(1\)|exit 1/, 'app:test:browser should fail until implemented');
 });
 
 test('legacy path-filter metadata is documented as transitional', async () => {
