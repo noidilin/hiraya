@@ -134,7 +134,7 @@ describe('active orders service Storefront contract', () => {
   it('updates order status in the minimal Storefront success envelope', async () => {
     const updatedOrder = { ...orderRow, status: 'shipped', updated_at: '2026-02-15T11:00:00.000Z' };
     const { app, query } = createTestApp({
-      query: vi.fn().mockResolvedValueOnce({ rowCount: 1, rows: [] }).mockResolvedValueOnce({ rows: [updatedOrder] }),
+      query: vi.fn().mockResolvedValueOnce({ rowCount: 1, rows: [updatedOrder] }),
     });
 
     const response = await request(app)
@@ -142,7 +142,7 @@ describe('active orders service Storefront contract', () => {
       .send({ status: 'shipped' })
       .expect(200);
 
-    expect(query).toHaveBeenCalledTimes(2);
+    expect(query).toHaveBeenCalledTimes(1);
     expect(response.body).toEqual({
       success: true,
       data: {
@@ -155,6 +155,55 @@ describe('active orders service Storefront contract', () => {
         updatedAt: updatedOrder.updated_at,
       },
     });
+  });
+
+  it('returns 400 before product lookup for invalid item quantities', async () => {
+    const { app, query, getProduct } = createTestApp();
+
+    const response = await request(app)
+      .post('/')
+      .send({ userId: orderRow.user_id, items: [{ productId: product.id, quantity: 0 }], shippingAddress: orderRow.shipping_address })
+      .expect(400);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(getProduct).not.toHaveBeenCalled();
+    expect(response.body).toEqual({ success: false, error: 'Order items require a productId and positive integer quantity' });
+  });
+
+  it('returns 502 when upstream product data contains an invalid price', async () => {
+    const { app, query } = createTestApp({ getProduct: vi.fn().mockResolvedValue({ ...product, price: 'not-a-price' }) });
+
+    const response = await request(app)
+      .post('/')
+      .send({ userId: orderRow.user_id, items: [{ productId: product.id, quantity: 1 }], shippingAddress: orderRow.shipping_address })
+      .expect(502);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(response.body).toEqual({ success: false, error: 'Invalid product price' });
+  });
+
+  it('returns 400 for unsupported order statuses before updating the database', async () => {
+    const { app, query } = createTestApp();
+
+    const response = await request(app)
+      .patch(`/${orderRow.id}/status`)
+      .send({ status: 'refunded' })
+      .expect(400);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(response.body).toEqual({ success: false, error: 'Invalid order status' });
+  });
+
+  it('returns 404 when no order row is updated during status changes', async () => {
+    const { app, query } = createTestApp({ query: vi.fn().mockResolvedValueOnce({ rowCount: 0, rows: [] }) });
+
+    const response = await request(app)
+      .patch(`/${orderRow.id}/status`)
+      .send({ status: 'shipped' })
+      .expect(404);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(response.body).toEqual({ success: false, error: 'Order not found' });
   });
 
   it('returns the minimal Storefront failure envelope for an empty cart checkout attempt', async () => {

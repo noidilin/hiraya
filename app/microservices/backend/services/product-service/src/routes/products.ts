@@ -14,6 +14,23 @@ function failure(res: express.Response, status: number, error: string) {
   return res.status(status).json({ success: false, error });
 }
 
+const SORT_COLUMNS: Record<string, string> = {
+  created_at: 'p.created_at',
+  updated_at: 'p.updated_at',
+  name: 'p.name',
+  price: 'p.price',
+};
+
+function getPagination(page: unknown, limit: unknown) {
+  const parsedPage = Number(page);
+  const parsedLimit = Number(limit);
+  const pageNum = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const limitNum = Number.isInteger(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 12;
+  const offset = (pageNum - 1) * limitNum;
+
+  return { pageNum, limitNum, offset };
+}
+
 export function createProductRoutes(dependencies: ProductRouteDependencies = {}): express.Router {
   const router: express.Router = express.Router();
   const dbQuery = dependencies.database?.query ?? defaultQuery;
@@ -30,9 +47,8 @@ export function createProductRoutes(dependencies: ProductRouteDependencies = {})
         maxPrice,
       } = req.query;
 
-      const pageNum = parseInt(page as string);
-      const limitNum = parseInt(limit as string);
-      const offset = (pageNum - 1) * limitNum;
+      const { pageNum, limitNum, offset } = getPagination(page, limit);
+      const sortColumn = SORT_COLUMNS[String(sortBy)] ?? SORT_COLUMNS.created_at;
 
       let whereClause = 'WHERE 1=1';
       const filterParams: any[] = [];
@@ -78,7 +94,7 @@ export function createProductRoutes(dependencies: ProductRouteDependencies = {})
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
         ${whereClause}
-        ORDER BY p.${sortBy}
+        ORDER BY ${sortColumn}
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `;
 

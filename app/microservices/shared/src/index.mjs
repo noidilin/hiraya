@@ -79,7 +79,7 @@ export const authSuccessEnvelopeFixture = Object.freeze({
     user: authenticatedUserWireFixture,
     token: 'demo-access-token',
   },
-  message: 'Demo login successful',
+  message: 'Login successful',
 });
 
 export const authenticatedUserEnvelopeFixture = Object.freeze({

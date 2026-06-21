@@ -39,7 +39,7 @@ The rewrite can start only after the baseline is green and enforced for PRs, the
   - failure: `{ "success": false, "error": string }`
 - API wire fixtures use backend JSON naming, including snake_case fields such as `image_url`, `compare_price`, and `inventory_quantity`.
 - Frontend adapters normalize wire data to UI/domain shapes.
-- Preserve demo login behavior (`password === "demo"`) for portfolio demos, wrapped in the new envelope.
+- Remove the legacy demo password bypass (`password === "demo"`); portfolio demos should use seeded credentials that pass normal password verification.
 - Exclude `/auth/refresh` from the initial critical auth baseline.
 - Unauthenticated `/profile` and `/orders` direct loads redirect to `/login`.
 - The cart stops before checkout in this baseline.

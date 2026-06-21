@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { query as defaultQuery } from '../database/connection';
 
 interface DatabaseDependency {
@@ -8,6 +9,20 @@ interface DatabaseDependency {
 
 export interface AuthRouteDependencies {
   database?: DatabaseDependency;
+}
+
+const TOKEN_EXPIRES_IN = (process.env.AUTH_TOKEN_EXPIRES_IN ?? '1h') as SignOptions['expiresIn'];
+
+function getAuthTokenSecret() {
+  if (process.env.AUTH_TOKEN_SECRET) {
+    return process.env.AUTH_TOKEN_SECRET;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_TOKEN_SECRET must be set in production');
+  }
+
+  return 'hiraya-dev-auth-token-secret-change-me';
 }
 
 function toAuthenticatedUser(user: any) {
@@ -22,27 +37,59 @@ function toAuthenticatedUser(user: any) {
   };
 }
 
+function signAuthToken(user: any) {
+  return jwt.sign(
+    {
+      sub: String(user.id),
+      email: user.email,
+      role: user.role,
+    },
+    getAuthTokenSecret(),
+    { expiresIn: TOKEN_EXPIRES_IN }
+  );
+}
+
+function verifyAuthToken(authHeader: string | undefined): string | null {
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : null;
+
+  if (!token || token === 'undefined') {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, getAuthTokenSecret()) as JwtPayload;
+    return typeof decoded.sub === 'string' && decoded.sub.length > 0 ? decoded.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 function toAuthEnvelope(user: any, message: string) {
   return {
     success: true,
     data: {
       user: toAuthenticatedUser(user),
-      token: user.id.toString(),
+      token: signAuthToken(user),
     },
     message,
   };
+}
+
+function requiredString(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 export function createAuthRoutes(options: AuthRouteDependencies = {}): express.Router {
   const router: express.Router = express.Router();
   const database = options.database ?? { query: defaultQuery };
 
-  // Simple demo authentication without JWT
-  let currentUser: any = null;
-
   router.post('/register', async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
+
+      if (![email, password, firstName, lastName].every(requiredString)) {
+        return res.status(400).json({ success: false, error: 'Missing required registration fields' });
+      }
 
       const existingUser = await database.query('SELECT id FROM users WHERE email = $1', [email]);
       if (existingUser.rows.length > 0) {
@@ -56,7 +103,6 @@ export function createAuthRoutes(options: AuthRouteDependencies = {}): express.R
       );
 
       const user = result.rows[0];
-      currentUser = toAuthenticatedUser(user);
 
       res.status(201).json(toAuthEnvelope(user, 'Registration successful'));
     } catch (error) {
@@ -69,27 +115,8 @@ export function createAuthRoutes(options: AuthRouteDependencies = {}): express.R
     try {
       const { email, password } = req.body;
 
-      // For demo mode: accept any email with password "demo"
-      if (password === 'demo') {
-        let user;
-        const result = await database.query('SELECT id, email, first_name, last_name, role, created_at, updated_at FROM users WHERE email = $1', [email]);
-
-        if (result.rows.length === 0) {
-          // Create demo user if doesn't exist
-          const hashedPassword = await bcrypt.hash('demo', 10);
-          const newUser = await database.query(
-            'INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, first_name, last_name, role, created_at, updated_at',
-            [email, hashedPassword, 'Demo', 'User', 'customer']
-          );
-          user = newUser.rows[0];
-        } else {
-          user = result.rows[0];
-        }
-
-        currentUser = toAuthenticatedUser(user);
-
-        res.json(toAuthEnvelope(user, 'Demo login successful'));
-        return;
+      if (![email, password].every(requiredString)) {
+        return res.status(400).json({ success: false, error: 'Missing email or password' });
       }
 
       // Normal password check
@@ -106,8 +133,6 @@ export function createAuthRoutes(options: AuthRouteDependencies = {}): express.R
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
 
-      currentUser = toAuthenticatedUser(user);
-
       res.json(toAuthEnvelope(user, 'Login successful'));
     } catch (error) {
       console.error('Login error:', error);
@@ -116,15 +141,19 @@ export function createAuthRoutes(options: AuthRouteDependencies = {}): express.R
   });
 
   router.post('/logout', (req, res) => {
-    currentUser = null;
+    const authHeader = req.headers.authorization;
+
+    if (authHeader?.startsWith('Bearer ') && !verifyAuthToken(authHeader)) {
+      return res.status(401).json({ success: false, error: 'Not logged in' });
+    }
+
     res.json({ success: true, data: null, message: 'Logged out successfully' });
   });
 
   router.get('/me', async (req, res) => {
-    const authHeader = req.headers.authorization;
-    const userId = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    const userId = verifyAuthToken(req.headers.authorization);
 
-    if (!userId || userId === 'undefined') {
+    if (!userId) {
       return res.status(401).json({ success: false, error: 'Not logged in' });
     }
 

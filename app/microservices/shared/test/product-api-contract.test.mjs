@@ -76,6 +76,41 @@ describe('active product service Storefront contract', () => {
     });
   });
 
+  it('allowlists sort columns and clamps pagination inputs before querying products', async () => {
+    const { app, query } = createTestApp({
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ total: String(productWireFixtureSet.length) }] })
+        .mockResolvedValueOnce({ rows: productWireFixtureSet }),
+    });
+
+    const response = await request(app)
+      .get('/')
+      .query({ page: '-4', limit: '1000', sortBy: 'price; DROP TABLE products; --' })
+      .expect(200);
+
+    expect(query).toHaveBeenCalledTimes(2);
+    const [productsSql, productsParams] = query.mock.calls[1];
+    expect(productsSql).toContain('ORDER BY p.created_at');
+    expect(productsSql).not.toContain('DROP TABLE');
+    expect(productsParams.slice(-2)).toEqual([100, 0]);
+    expect(response.body.data.pagination.currentPage).toBe(1);
+  });
+
+  it('uses explicitly supported sort columns in product listing queries', async () => {
+    const { app, query } = createTestApp({
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ total: String(productWireFixtureSet.length) }] })
+        .mockResolvedValueOnce({ rows: productWireFixtureSet }),
+    });
+
+    await request(app).get('/').query({ sortBy: 'price' }).expect(200);
+
+    const [productsSql] = query.mock.calls[1];
+    expect(productsSql).toContain('ORDER BY p.price');
+  });
+
   it('lists product categories in the minimal Storefront success envelope', async () => {
     const { app } = createTestApp({ query: vi.fn().mockResolvedValueOnce({ rows: categories }) });
 

@@ -18,7 +18,15 @@ export interface OrderRouteDependencies {
 const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003';
 
 async function defaultGetProduct(productId: string): Promise<Product | null> {
-  const productResponse = await axios.get(`${PRODUCTS_SERVICE_URL}/${productId}`);
+  const productResponse = await axios.get(`${PRODUCTS_SERVICE_URL}/${productId}`, {
+    timeout: Number(process.env.PRODUCTS_SERVICE_TIMEOUT_MS) || 2000,
+    validateStatus: (status) => status === 200 || status === 404,
+  });
+
+  if (productResponse.status === 404) {
+    return null;
+  }
+
   return productResponse.data.data ?? null;
 }
 
@@ -91,6 +99,8 @@ function failure(res: express.Response, status: number, error: string) {
   return res.status(status).json({ success: false, error });
 }
 
+const ORDER_STATUSES = new Set(['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
+
 export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): express.Router {
   const router: express.Router = express.Router();
   const dbQuery = dependencies.database?.query ?? defaultQuery;
@@ -109,6 +119,12 @@ export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): ex
       const orderItems: any[] = [];
 
       for (const item of items) {
+        const quantity = Number(item.quantity);
+
+        if (!item.productId || !Number.isInteger(quantity) || quantity <= 0) {
+          return failure(res, 400, 'Order items require a productId and positive integer quantity');
+        }
+
         const product = await getProduct(item.productId);
 
         if (!product) {
@@ -116,11 +132,15 @@ export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): ex
         }
 
         const productPrice = Number(product.price);
-        totalAmount += productPrice * item.quantity;
+        if (!Number.isFinite(productPrice) || productPrice < 0) {
+          return failure(res, 502, 'Invalid product price');
+        }
+
+        totalAmount += productPrice * quantity;
 
         orderItems.push({
           product_id: item.productId,
-          quantity: item.quantity,
+          quantity,
           price: product.price,
           product,
         });
@@ -200,9 +220,18 @@ export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): ex
       const { status } = req.body;
       const { id } = req.params;
 
-      await dbQuery('UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
+      if (!ORDER_STATUSES.has(status)) {
+        return failure(res, 400, 'Invalid order status');
+      }
 
-      const result = await dbQuery('SELECT * FROM orders WHERE id = $1', [id]);
+      const result = await dbQuery(
+        'UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+
+      if (result.rows.length === 0) {
+        return failure(res, 404, 'Order not found');
+      }
 
       const response: ServiceResponse = {
         success: true,
