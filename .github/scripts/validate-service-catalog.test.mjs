@@ -98,6 +98,32 @@ test('fails when referenced local paths do not exist', async () => {
   assert.match(result.stderr, /manifest\.path path does not exist/);
 });
 
+test('fails when referenced local paths escape the repository root', async () => {
+  const { root, catalogPath } = await createCatalogFixture({
+    services: [
+      {
+        name: 'frontend',
+        packageName: 'frontend',
+        workspace: '..',
+        image: { repository: 'hiraya-frontend' },
+        build: {
+          context: 'app/microservices/frontend',
+          dockerfile: 'app/microservices/frontend/Dockerfile',
+        },
+        manifest: { path: 'gitops/k8s/frontend/deployment.yml' },
+        pathOwnership: ['../**'],
+        vintageStorefrontBaseline: { active: true, critical: true },
+      },
+    ],
+  });
+
+  const result = validate(catalogPath, root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /workspace path does not exist: \../);
+  assert.match(result.stderr, /pathOwnership\[0\] base path does not exist: \../);
+});
+
 test('fails when a path ownership glob points at a missing local base path', async () => {
   const { root, catalogPath } = await createCatalogFixture({
     services: [

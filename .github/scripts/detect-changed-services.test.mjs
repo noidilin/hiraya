@@ -117,6 +117,29 @@ test('maps a backend service path to that service only', async () => {
   assert.deepEqual(serviceNames(matrix), ['orders']);
 });
 
+test('fails fast for unsupported character class and brace glob syntax', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+  const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+
+  for (const [pattern, message] of [
+    ['app/microservices/frontend/src/*.[tj]s', /Unsupported character class glob syntax/],
+    ['app/microservices/frontend/src/*.{ts,tsx}', /Unsupported brace glob syntax/],
+  ]) {
+    catalog.services[0].pathOwnership = [pattern];
+    await writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
+
+    const result = spawnSync(process.execPath, [
+      scriptPath,
+      '--catalog', catalogPath,
+      '--root', root,
+      'app/microservices/frontend/src/App.tsx',
+    ], { encoding: 'utf8' });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, message);
+  }
+});
+
 test('fans out shared backend files to backend service owners', async () => {
   const { root, catalogPath } = await createCatalogFixture();
 

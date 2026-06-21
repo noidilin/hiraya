@@ -219,17 +219,28 @@ function globMatches(pattern: string, file: string): boolean {
   const normalizedPattern = normalizePath(pattern);
   const normalizedFile = normalizePath(file);
 
+  assertSupportedGlobSyntax(normalizedPattern);
+
   if (normalizedPattern.endsWith('/**')) {
     const base = normalizedPattern.slice(0, -3);
     return normalizedFile === base || normalizedFile.startsWith(`${base}/`);
   }
 
-  if (!/[\*\?\[]/.test(normalizedPattern)) {
+  if (!/[\*\?]/.test(normalizedPattern)) {
     return normalizedFile === normalizedPattern;
   }
 
   const regex = new RegExp(`^${globToRegexSource(normalizedPattern)}$`);
   return regex.test(normalizedFile);
+}
+
+function assertSupportedGlobSyntax(pattern: string): void {
+  if (pattern.includes('[')) {
+    throw new Error(`Unsupported character class glob syntax in pathOwnership pattern: ${pattern}`);
+  }
+  if (pattern.includes('{')) {
+    throw new Error(`Unsupported brace glob syntax in pathOwnership pattern: ${pattern}`);
+  }
 }
 
 function globToRegexSource(pattern: string): string {
