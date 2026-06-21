@@ -1,0 +1,171 @@
+name: Hiraya Infra Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-infra-dev-platform
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-1
+  TF_STATE_BUCKET: devops-hiraya-dev-tf-state
+  TF_PLATFORM_STATE_KEY: devops-hiraya-dev/dev/platform/terraform.tfstate
+  INFRA_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-plan
+  INFRA_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-apply
+  PLATFORM_DIR: infra/envs/dev/platform
+
+jobs:
+  preflight-plan:
+    name: Pre-approval platform plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install toolchain
+        uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+        with:
+          install: true
+          cache: true
+
+      - name: Configure AWS credentials with plan role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.INFRA_PLAN_ROLE_ARN }}
+          role-session-name: hiraya-infra-deploy-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Generate platform backend config
+        shell: bash
+        run: .github/scripts/write-platform-backend.sh
+
+      - name: Initialize and validate platform Terraform
+        shell: bash
+        run: |
+          terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          terraform -chdir="${PLATFORM_DIR}" validate -no-color
+
+      - name: Run full refreshed pre-approval plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform -chdir="${PLATFORM_DIR}" plan -input=false -no-color | tee "${PLATFORM_DIR}/preflight-plan.txt"
+
+      - name: Upload pre-approval plan artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: terraform-preflight-plan-dev-platform-${{ github.sha }}
+          path: ${{ env.PLATFORM_DIR }}/preflight-plan.txt
+          retention-days: 14
+
+      - name: Summarize pre-approval plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          plan_file="${PLATFORM_DIR}/preflight-plan.txt"
+          summary=$(grep -E '^(Plan:|No changes\.)' "$plan_file" | tail -1 || true)
+          if [[ -z "$summary" ]]; then
+            summary="Summary unavailable; inspect the uploaded plan artifact."
+          fi
+
+          {
+            echo "## Pre-approval Terraform plan"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack | \`${PLATFORM_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Mode | Full refreshed plan before \`dev\` approval |"
+            echo "| Summary | \`${summary}\` |"
+            echo "| Full plan | Artifact \`terraform-preflight-plan-dev-platform-${GITHUB_SHA}\` |"
+            echo
+            echo "<details><summary>Show plan excerpt</summary>"
+            echo
+            echo '```terraform'
+            head -c 55000 "$plan_file"
+            if [[ $(wc -c <"$plan_file") -gt 55000 ]]; then
+              echo
+              echo "...truncated; see workflow artifact for full plan..."
+            fi
+            echo
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: Apply disposable dev platform
+    needs: preflight-plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install toolchain
+        uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+        with:
+          install: true
+          cache: true
+
+      - name: Configure AWS credentials with apply role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.INFRA_APPLY_ROLE_ARN }}
+          role-session-name: hiraya-infra-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Generate platform backend config
+        shell: bash
+        run: .github/scripts/write-platform-backend.sh
+
+      - name: Initialize platform Terraform
+        shell: bash
+        run: terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: Create fresh approved binary plan
+        shell: bash
+        run: terraform -chdir="${PLATFORM_DIR}" plan -input=false -out=tfplan.binary
+
+      - name: Apply approved binary plan
+        shell: bash
+        run: terraform -chdir="${PLATFORM_DIR}" apply -input=false -auto-approve tfplan.binary
+
+      - name: Run route-health smoke checks
+        shell: bash
+        run: .github/scripts/platform-route-smoke.sh
+
+      - name: Summarize deployment
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Dev platform deploy"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack | \`${PLATFORM_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Environment | \`dev\` |"
+            echo "| Result | \`${{ job.status }}\` |"
+            echo
+            echo "Terraform applied the fresh post-approval binary plan, then ran EKS, Gateway, HTTPRoute, and public route smoke checks. Sensitive Argo CD and Grafana passwords are not printed."
+          } >> "$GITHUB_STEP_SUMMARY"
