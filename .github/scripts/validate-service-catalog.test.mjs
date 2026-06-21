@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const scriptPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  'validate-service-catalog.mjs',
+  'dist/validate-service-catalog.mjs',
 );
 
 async function createCatalogFixture(catalogOverrides = {}) {

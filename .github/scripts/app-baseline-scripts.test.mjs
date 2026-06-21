@@ -20,6 +20,7 @@ test('app workspace exposes the reusable baseline command surface', async () => 
   for (const scriptName of [
     'app:install',
     'app:workspace',
+    'scripts:build',
     'app:catalog',
     'app:changed',
     'app:static',
@@ -52,5 +53,6 @@ test('legacy path-filter metadata is documented as transitional', async () => {
   assert.match(legacyFilters, /transitional|superseded/i, 'legacy filters should be marked transitional or superseded');
   assert.match(appReadme, /service catalog/i, 'app README should document the service catalog transition');
   assert.match(appReadme, /changed-service detector/i, 'app README should name the verified detector path');
+  assert.match(appReadme, /compiled runtime/i, 'app README should explain that TypeScript CI scripts run from compiled JavaScript');
   assert.match(appReadme, /legacy path-filter/i, 'app README should tell agents how to handle the legacy filters');
 });

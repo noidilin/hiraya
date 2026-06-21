@@ -10,7 +10,8 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@9.1
 | --- | --- |
 | `pnpm run app:install` | Install the workspace with the committed lockfile using `--frozen-lockfile`. |
 | `pnpm run app:workspace` | Verify deterministic install and list all workspace packages. |
-| `pnpm run app:catalog` | Validate `.github/utils/services.json` and run catalog/detector self-tests. |
+| `pnpm run scripts:build` | Compile TypeScript CI helper scripts to checked-in Node runtime files. |
+| `pnpm run app:catalog` | Compile scripts, validate `.github/utils/services.json`, and run catalog/detector self-tests. |
 | `pnpm run app:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
 | `pnpm run app:static` | Run the currently meaningful build/static checks for the Storefront and backend services. |
 | `pnpm run app:baseline` | Run workspace, catalog, changed-service, and static checks in the same order CI should reuse. |
@@ -24,7 +25,7 @@ Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` dele
 
 `.github/utils/services.json` is the canonical service catalog for app service metadata: package names, image repositories, build contexts, manifest targets, path ownership, and Vintage Storefront baseline criticality. New app baseline work should update this catalog and verify changes through `pnpm run app:catalog` or `pnpm run app:changed -- <files...>`.
 
-The verified changed-service detector is `.github/scripts/detect-changed-services.mjs`; future PR checks and image workflows should consume its matrix output instead of duplicating service mappings.
+The verified changed-service detector source is `.github/scripts/src/detect-changed-services.mts`. Workflows and local commands execute the compiled runtime file at `.github/scripts/dist/detect-changed-services.mjs`, so changed-service detection stays runnable with plain Node after checkout.
 
 `.github/utils/file-filters.yml` is legacy path-filter metadata kept only as a transitional compatibility layer for the existing image workflow. During the transition:
 

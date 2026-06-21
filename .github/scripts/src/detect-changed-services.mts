@@ -3,8 +3,59 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
+import type { Readable } from 'node:stream';
 
-function usage() {
+interface CliOptions {
+  catalogPath: string;
+  root: string;
+  filesFrom?: string;
+  base: string;
+  head: string;
+  all: boolean;
+  githubOutput?: string;
+  changedFiles: string[];
+}
+
+interface ServiceCatalog {
+  services: Service[];
+}
+
+interface Service {
+  name: string;
+  packageName: string;
+  workspace: string;
+  image: {
+    repository: string;
+  };
+  build: {
+    context: string;
+    dockerfile: string;
+  };
+  manifest: {
+    path: string;
+  };
+  pathOwnership?: string[];
+  vintageStorefrontBaseline: {
+    critical: boolean;
+  };
+}
+
+interface MatrixEntry {
+  service: string;
+  package_name: string;
+  workspace: string;
+  repository: string;
+  build_context: string;
+  dockerfile: string;
+  manifest: string;
+  critical: boolean;
+}
+
+interface ServiceMatrix {
+  include: MatrixEntry[];
+}
+
+function usage(): string {
   return `Usage: detect-changed-services.mjs [options] [changed-file...]
 
 Options:
@@ -18,10 +69,10 @@ Options:
 `;
 }
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]): CliOptions {
   const args = [...argv];
-  const changedFiles = [];
-  const options = {
+  const changedFiles: string[] = [];
+  const options: Omit<CliOptions, 'changedFiles'> = {
     catalogPath: '.github/utils/services.json',
     root: process.cwd(),
     filesFrom: undefined,
@@ -67,14 +118,14 @@ function parseArgs(argv) {
   };
 }
 
-function requireValue(option, value) {
+function requireValue(option: string, value: string | undefined): string {
   if (!value) {
     throw new Error(`${option} requires a value\n${usage()}`);
   }
   return value;
 }
 
-async function changedFilesFrom(options) {
+async function changedFilesFrom(options: CliOptions): Promise<string[] | undefined> {
   if (options.all) {
     return undefined;
   }
@@ -91,7 +142,7 @@ async function changedFilesFrom(options) {
   return deriveChangedFiles(options);
 }
 
-async function readFilesFromOption(filesFrom) {
+async function readFilesFromOption(filesFrom: string | undefined): Promise<string[]> {
   if (!filesFrom) {
     return [];
   }
@@ -101,16 +152,16 @@ async function readFilesFromOption(filesFrom) {
   return content.split(/\r?\n/);
 }
 
-async function readStream(stream) {
+async function readStream(stream: Readable): Promise<string> {
   let content = '';
   stream.setEncoding('utf8');
   for await (const chunk of stream) {
-    content += chunk;
+    content += String(chunk);
   }
   return content;
 }
 
-function deriveChangedFiles(options) {
+function deriveChangedFiles(options: CliOptions): string[] {
   const ranges = [
     `${options.base}...${options.head}`,
     `${options.base}..${options.head}`,
@@ -130,7 +181,7 @@ function deriveChangedFiles(options) {
   throw new Error(`Unable to derive changed files with git diff. Pass changed files or --files-from.\n${usage()}`);
 }
 
-function normalizeChangedFiles(files, root) {
+function normalizeChangedFiles(files: string[], root: string): string[] {
   return [...new Set(files
     .map((file) => file.trim())
     .filter(Boolean)
@@ -139,18 +190,19 @@ function normalizeChangedFiles(files, root) {
   )];
 }
 
-function normalizePath(value) {
+function normalizePath(value: string): string {
   return value.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-function isGlobalChange(file, catalogPath, root) {
+function isGlobalChange(file: string, catalogPath: string, root: string): boolean {
   const catalogRelativePath = normalizePath(path.relative(root, catalogPath));
   return file === catalogRelativePath
     || file === '.github/utils/services.json'
+    || file.startsWith('.github/scripts/')
     || file.startsWith('.github/workflows/');
 }
 
-function serviceToMatrixEntry(service) {
+function serviceToMatrixEntry(service: Service): MatrixEntry {
   return {
     service: service.name,
     package_name: service.packageName,
@@ -163,7 +215,7 @@ function serviceToMatrixEntry(service) {
   };
 }
 
-function globMatches(pattern, file) {
+function globMatches(pattern: string, file: string): boolean {
   const normalizedPattern = normalizePath(pattern);
   const normalizedFile = normalizePath(file);
 
@@ -180,7 +232,7 @@ function globMatches(pattern, file) {
   return regex.test(normalizedFile);
 }
 
-function globToRegexSource(pattern) {
+function globToRegexSource(pattern: string): string {
   let source = '';
   for (let index = 0; index < pattern.length; index += 1) {
     const char = pattern[index];
@@ -199,7 +251,7 @@ function globToRegexSource(pattern) {
   return source;
 }
 
-function selectServices(catalog, changedFiles, options) {
+function selectServices(catalog: ServiceCatalog, changedFiles: string[] | undefined, options: CliOptions): Service[] {
   if (options.all || changedFiles === undefined) {
     return catalog.services;
   }
@@ -208,7 +260,7 @@ function selectServices(catalog, changedFiles, options) {
     return catalog.services;
   }
 
-  const selected = new Set();
+  const selected = new Set<string>();
   for (const file of changedFiles) {
     for (const service of catalog.services) {
       if (service.pathOwnership?.some((pattern) => globMatches(pattern, file))) {
@@ -220,7 +272,7 @@ function selectServices(catalog, changedFiles, options) {
   return catalog.services.filter((service) => selected.has(service.name));
 }
 
-async function writeGithubOutput(outputPath, matrix, services) {
+async function writeGithubOutput(outputPath: string | undefined, matrix: ServiceMatrix, services: string[]): Promise<void> {
   if (!outputPath) {
     return;
   }
@@ -233,9 +285,9 @@ async function writeGithubOutput(outputPath, matrix, services) {
   await writeFile(outputPath, `${lines.join('\n')}\n`, { flag: 'a' });
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const catalog = JSON.parse(await readFile(options.catalogPath, 'utf8'));
+  const catalog = JSON.parse(await readFile(options.catalogPath, 'utf8')) as ServiceCatalog;
   const changedFiles = await changedFilesFrom(options);
   const services = selectServices(catalog, changedFiles, options);
   const matrix = { include: services.map(serviceToMatrixEntry) };
@@ -244,7 +296,7 @@ async function main() {
   console.log(JSON.stringify(matrix));
 }
 
-main().catch((error) => {
-  console.error(error instanceof SyntaxError ? `Invalid JSON: ${error.message}` : error.message);
+main().catch((error: unknown) => {
+  console.error(error instanceof SyntaxError ? `Invalid JSON: ${error.message}` : error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
