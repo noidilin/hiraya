@@ -1,23 +1,24 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ProtectedRoute from './ProtectedRoute';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { authService } from '../../services/authService';
 
-jest.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', () => ({
   Navigate: ({ to }: { to: string }) => <div>Redirected to {to}</div>,
   useLocation: () => ({ pathname: '/profile' }),
-}), { virtual: true });
+}));
 
-jest.mock('../../services/authService', () => ({
+vi.mock('../../services/authService', () => ({
   authService: {
-    login: jest.fn(),
-    logout: jest.fn(),
-    getCurrentUser: jest.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(),
   },
 }));
 
-const mockedAuthService = authService as jest.Mocked<typeof authService>;
+const mockedAuthService = vi.mocked(authService);
 
 const renderProtectedRoute = () => {
   render(
@@ -31,7 +32,7 @@ const renderProtectedRoute = () => {
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
   });
 

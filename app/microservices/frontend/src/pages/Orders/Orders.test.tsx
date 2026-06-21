@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import ProtectedRoute from '../../components/ProtectedRoute/ProtectedRoute';
@@ -6,29 +7,29 @@ import { authService } from '../../services/authService';
 import apiClient from '../../services/api';
 import Orders from './Orders';
 
-jest.mock('../../services/authService', () => ({
+vi.mock('../../services/authService', () => ({
   authService: {
-    login: jest.fn(),
-    logout: jest.fn(),
-    getCurrentUser: jest.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(),
   },
 }));
 
-jest.mock('../../services/api', () => ({
+vi.mock('../../services/api', () => ({
   __esModule: true,
   default: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
 }));
 
-jest.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', () => ({
   Navigate: ({ to }: { to: string }) => <div>Redirected to {to}</div>,
   useLocation: () => ({ pathname: '/orders' }),
-  useNavigate: () => jest.fn(),
-}), { virtual: true });
+  useNavigate: () => vi.fn(),
+}));
 
-const mockedAuthService = authService as jest.Mocked<typeof authService>;
-const mockedApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockedAuthService = vi.mocked(authService);
+const mockedApiClient = vi.mocked(apiClient);
 
 const demoUser = {
   id: 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6',
@@ -92,7 +93,7 @@ const renderAuthenticatedOrdersRoute = () => {
 
 describe('Orders route', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
   });
 

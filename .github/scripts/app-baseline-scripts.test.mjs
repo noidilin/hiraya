@@ -38,6 +38,7 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:test:catalog',
     'app:test:contract',
     'app:test:backend-contract',
+    'app:test:frontend',
     'app:test:browser',
   ]) {
     assert.equal(typeof scripts[scriptName], 'string', `${scriptName} should be documented as a package script`);
@@ -63,6 +64,21 @@ test('Storefront exposes explicit reusable static check commands', async () => {
   assert.match(workspaceScripts['app:static'], /storefront:(build|static)/, 'app:static should reuse explicit Storefront static scripts');
   assert.match(readme, /Storefront build, typecheck, and lint/i);
   assert.match(readme, /lint errors block while warnings remain allowed/i);
+});
+
+test('Storefront unit tests run through Vitest and are part of the app baseline', async () => {
+  const [workspaceScripts, frontendScripts, readme] = await Promise.all([
+    readWorkspaceScripts(),
+    readFrontendScripts(),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  assert.match(frontendScripts.test, /vitest\b.*run|vitest\b/, 'frontend test script should run Vitest');
+  assert.doesNotMatch(frontendScripts.test, /react-scripts test/, 'frontend tests should not use the CRA/Jest runner');
+  assert.match(frontendScripts.test, /jsdom/, 'frontend tests should run in a browser-like DOM environment');
+  assert.match(workspaceScripts['app:test:frontend'], /--filter frontend test/, 'workspace should expose the frontend unit-test gate');
+  assert.match(workspaceScripts['app:baseline'], /app:test:frontend/, 'app:baseline should fail when Storefront unit tests are broken');
+  assert.match(readme, /Storefront Vitest unit tests/i);
 });
 
 test('implemented contract baseline command runs shared validation while future browser command fails clearly', async () => {

@@ -1,16 +1,17 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from './api';
 import { orderService } from './orderService';
 
-jest.mock('./api', () => ({
+vi.mock('./api', () => ({
   __esModule: true,
   default: {
-    get: jest.fn(),
-    post: jest.fn(),
-    patch: jest.fn(),
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
   },
 }));
 
-const mockedApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockedApiClient = vi.mocked(apiClient);
 
 const orderHistoryEnvelope = {
   success: true,
@@ -51,7 +52,7 @@ const orderHistoryEnvelope = {
 
 describe('orderService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('unwraps order-history envelopes and normalizes wire data for the Storefront UI', async () => {

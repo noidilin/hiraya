@@ -18,10 +18,11 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run storefront:typecheck` | Run the Vintage Storefront TypeScript checker without emitting files. |
 | `pnpm run storefront:lint` | Run the Vintage Storefront ESLint check. Errors fail the command; warnings are permitted for now. |
 | `pnpm run storefront:static` | Run the reusable Storefront build, typecheck, and lint sequence for local and CI use. |
-| `pnpm run app:baseline` | Run workspace, catalog, backend contract, changed-service, and static checks in the same order CI should reuse. |
+| `pnpm run app:baseline` | Run workspace, catalog, backend contract, Storefront Vitest unit tests, changed-service, and static checks in the same order CI should reuse. |
 | `pnpm run app:test:catalog` | Run service catalog and changed-service detector tests. |
 | `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, backend route, and consumer smoke tests. |
 | `pnpm run app:test:backend-contract` | Run the gateway, auth, product, and orders contract suites together as the reusable backend contract gate. |
+| `pnpm run app:test:frontend` | Run the Storefront Vitest unit tests in jsdom so broken adapter and behavior tests fail the app baseline. |
 | `pnpm run app:test:browser` | Fails clearly until the browser behavior baseline slice is implemented. |
 
 Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` delegate to this `app:*` surface for compatibility.
