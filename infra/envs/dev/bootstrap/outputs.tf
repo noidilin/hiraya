@@ -18,6 +18,16 @@ output "github_image_push_role_arn" {
   value       = aws_iam_role.github_image_push.arn
 }
 
+output "github_infra_plan_role_arn" {
+  description = "GitHub Actions OIDC role ARN for trusted Terraform platform plans."
+  value       = aws_iam_role.github_infra_plan.arn
+}
+
+output "github_infra_apply_role_arn" {
+  description = "GitHub Actions OIDC role ARN for approved Terraform platform apply and destroy workflows."
+  value       = aws_iam_role.github_infra_apply.arn
+}
+
 output "backend_config" {
   description = "Backend config values for ../platform/backend.hcl."
   value = {
