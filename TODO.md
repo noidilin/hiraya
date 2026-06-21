@@ -42,6 +42,8 @@ But before adding more features, I’d improve:
 
 ### 4. Add “real tests” gradually
 
+Resolved plan: [`docs/plan/vintage-storefront-test-baseline.md`](docs/plan/vintage-storefront-test-baseline.md)
+
 Before the frontend rewrite, add a small but meaningful test baseline:
 
 - Backend unit tests per service.
