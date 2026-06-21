@@ -1,4 +1,4 @@
-name: Hiraya Infra CI
+name: infra-ci
 
 on:
   pull_request:
@@ -86,7 +86,6 @@ jobs:
           if [[ "$found_chart" == "false" ]]; then
             echo "No local Helm charts found under infra/modules."
           fi
-
 
   trusted-platform-plan:
     name: Trusted PR Terraform plan

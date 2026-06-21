@@ -1,4 +1,4 @@
-name: Hiraya GitOps Manifest Update
+name: gitops-manifest-update
 
 run-name: Update ${{ inputs.service }} to ${{ inputs.version }}
 

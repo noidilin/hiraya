@@ -1,4 +1,4 @@
-name: Hiraya Infra Destroy
+name: infra-destroy
 
 on:
   workflow_dispatch:
