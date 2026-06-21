@@ -2,3 +2,15 @@ packages:
   - frontend
   - backend
   - backend/services/*
+
+# pnpm 11 verifies the committed lockfile against supply-chain policy.
+# This exact transitive version was already selected during the Node 24 lock refresh.
+minimumReleaseAgeExclude:
+  - nanoid@3.3.14
+
+# pnpm 11 requires explicit lifecycle-script decisions.
+# core-js postinstall scripts are informational; sharp needs its native install step.
+allowBuilds:
+  core-js: false
+  core-js-pure: false
+  sharp: true

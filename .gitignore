@@ -27,9 +27,6 @@ backend.hcl
 # Kubernetes
 *.kubeconfig
 
-# Docker
-.dockerignore
-
 # Logs
 *.log
 

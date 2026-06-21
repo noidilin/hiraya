@@ -2,7 +2,7 @@
 
 This workspace owns the reusable app baseline command surface for local development and future GitHub Actions workflows. Commands are generic so they can survive the planned Storefront rewrite from CRA/MUI to another frontend stack.
 
-Run commands from `app/microservices` with the pinned package manager (`pnpm@9.15.9`). None of the baseline commands require AWS credentials.
+Run commands from `app/microservices` with the pinned package manager (`pnpm@11.8.0`). None of the baseline commands require AWS credentials. pnpm 11 supply-chain and build-script policy exceptions are documented in `pnpm-workspace.yaml`.
 
 ## Baseline commands
 
