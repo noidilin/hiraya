@@ -223,7 +223,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh workflow run update-gitops-manifests.yml \
+          gh workflow run gitops-manifests-update.yml \
             --ref main \
             -f service="${{ matrix.service }}" \
             -f version="${IMAGE_TAG}"
