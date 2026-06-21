@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const scriptPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  'detect-changed-services.mjs',
+  'dist/detect-changed-services.mjs',
 );
 
 async function createCatalogFixture() {
@@ -125,11 +125,15 @@ test('fans out shared backend files to backend service owners', async () => {
   assert.deepEqual(serviceNames(matrix), ['auth', 'orders']);
 });
 
-test('fans out workflow and catalog changes to all catalog services', async () => {
+test('fans out workflow, script, and catalog changes to all catalog services', async () => {
   const { root, catalogPath } = await createCatalogFixture();
 
   assert.deepEqual(
     serviceNames(detect(catalogPath, root, ['.github/utils/services.json'])),
+    ['frontend', 'auth', 'orders'],
+  );
+  assert.deepEqual(
+    serviceNames(detect(catalogPath, root, ['.github/scripts/src/detect-changed-services.mts'])),
     ['frontend', 'auth', 'orders'],
   );
   assert.deepEqual(

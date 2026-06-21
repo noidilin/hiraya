@@ -10,17 +10,18 @@
   "scripts": {
     "app:install": "corepack pnpm@9.15.9 install --frozen-lockfile",
     "app:workspace": "corepack pnpm@9.15.9 run app:install && corepack pnpm@9.15.9 list --recursive --depth -1",
-    "app:catalog": "corepack pnpm@9.15.9 run catalog:validate && corepack pnpm@9.15.9 run app:test:catalog",
-    "app:changed": "node ../../.github/scripts/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
+    "scripts:build": "tsc -p ../../.github/scripts/tsconfig.json",
+    "app:catalog": "corepack pnpm@9.15.9 run scripts:build && corepack pnpm@9.15.9 run catalog:validate && node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs",
+    "app:changed": "node ../../.github/scripts/dist/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
     "app:static": "corepack pnpm@9.15.9 run build",
     "app:baseline": "corepack pnpm@9.15.9 run app:workspace && corepack pnpm@9.15.9 run app:catalog && corepack pnpm@9.15.9 run app:changed -- --all && corepack pnpm@9.15.9 run app:static",
-    "app:test:catalog": "node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs",
+    "app:test:catalog": "corepack pnpm@9.15.9 run scripts:build && node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs",
     "app:test:contract": "node -e \"console.error('app:test:contract not implemented yet; implement the API contract baseline slice before enabling this command.'); process.exit(1)\"",
     "app:test:browser": "node -e \"console.error('app:test:browser not implemented yet; implement the browser behavior baseline slice before enabling this command.'); process.exit(1)\"",
     "install:all": "corepack pnpm@9.15.9 run app:install",
     "check:workspace": "corepack pnpm@9.15.9 run app:workspace",
-    "catalog:validate": "node ../../.github/scripts/validate-service-catalog.mjs ../../.github/utils/services.json --root ../..",
-    "catalog:changed": "node ../../.github/scripts/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
+    "catalog:validate": "node ../../.github/scripts/dist/validate-service-catalog.mjs ../../.github/utils/services.json --root ../..",
+    "catalog:changed": "node ../../.github/scripts/dist/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
     "test:catalog": "corepack pnpm@9.15.9 run app:test:catalog",
     "dev": "concurrently \"corepack pnpm@9.15.9 run dev:frontend\" \"corepack pnpm@9.15.9 run dev:backend\"",
     "dev:frontend": "corepack pnpm@9.15.9 --filter frontend start",
@@ -36,6 +37,8 @@
     "docker:down": "docker-compose down"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/node": "^20.19.43",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.9.3"
   }
 }

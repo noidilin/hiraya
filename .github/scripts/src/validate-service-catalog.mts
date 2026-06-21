@@ -11,27 +11,36 @@ const REQUIRED_STRING_FIELDS = [
   'build.context',
   'build.dockerfile',
   'manifest.path',
-];
+] as const;
 
 const REQUIRED_BOOLEAN_FIELDS = [
   'vintageStorefrontBaseline.active',
   'vintageStorefrontBaseline.critical',
-];
+] as const;
 
 const PATH_FIELDS = [
   'workspace',
   'build.context',
   'build.dockerfile',
   'manifest.path',
-];
+] as const;
 
-function usage() {
+interface CliOptions {
+  catalogPath: string;
+  root: string;
+}
+
+interface ServiceCatalog {
+  services: unknown[];
+}
+
+function usage(): string {
   return 'Usage: validate-service-catalog.mjs [catalog-path] [--root repo-root]';
 }
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]): CliOptions {
   const args = [...argv];
-  let catalogPath;
+  let catalogPath: string | undefined;
   let root = process.cwd();
 
   while (args.length > 0) {
@@ -59,14 +68,23 @@ function parseArgs(argv) {
   };
 }
 
-function readField(object, dottedPath) {
-  return dottedPath.split('.').reduce((value, part) => value?.[part], object);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function validateShape(catalog) {
-  const errors = [];
+function readField(object: unknown, dottedPath: string): unknown {
+  return dottedPath.split('.').reduce<unknown>((value, part) => {
+    if (!isRecord(value)) {
+      return undefined;
+    }
+    return value[part];
+  }, object);
+}
 
-  if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog)) {
+function validateShape(catalog: unknown): string[] {
+  const errors: string[] = [];
+
+  if (!isRecord(catalog)) {
     return ['catalog must be a JSON object'];
   }
 
@@ -74,11 +92,11 @@ function validateShape(catalog) {
     return ['services must be an array'];
   }
 
-  const names = new Set();
-  const repositories = new Set();
+  const names = new Set<string>();
+  const repositories = new Set<string>();
   for (const [index, service] of catalog.services.entries()) {
     const prefix = `services[${index}]`;
-    if (!service || typeof service !== 'object' || Array.isArray(service)) {
+    if (!isRecord(service)) {
       errors.push(`${prefix} must be an object`);
       continue;
     }
@@ -125,7 +143,7 @@ function validateShape(catalog) {
   return errors;
 }
 
-async function pathExists(root, relativePath) {
+async function pathExists(root: string, relativePath: string): Promise<boolean> {
   if (path.isAbsolute(relativePath)) {
     return false;
   }
@@ -138,15 +156,15 @@ async function pathExists(root, relativePath) {
   }
 }
 
-function globBase(pattern) {
+function globBase(pattern: string): string {
   const firstGlobIndex = pattern.search(/[\*\?\[\{]/);
   const rawBase = firstGlobIndex === -1 ? pattern : pattern.slice(0, firstGlobIndex);
   const trimmedBase = rawBase.replace(/[/\\]+$/, '');
   return trimmedBase === '' ? '.' : trimmedBase;
 }
 
-async function validatePaths(catalog, root) {
-  const errors = [];
+async function validatePaths(catalog: ServiceCatalog, root: string): Promise<string[]> {
+  const errors: string[] = [];
 
   for (const [index, service] of catalog.services.entries()) {
     for (const field of PATH_FIELDS) {
@@ -159,8 +177,9 @@ async function validatePaths(catalog, root) {
       }
     }
 
-    if (Array.isArray(service.pathOwnership)) {
-      for (const [ownedPathIndex, ownedPath] of service.pathOwnership.entries()) {
+    const pathOwnership = readField(service, 'pathOwnership');
+    if (Array.isArray(pathOwnership)) {
+      for (const [ownedPathIndex, ownedPath] of pathOwnership.entries()) {
         if (typeof ownedPath !== 'string' || ownedPath.trim() === '') {
           continue;
         }
@@ -175,12 +194,17 @@ async function validatePaths(catalog, root) {
   return errors;
 }
 
-async function main() {
+function isCatalog(value: unknown): value is ServiceCatalog {
+  return isRecord(value) && Array.isArray(value.services);
+}
+
+async function main(): Promise<void> {
   const { catalogPath, root } = parseArgs(process.argv.slice(2));
-  const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+  const catalog = JSON.parse(await readFile(catalogPath, 'utf8')) as unknown;
+  const shapeErrors = validateShape(catalog);
   const errors = [
-    ...validateShape(catalog),
-    ...await validatePaths(catalog, root),
+    ...shapeErrors,
+    ...isCatalog(catalog) ? await validatePaths(catalog, root) : [],
   ];
 
   if (errors.length > 0) {
@@ -192,10 +216,14 @@ async function main() {
     return;
   }
 
+  if (!isCatalog(catalog)) {
+    throw new Error('services must be an array');
+  }
+
   console.log(`Validated ${catalog.services.length} service${catalog.services.length === 1 ? '' : 's'} in ${path.relative(root, catalogPath) || catalogPath}`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof SyntaxError ? `Invalid JSON: ${error.message}` : error.message);
+main().catch((error: unknown) => {
+  console.error(error instanceof SyntaxError ? `Invalid JSON: ${error.message}` : error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
