@@ -294,6 +294,16 @@ export const orderDetailEnvelopeFixture = Object.freeze({
   data: orderWireFixtureSet[0],
 });
 
+export const storefrontContractPaths = Object.freeze({
+  productList: '/api/products',
+  productDetailFixture: `/api/products/${productDetailEnvelopeFixture.data.id}`,
+  authLogin: '/api/auth/login',
+  authMe: '/api/auth/me',
+  orderCreate: '/api/orders',
+  orderHistory: '/api/orders/my-orders',
+  orderDetailFixture: `/api/orders/${orderDetailEnvelopeFixture.data.id}`,
+});
+
 export const storefrontContractSchemas = Object.freeze({
   storefrontSuccessEnvelope: storefrontSuccessEnvelopeSchema,
   storefrontFailureEnvelope: storefrontFailureEnvelopeSchema,

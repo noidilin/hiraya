@@ -16,7 +16,7 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run app:static` | Run the currently meaningful build/static checks for the Storefront and backend services. |
 | `pnpm run app:baseline` | Run workspace, catalog, changed-service, and static checks in the same order CI should reuse. |
 | `pnpm run app:test:catalog` | Run service catalog and changed-service detector tests. |
-| `pnpm run app:test:contract` | Fails clearly until the API contract baseline slice is implemented. |
+| `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, and consumer smoke tests. |
 | `pnpm run app:test:browser` | Fails clearly until the browser behavior baseline slice is implemented. |
 
 Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` delegate to this `app:*` surface for compatibility.

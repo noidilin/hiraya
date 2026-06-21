@@ -25,6 +25,7 @@ async function createCatalogFixture() {
         manifest: 'gitops/k8s/frontend/deployment.yml',
         pathOwnership: [
           'app/microservices/frontend/**',
+          'app/microservices/shared/**',
           'app/microservices/package.json',
         ],
       }),
@@ -37,6 +38,7 @@ async function createCatalogFixture() {
         pathOwnership: [
           'app/microservices/backend/services/auth/**',
           'app/microservices/backend/shared/**',
+          'app/microservices/shared/**',
           'app/microservices/backend/package.json',
         ],
       }),
@@ -49,6 +51,7 @@ async function createCatalogFixture() {
         pathOwnership: [
           'app/microservices/backend/services/orders/**',
           'app/microservices/backend/shared/**',
+          'app/microservices/shared/**',
           'app/microservices/backend/package.json',
         ],
       }),
@@ -146,6 +149,14 @@ test('fans out shared backend files to backend service owners', async () => {
   const matrix = detect(catalogPath, root, ['app/microservices/backend/shared/types.ts']);
 
   assert.deepEqual(serviceNames(matrix), ['auth', 'orders']);
+});
+
+test('fans out shared Storefront contracts to active contract consumers', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+
+  const matrix = detect(catalogPath, root, ['app/microservices/shared/src/index.mjs']);
+
+  assert.deepEqual(serviceNames(matrix), ['frontend', 'auth', 'orders']);
 });
 
 test('fans out workflow, script, and catalog changes to all catalog services', async () => {

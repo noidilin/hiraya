@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import {
@@ -23,8 +22,8 @@ describe('Storefront API envelope schemas', () => {
       message: 'Product loaded',
     });
 
-    assert.equal(bareResult.success, true);
-    assert.equal(messageResult.success, true);
+    expect(bareResult.success).toBe(true);
+    expect(messageResult.success).toBe(true);
   });
 
   it('accept a failed Storefront envelope with an error string', () => {
@@ -33,7 +32,7 @@ describe('Storefront API envelope schemas', () => {
       error: 'Product not found',
     });
 
-    assert.equal(result.success, true);
+    expect(result.success).toBe(true);
   });
 
   it('reject representative malformed Storefront envelopes', () => {
@@ -49,8 +48,8 @@ describe('Storefront API envelope schemas', () => {
       const successResult = storefrontSuccessEnvelopeSchema.safeParse(envelope);
       const failureResult = storefrontFailureEnvelopeSchema.safeParse(envelope);
 
-      assert.equal(successResult.success, false, `${JSON.stringify(envelope)} should not be a valid success envelope`);
-      assert.equal(failureResult.success, false, `${JSON.stringify(envelope)} should not be a valid failure envelope`);
+      expect(successResult.success, `${JSON.stringify(envelope)} should not be a valid success envelope`).toBe(false);
+      expect(failureResult.success, `${JSON.stringify(envelope)} should not be a valid failure envelope`).toBe(false);
     }
   });
 
@@ -58,8 +57,8 @@ describe('Storefront API envelope schemas', () => {
     const successSchema = createStorefrontSuccessEnvelopeSchema(productSchema);
     const envelopeSchema = createStorefrontEnvelopeSchema(productSchema);
 
-    assert.equal(successSchema.safeParse({ success: true, data: { id: 'prairie-midi-dress' } }).success, true);
-    assert.equal(successSchema.safeParse({ success: true, data: { sku: 'missing-id' } }).success, false);
-    assert.equal(envelopeSchema.safeParse({ success: false, error: 'Unavailable' }).success, true);
+    expect(successSchema.safeParse({ success: true, data: { id: 'prairie-midi-dress' } }).success).toBe(true);
+    expect(successSchema.safeParse({ success: true, data: { sku: 'missing-id' } }).success).toBe(false);
+    expect(envelopeSchema.safeParse({ success: false, error: 'Unavailable' }).success).toBe(true);
   });
 });
