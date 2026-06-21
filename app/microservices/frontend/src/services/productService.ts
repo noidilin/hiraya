@@ -64,7 +64,7 @@ const normalizeProduct = (product: ProductWire): Product => ({
   inventory: product.inventory_quantity ?? product.inventory ?? 0,
   rating: product.rating,
   reviewCount: product.reviewCount,
-  isNew: product.is_featured ?? product.new_arrival,
+  isNew: product.is_featured || product.new_arrival,
   discountPercentage: product.discountPercentage,
   createdAt: product.created_at || product.createdAt || '',
   updatedAt: product.updated_at || product.updatedAt || '',
@@ -83,12 +83,16 @@ export const productService = {
   },
 
   getByCategory: async (category: string): Promise<Product[]> => {
-    const response = await apiClient.get<ApiEnvelope<ProductListData>>(`/products?category=${category}`);
+    const response = await apiClient.get<ApiEnvelope<ProductListData>>('/products', {
+      params: { category },
+    });
     return unwrapEnvelope(response.data).products.map(normalizeProduct);
   },
 
   search: async (query: string): Promise<Product[]> => {
-    const response = await apiClient.get<ApiEnvelope<ProductListData>>(`/products?search=${query}`);
+    const response = await apiClient.get<ApiEnvelope<ProductListData>>('/products', {
+      params: { search: query },
+    });
     return unwrapEnvelope(response.data).products.map(normalizeProduct);
   },
 };

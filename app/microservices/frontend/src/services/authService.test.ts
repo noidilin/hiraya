@@ -45,6 +45,19 @@ describe('authService', () => {
     });
   });
 
+  it('throws on an unsuccessful login envelope', async () => {
+    mockedApiClient.post.mockResolvedValueOnce({
+      data: {
+        success: false,
+        error: 'Invalid credentials',
+      },
+    });
+
+    await expect(authService.login({ email: demoUser.email, password: 'wrong-password' })).rejects.toThrow(
+      'Invalid credentials',
+    );
+  });
+
   it('unwraps the current identity envelope', async () => {
     mockedApiClient.get.mockResolvedValueOnce({
       data: {

@@ -61,7 +61,7 @@ test('Storefront exposes explicit reusable static check commands', async () => {
   assert.match(frontendScripts.typecheck, /tsc\b.*--noEmit|--noEmit.*tsc\b/, 'typecheck should run TypeScript without emitting files');
   assert.match(frontendScripts.lint, /eslint\b/, 'lint should run eslint explicitly');
   assert.doesNotMatch(frontendScripts.lint, /--max-warnings\s+0/, 'lint warnings should remain allowed initially');
-  assert.match(workspaceScripts['app:static'], /storefront:(build|static)/, 'app:static should reuse explicit Storefront static scripts');
+  assert.match(workspaceScripts['app:static'], /storefront:static/, 'app:static should reuse explicit Storefront static scripts');
   assert.match(readme, /Storefront build, typecheck, and lint/i);
   assert.match(readme, /lint errors block while warnings remain allowed/i);
 });

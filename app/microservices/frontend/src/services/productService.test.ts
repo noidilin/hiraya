@@ -85,6 +85,42 @@ describe('productService', () => {
     expect(mockedApiClient.get).toHaveBeenCalledWith(`/products/${productWire.id}`);
   });
 
+  it('treats new_arrival as isNew when is_featured is false', async () => {
+    mockedApiClient.get.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {
+          ...productWire,
+          is_featured: false,
+          new_arrival: true,
+        },
+      },
+    });
+
+    await expect(productService.getById(productWire.id)).resolves.toEqual(expect.objectContaining({
+      isNew: true,
+    }));
+  });
+
+  it('passes category and search through axios query params', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        success: true,
+        data: { products: [] },
+      },
+    });
+
+    await expect(productService.getByCategory('women & vintage')).resolves.toEqual([]);
+    await expect(productService.search('lace trim?')).resolves.toEqual([]);
+
+    expect(mockedApiClient.get).toHaveBeenNthCalledWith(1, '/products', {
+      params: { category: 'women & vintage' },
+    });
+    expect(mockedApiClient.get).toHaveBeenNthCalledWith(2, '/products', {
+      params: { search: 'lace trim?' },
+    });
+  });
+
   it('rejects failed product envelopes', async () => {
     mockedApiClient.get.mockResolvedValueOnce({
       data: {

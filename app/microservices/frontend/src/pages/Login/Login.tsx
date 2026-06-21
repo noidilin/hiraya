@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
+  const redirectTo = (location.state as { from?: { pathname: string; search?: string; hash?: string } } | null)?.from || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,9 +5,14 @@ import ProtectedRoute from './ProtectedRoute';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { authService } from '../../services/authService';
 
+const navigateSpy = vi.hoisted(() => vi.fn());
+
 vi.mock('react-router-dom', () => ({
-  Navigate: ({ to }: { to: string }) => <div>Redirected to {to}</div>,
-  useLocation: () => ({ pathname: '/profile' }),
+  Navigate: ({ to, state }: { to: string; state?: unknown }) => {
+    navigateSpy({ to, state });
+    return <div>Redirected to {to}</div>;
+  },
+  useLocation: () => ({ pathname: '/profile', search: '?tab=orders', hash: '#latest' }),
 }));
 
 vi.mock('../../services/authService', () => ({
@@ -40,6 +45,16 @@ describe('ProtectedRoute', () => {
     renderProtectedRoute();
 
     expect(await screen.findByText('Redirected to /login')).toBeInTheDocument();
+    expect(navigateSpy).toHaveBeenCalledWith({
+      to: '/login',
+      state: {
+        from: expect.objectContaining({
+          pathname: '/profile',
+          search: '?tab=orders',
+          hash: '#latest',
+        }),
+      },
+    });
     expect(screen.queryByRole('heading', { name: /my profile/i })).not.toBeInTheDocument();
     expect(mockedAuthService.getCurrentUser).not.toHaveBeenCalled();
   });

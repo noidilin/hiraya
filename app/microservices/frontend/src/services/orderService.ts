@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { ApiEnvelope, Order, Product } from '../types';
+import { Address, ApiEnvelope, Order, Product } from '../types';
 
 type OrderHistoryData = {
   orders: OrderWire[];
@@ -17,8 +17,8 @@ type OrderWire = {
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
-  shippingAddress?: Order['shippingAddress'];
-  shipping_address?: Order['shippingAddress'];
+  shippingAddress?: Partial<Address>;
+  shipping_address?: Partial<Address>;
 };
 
 type OrderItemWire = {
@@ -56,7 +56,7 @@ type ProductWire = {
   images?: Product['images'];
 };
 
-const emptyAddress = {
+const emptyAddress: Address = {
   street: '',
   city: '',
   state: '',
@@ -97,7 +97,7 @@ const normalizeProduct = (product: ProductWire): Product => ({
   inventory: product.inventory_quantity ?? product.inventory ?? 0,
   rating: product.rating,
   reviewCount: product.reviewCount,
-  isNew: product.is_featured ?? product.new_arrival,
+  isNew: product.is_featured || product.new_arrival,
   discountPercentage: product.discountPercentage,
   createdAt: product.created_at || product.createdAt || '',
   updatedAt: product.updated_at || product.updatedAt || '',
@@ -116,7 +116,10 @@ const normalizeOrder = (order: OrderWire): Order => ({
   })),
   totalAmount: toNumber(order.totalAmount ?? order.total_amount),
   status: order.status,
-  shippingAddress: order.shippingAddress || order.shipping_address || emptyAddress,
+  shippingAddress: {
+    ...emptyAddress,
+    ...(order.shippingAddress || order.shipping_address || {}),
+  },
   createdAt: order.createdAt || order.created_at || '',
   updatedAt: order.updatedAt || order.updated_at || '',
 });
@@ -124,7 +127,7 @@ const normalizeOrder = (order: OrderWire): Order => ({
 export const orderService = {
   createOrder: async (orderData: {
     items: { productId: string; quantity: number }[];
-    shippingAddress: any;
+    shippingAddress: Address;
   }): Promise<Order> => {
     const response = await apiClient.post<ApiEnvelope<OrderWire>>('/orders', orderData);
     return normalizeOrder(unwrapEnvelope(response.data));
