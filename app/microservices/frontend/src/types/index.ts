@@ -65,8 +65,12 @@ export interface Address {
 export interface AuthResponse {
   user: User;
   token: string;
-  refreshToken: string;
+  refreshToken?: string;
 }
+
+export type ApiEnvelope<T> =
+  | { success: true; data: T; message?: string }
+  | { success: false; error: string };
 
 export interface LoginCredentials {
   email: string;
