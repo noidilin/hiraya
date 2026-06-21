@@ -4,17 +4,13 @@ import {
   Typography,
   Box,
   Button,
-  Card,
-  CardContent,
   CardMedia,
   IconButton,
   Grid,
   Paper,
   Divider,
-  Stepper,
-  Step,
-  StepLabel,
   Alert,
+  Chip,
   Snackbar,
 } from '@mui/material';
 import {
@@ -26,18 +22,11 @@ import {
   Security as SecurityIcon,
 } from '@mui/icons-material';
 import { useCart } from '../../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
 
 const Cart: React.FC = () => {
-  const { items, total, removeItem, updateQuantity, clearCart } = useCart();
-  const navigate = useNavigate();
+  const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCart();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [removedItemName, setRemovedItemName] = useState('');
-
-  const handleCheckout = () => {
-    // In a real app, this would navigate to checkout
-    navigate('/checkout');
-  };
 
   const handleQuantityChange = (productId: string, delta: number) => {
     const item = items.find(item => item.id === productId);
@@ -91,7 +80,7 @@ const Cart: React.FC = () => {
           Shopping Cart
         </Typography>
         <Typography variant="h6" color="text.secondary" paragraph>
-          {items.length} {items.length === 1 ? 'Item' : 'Items'} in your cart
+          {itemCount} {itemCount === 1 ? 'Item' : 'Items'} in your cart
         </Typography>
         
         <Grid container spacing={4}>
@@ -130,6 +119,7 @@ const Cart: React.FC = () => {
                       <Grid size={{ xs: 12, sm: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <IconButton
+                            aria-label={`Decrease quantity for ${item.name}`}
                             onClick={() => handleQuantityChange(item.id, -1)}
                             disabled={item.quantity <= 1}
                             sx={{
@@ -144,7 +134,7 @@ const Cart: React.FC = () => {
                             <RemoveIcon />
                           </IconButton>
                           <Typography 
-                            sx={{ 
+                            sx={{
                               minWidth: '3rem', 
                               textAlign: 'center',
                               fontWeight: 600,
@@ -154,6 +144,7 @@ const Cart: React.FC = () => {
                             {item.quantity}
                           </Typography>
                           <IconButton
+                            aria-label={`Increase quantity for ${item.name}`}
                             onClick={() => handleQuantityChange(item.id, 1)}
                             disabled={item.quantity >= item.inventory}
                             sx={{
@@ -181,6 +172,7 @@ const Cart: React.FC = () => {
                             ${((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity).toFixed(2)}
                           </Typography>
                           <IconButton
+                            aria-label={`Remove ${item.name} from cart`}
                             onClick={() => handleRemoveItem(item.id, item.name)}
                             color="error"
                             sx={{
@@ -220,10 +212,13 @@ const Cart: React.FC = () => {
           </Grid>
           
           <Grid size={{ xs: 12, md: 4 }}>
-            <Paper elevation={2} sx={{ p: 3, position: 'sticky', top: 24 }}>
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                Order Summary
-              </Typography>
+            <Paper elevation={2} sx={{ p: 3, position: 'sticky', top: 24 }} role="region" aria-label="Order Summary">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'center', mb: 1 }}>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 0 }}>
+                  Order Summary
+                </Typography>
+                <Chip label="Coming soon" color="warning" size="small" />
+              </Box>
               
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -268,17 +263,21 @@ const Cart: React.FC = () => {
                 variant="contained"
                 color="secondary"
                 size="large"
-                onClick={handleCheckout}
+                disabled
                 fullWidth
                 sx={{ mb: 2, py: 1.5 }}
               >
-                Proceed to Checkout
+                Checkout Coming Soon
               </Button>
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Checkout is coming soon. Your cart is saved for browsing while the Storefront order flow is being prepared.
+              </Alert>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', mb: 2 }}>
                 <SecurityIcon fontSize="small" color="action" />
                 <Typography variant="caption" color="text.secondary">
-                  Secure Checkout Process
+                  Cart review only — checkout is unavailable in this demo slice.
                 </Typography>
               </Box>
             </Paper>
