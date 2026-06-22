@@ -14,11 +14,12 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run app:catalog` | Compile scripts, validate `.github/utils/services.json`, and run catalog/detector self-tests. |
 | `pnpm run app:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
 | `pnpm run app:static` | Run Storefront build, typecheck, and lint checks, then the backend build. Lint errors block while warnings remain allowed initially. |
+| `pnpm run app:gitops` | Render GitOps desired state with `kubectl kustomize gitops` and run targeted GitOps render assertions without Kubernetes cluster credentials. |
 | `pnpm run storefront:build` | Build the Vintage Storefront production bundle through the frontend package. |
 | `pnpm run storefront:typecheck` | Run the Vintage Storefront TypeScript checker without emitting files. |
 | `pnpm run storefront:lint` | Run the Vintage Storefront ESLint check. Errors fail the command; warnings are permitted for now. |
 | `pnpm run storefront:static` | Run the reusable Storefront build, typecheck, and lint sequence for local and CI use. |
-| `pnpm run app:baseline` | Run workspace, catalog, backend contract, Storefront Vitest unit tests, changed-service, and static checks in the same order CI should reuse. |
+| `pnpm run app:baseline` | Run workspace, catalog, backend contract, Storefront Vitest unit tests, changed-service, GitOps render assertions, and static checks in the same order CI should reuse. |
 | `pnpm run app:test:catalog` | Run service catalog and changed-service detector tests. |
 | `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, backend route, and consumer smoke tests. |
 | `pnpm run app:test:backend-contract` | Run the gateway, auth, product, and orders contract suites together as the reusable backend contract gate. |
@@ -50,5 +51,7 @@ The verified changed-service detector source is `.github/scripts/src/detect-chan
 The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `Vintage Storefront app baseline / app-baseline`.
 
 The workflow runs for pull requests that touch the app workspace, GitOps manifests, the workflow itself, CI helper scripts, or the service catalog. It grants only read-only repository contents permission, does not request OIDC or cloud secrets, activates the pinned Node/pnpm app toolchain, summarizes impacted services through the service catalog changed-service detector, and runs `pnpm run app:baseline` from this workspace.
+
+`app:baseline` includes the GitOps render assertions from `.github/scripts/src/assert-gitops-render.mts`. The assertion gate renders repository desired state only, then verifies the Vintage Storefront HTTPRoute hostname and frontend backend reference, the frontend ClusterIP Service and container target port, gateway environment URLs for active Storefront APIs, and every rendered Deployment/Service targetPort-to-containerPort pair, including legacy deployed services outside active behavior tests.
 
 The same changed-service detector also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the detector emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.
