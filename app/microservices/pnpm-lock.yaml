@@ -28,7 +28,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.6.2
-        version: 1.18.0(supports-color@5.5.0)
+        version: 1.18.0
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -181,7 +181,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.6.7
-        version: 1.18.0(supports-color@5.5.0)
+        version: 1.18.0
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -206,7 +206,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.6.2
-        version: 1.18.0(supports-color@5.5.0)
+        version: 1.18.0
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -407,7 +407,7 @@ importers:
         version: 5.3.3
       axios:
         specifier: ^1.13.4
-        version: 1.18.0(supports-color@5.5.0)
+        version: 1.18.0
       react:
         specifier: ^19.2.4
         version: 19.2.7
@@ -427,6 +427,9 @@ importers:
         specifier: ^2.1.4
         version: 2.1.4
     devDependencies:
+      eslint:
+        specifier: 8.57.1
+        version: 8.57.1
       vitest:
         specifier: ^4.1.9
         version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@16.7.0)(vite@8.0.16(@types/node@24.13.2)(jiti@1.21.7)(terser@5.48.0))
@@ -9538,7 +9541,7 @@ snapshots:
       loader-utils: 2.0.4
       regex-parser: 2.3.1
 
-  agent-base@6.0.2(supports-color@5.5.0):
+  agent-base@6.0.2:
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
@@ -9729,11 +9732,11 @@ snapshots:
 
   axe-core@4.12.1: {}
 
-  axios@1.18.0(supports-color@5.5.0):
+  axios@1.18.0:
     dependencies:
       follow-redirects: 1.16.0
       form-data: 4.0.6
-      https-proxy-agent: 5.0.1(supports-color@5.5.0)
+      https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
@@ -11504,7 +11507,7 @@ snapshots:
   http-proxy-agent@4.0.1:
     dependencies:
       '@tootallnate/once': 1.1.2
-      agent-base: 6.0.2(supports-color@5.5.0)
+      agent-base: 6.0.2
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
@@ -11529,9 +11532,9 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  https-proxy-agent@5.0.1(supports-color@5.5.0):
+  https-proxy-agent@5.0.1:
     dependencies:
-      agent-base: 6.0.2(supports-color@5.5.0)
+      agent-base: 6.0.2
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
@@ -12248,7 +12251,7 @@ snapshots:
       form-data: 3.0.5
       html-encoding-sniffer: 2.0.1
       http-proxy-agent: 4.0.1
-      https-proxy-agent: 5.0.1(supports-color@5.5.0)
+      https-proxy-agent: 5.0.1
       is-potential-custom-element-name: 1.0.1
       nwsapi: 2.2.24
       parse5: 6.0.1
