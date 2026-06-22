@@ -9,6 +9,7 @@ const workspacePackagePath = path.join(repoRoot, 'app/microservices/package.json
 const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/package.json');
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
+const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/platform/enforce-app-baseline-required-check.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
 const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
@@ -183,15 +184,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
 
   assert.match(workflow, /^name: Vintage Storefront app baseline$/m);
   assert.match(workflow, /^  pull_request:$/m, 'workflow should run on pull requests');
-  for (const pathPattern of [
-    'app/microservices/**',
-    'gitops/**',
-    '.github/workflows/app-pr-baseline.yml',
-    '.github/scripts/**',
-    '.github/utils/services.json',
-  ]) {
-    assert.match(workflow, new RegExp(`      - "${pathPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*\\\*/g, '.*')}"`));
-  }
+  assert.doesNotMatch(workflow, /pull_request:\n\s+paths:/, 'required-check candidate must not be skipped by path filters');
 
   assert.match(workflow, /permissions:\n  contents: read\n/);
   assert.doesNotMatch(workflow, /id-token:\s*write/);
@@ -205,6 +198,27 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
   assert.match(readme, /Vintage Storefront app baseline \/ app-baseline/i);
   assert.match(readme, /required branch protection/i);
+});
+
+test('required app baseline branch rule is documented with non-AWS evidence', async () => {
+  const [workflow, readme, runbook] = await Promise.all([
+    readFile(appPrBaselineWorkflowPath, 'utf8'),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(appBaselineRequiredCheckRunbookPath, 'utf8'),
+  ]);
+
+  const requiredCheck = 'Vintage Storefront app baseline / app-baseline';
+
+  assert.match(workflow, /^  pull_request:$/m, 'required check must run on pull requests');
+  assert.doesNotMatch(workflow, /pull_request:\n\s+paths:/, 'required check must not depend on path filters');
+  assert.match(readme, new RegExp(requiredCheck.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(runbook, /GitHub repository ruleset/i);
+  assert.match(runbook, /main/i);
+  assert.match(runbook, new RegExp(requiredCheck.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(runbook, /gh api repos\/noidilin\/hiraya\/rulesets/i);
+  assert.match(runbook, /required_status_checks/i);
+  assert.match(runbook, /AWS-backed checks are not required/i);
+  assert.match(runbook, /Settings evidence/i);
 });
 
 test('main image CI gates ECR pushes and manifest updates behind the app baseline', async () => {
