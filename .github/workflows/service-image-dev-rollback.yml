@@ -222,7 +222,10 @@ jobs:
     if: ${{ inputs.dry_run == false }}
     environment: ${{ inputs.environment }}
     permissions:
-      contents: write
+      contents: read
+
+    env:
+      ROLLBACK_BRANCH: ci/rollback-${{ inputs.environment }}-${{ inputs.service }}-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Re-check rollback confirmation
@@ -236,13 +239,38 @@ jobs:
             exit 1
           fi
 
+      - name: Validate GitHub App secrets
+        env:
+          APP_ID: ${{ secrets.HIRAYA_BOT_APP_ID }}
+          PRIVATE_KEY: ${{ secrets.HIRAYA_BOT_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$APP_ID" || -z "$PRIVATE_KEY" ]]; then
+            echo "Missing HIRAYA_BOT_APP_ID or HIRAYA_BOT_PRIVATE_KEY repository secret." >&2
+            echo "Create and install the Hiraya GitHub App before applying rollback PRs." >&2
+            exit 1
+          fi
+
+      - name: Create Hiraya bot token
+        id: bot-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.HIRAYA_BOT_APP_ID }}
+          private-key: ${{ secrets.HIRAYA_BOT_PRIVATE_KEY }}
+
       - name: Checkout main
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: main
-          # Intentionally persist the write-scoped token for the rebase/push retry loop below.
-          # Risk accepted: later steps in this job can use repo write credentials; keep this job minimal.
-          persist-credentials: true
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Prepare rollback branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout -B "$ROLLBACK_BRANCH" origin/main
 
       - name: Apply image rollback
         env:
@@ -267,7 +295,8 @@ jobs:
           set -euo pipefail
           kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
 
-      - name: Commit and push rollback
+      - name: Commit rollback
+        id: commit-rollback
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           SERVICE: ${{ inputs.service }}
@@ -282,56 +311,74 @@ jobs:
 
           if git diff --quiet -- "$MANIFEST"; then
             echo "No manifest changes to commit. ${SERVICE} is already at ${TARGET_IMAGE}."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "hiraya-bot[bot]"
+          git config user.email "hiraya-bot[bot]@users.noreply.github.com"
           git add "$MANIFEST"
           git commit \
-            -m "rollback(${ENVIRONMENT}): ${SERVICE} to ${ROLLBACK_TO_TAG} [skip ci]" \
+            -m "rollback(${ENVIRONMENT}): ${SERVICE} to ${ROLLBACK_TO_TAG}" \
             -m "Reason: ${REASON}" \
             -m "Operator: @${GITHUB_ACTOR}" \
             -m "Previous image: ${CURRENT_IMAGE}" \
             -m "Target image: ${TARGET_IMAGE}"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
-          max_retries=5
-          attempt=1
-          while [[ "$attempt" -le "$max_retries" ]]; do
-            git fetch origin main
-
-            if git rebase origin/main; then
-              if git push origin HEAD:main; then
-                echo "Push succeeded on attempt ${attempt}."
-                exit 0
-              fi
-            else
-              echo "Rebase failed on attempt ${attempt}; aborting rebase before retry."
-              git rebase --abort || true
-            fi
-
-            sleep_time=$(( 2 ** (attempt - 1) + RANDOM % 3 ))
-            echo "Push failed on attempt ${attempt}; retrying in ${sleep_time}s."
-            sleep "$sleep_time"
-            attempt=$(( attempt + 1 ))
-          done
-
-          echo "Push failed after ${max_retries} attempts." >&2
-          exit 1
-
-      - name: Set up Node from app toolchain
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version-file: app/microservices/package.json
-
-      - name: Activate pinned pnpm
+      - name: Push rollback branch
+        if: ${{ steps.commit-rollback.outputs.has_changes == 'true' }}
+        env:
+          BOT_TOKEN: ${{ steps.bot-token.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.8.0 --activate
+          git remote set-url origin "https://x-access-token:${BOT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force-with-lease origin "HEAD:${ROLLBACK_BRANCH}"
 
-      - name: Run public Storefront deploy smoke
+      - name: Open rollback PR and enable auto-merge
+        if: ${{ steps.commit-rollback.outputs.has_changes == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          SERVICE: ${{ inputs.service }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+          REASON: ${{ inputs.reason }}
+          MANIFEST: ${{ needs.preview.outputs.manifest }}
+          CURRENT_IMAGE: ${{ needs.preview.outputs.current_image }}
+          TARGET_IMAGE: ${{ needs.preview.outputs.target_image }}
         shell: bash
-        working-directory: app/microservices
-        run: pnpm run app:smoke:public
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/hiraya-rollback-pr.md <<EOF
+          ## Rollback request
+
+          This PR was created by the approved rollback workflow after the ${ENVIRONMENT} environment gate.
+
+          | Field | Value |
+          | --- | --- |
+          | Environment | \`${ENVIRONMENT}\` |
+          | Service | \`${SERVICE}\` |
+          | Manifest | \`${MANIFEST}\` |
+          | Previous image | \`${CURRENT_IMAGE}\` |
+          | Target image | \`${TARGET_IMAGE}\` |
+          | Operator | @${GITHUB_ACTOR} |
+          | Reason | ${REASON} |
+          | Required check before merge | \`app-baseline\` |
+          | Merge method | squash auto-merge |
+          EOF
+
+          pr_url=$(gh pr create \
+            --base main \
+            --head "$ROLLBACK_BRANCH" \
+            --title "rollback(${ENVIRONMENT}): ${SERVICE} to ${ROLLBACK_TO_TAG}" \
+            --body-file /tmp/hiraya-rollback-pr.md)
+
+          gh pr merge "$pr_url" --auto --squash --delete-branch
+
+          {
+            echo "### Rollback PR"
+            echo ""
+            echo "Opened ${pr_url} and enabled squash auto-merge after required checks pass."
+          } >> "$GITHUB_STEP_SUMMARY"
