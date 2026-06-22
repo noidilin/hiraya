@@ -114,7 +114,8 @@ test('Vintage Storefront UI login saves authenticated state reused by protected 
   ]);
 
   const authenticatedState = await page.context().storageState();
-  const originState = authenticatedState.origins.find((origin) => origin.origin === 'http://127.0.0.1:3000');
+  const currentOrigin = new URL(page.url()).origin;
+  const originState = authenticatedState.origins.find((origin) => origin.origin === currentOrigin);
   expect(originState?.localStorage).toEqual(
     expect.arrayContaining([
       {
@@ -125,16 +126,22 @@ test('Vintage Storefront UI login saves authenticated state reused by protected 
   );
 
   const profileContext = await browser.newContext({ storageState: authenticatedState });
-  await routeAuthenticatedShellApi(profileContext);
-  const protectedProfile = await profileContext.newPage();
-  await protectedProfile.goto('/profile');
-  await expectProfileShell(protectedProfile);
-  await profileContext.close();
+  try {
+    await routeAuthenticatedShellApi(profileContext);
+    const protectedProfile = await profileContext.newPage();
+    await protectedProfile.goto('/profile');
+    await expectProfileShell(protectedProfile);
+  } finally {
+    await profileContext.close();
+  }
 
   const ordersContext = await browser.newContext({ storageState: authenticatedState });
-  await routeAuthenticatedShellApi(ordersContext);
-  const protectedOrders = await ordersContext.newPage();
-  await protectedOrders.goto('/orders');
-  await expectOrdersShell(protectedOrders);
-  await ordersContext.close();
+  try {
+    await routeAuthenticatedShellApi(ordersContext);
+    const protectedOrders = await ordersContext.newPage();
+    await protectedOrders.goto('/orders');
+    await expectOrdersShell(protectedOrders);
+  } finally {
+    await ordersContext.close();
+  }
 });
