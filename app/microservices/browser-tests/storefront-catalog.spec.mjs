@@ -17,17 +17,20 @@ const routeStorefrontCatalogApi = async (page) => {
     throw new Error(`Unexpected unmocked Storefront API request: ${route.request().url()}`);
   });
 
-  await page.route(`**${storefrontContractPaths.productList}**`, async (route) => {
-    const productListEnvelope = storefrontContractSchemas.productListEnvelope.parse(
-      storefrontContractFixtures.productListEnvelope,
-    );
+  await page.route(
+    (url) => url.pathname === storefrontContractPaths.productList,
+    async (route) => {
+      const productListEnvelope = storefrontContractSchemas.productListEnvelope.parse(
+        storefrontContractFixtures.productListEnvelope,
+      );
 
-    await route.fulfill({
-      status: 200,
-      headers: jsonHeaders,
-      json: productListEnvelope,
-    });
-  });
+      await route.fulfill({
+        status: 200,
+        headers: jsonHeaders,
+        json: productListEnvelope,
+      });
+    },
+  );
 };
 
 test.beforeEach(async ({ page }) => {
