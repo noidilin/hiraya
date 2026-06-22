@@ -49,7 +49,7 @@ The verified changed-service detector source is `.github/scripts/src/detect-chan
 
 ## PR baseline workflow
 
-The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `Vintage Storefront app baseline / app-baseline`.
+The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `app-baseline`.
 
 The workflow runs for every pull request so the required status check is always reported and cannot remain pending because of GitHub Actions path filters. It grants only read-only repository contents permission, does not request OIDC or cloud secrets, activates the pinned Node/pnpm app toolchain, summarizes impacted services through the service catalog changed-service detector, and runs `pnpm run app:baseline` from this workspace.
 
@@ -57,7 +57,7 @@ The workflow runs for every pull request so the required status check is always 
 
 The same changed-service detector also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the detector emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.
 
-The required check is enforced on the protected `main` branch through the GitHub repository ruleset documented in [`docs/runbooks/platform/enforce-app-baseline-required-check.md`](../../docs/runbooks/platform/enforce-app-baseline-required-check.md). The rule requires only `Vintage Storefront app baseline / app-baseline`; AWS-backed image push, deploy, public smoke, Terraform, and infra checks are not required for ordinary app PRs.
+The required check is enforced on the protected `main` branch through the GitHub repository ruleset documented in [`docs/runbooks/platform/enforce-app-baseline-required-check.md`](../../docs/runbooks/platform/enforce-app-baseline-required-check.md). The rule requires only `app-baseline`; AWS-backed image push, deploy, public smoke, Terraform, and infra checks are not required for ordinary app PRs.
 
 ## Public deploy smoke
 
