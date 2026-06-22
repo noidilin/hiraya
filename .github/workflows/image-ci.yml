@@ -42,8 +42,6 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: app/microservices/package.json
-          cache: pnpm
-          cache-dependency-path: app/microservices/pnpm-lock.yaml
 
       - name: Activate pinned pnpm
         shell: bash
@@ -101,8 +99,6 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: app/microservices/package.json
-          cache: pnpm
-          cache-dependency-path: app/microservices/pnpm-lock.yaml
 
       - name: Activate pinned pnpm
         shell: bash
