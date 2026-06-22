@@ -2,13 +2,6 @@ name: Vintage Storefront app baseline
 
 on:
   pull_request:
-    paths:
-      - "app/microservices/**"
-      - "gitops/**"
-      - ".github/workflows/app-pr-baseline.yml"
-      - ".github/scripts/**"
-      - ".github/utils/services.json"
-      - "docs/plan/vintage-storefront-test-baseline.md"
 
 permissions:
   contents: read
