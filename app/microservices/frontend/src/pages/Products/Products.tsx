@@ -3,18 +3,12 @@ import {
   Container,
   Typography,
   Grid,
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
   Button,
-  TextField,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
   Box,
-  Chip,
   Drawer,
   useMediaQuery,
   IconButton,
@@ -23,7 +17,6 @@ import {
 import {
   FilterList as FilterIcon,
   Close as CloseIcon,
-  Sort as SortIcon,
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
 } from '@mui/icons-material';
@@ -210,6 +203,7 @@ const Products: React.FC = () => {
           <Select
             value={sortBy}
             label="Sort By"
+            inputProps={{ 'aria-label': 'Sort products' }}
             onChange={(e) => setSortBy(e.target.value)}
           >
             <MenuItem value="featured">Featured</MenuItem>
@@ -247,39 +241,41 @@ const Products: React.FC = () => {
       </Box>
 
       {/* Products Grid */}
-      <Grid container spacing={viewMode === 'list' ? 2 : 4}>
-        {filteredProducts.map((product) => (
-          <Grid 
-            size={{
-              xs: 12,
-              sm: viewMode === 'list' ? 12 : 6,
-              md: viewMode === 'list' ? 12 : 4,
-              lg: viewMode === 'list' ? 12 : 3
-            }}
-            key={product.id}
-          >
-            <ProductCard
-              product={product}
-              onAddToCart={addItem}
-              variant={viewMode}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <Box component="section" aria-label="Product catalog results">
+        <Grid container spacing={viewMode === 'list' ? 2 : 4}>
+          {filteredProducts.map((product) => (
+            <Grid 
+              size={{
+                xs: 12,
+                sm: viewMode === 'list' ? 12 : 6,
+                md: viewMode === 'list' ? 12 : 4,
+                lg: viewMode === 'list' ? 12 : 3
+              }}
+              key={product.id}
+            >
+              <ProductCard
+                product={product}
+                onAddToCart={addItem}
+                variant={viewMode}
+              />
+            </Grid>
+          ))}
+        </Grid>
 
-      {filteredProducts.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No vintage finds matched your criteria.
-          </Typography>
-          <Button variant="outlined" onClick={() => {
-            setSearchQuery('');
-            setSortBy('featured');
-          }}>
-            Clear Filters
-          </Button>
-        </Box>
-      )}
+        {filteredProducts.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No vintage finds matched your criteria.
+            </Typography>
+            <Button variant="outlined" onClick={() => {
+              setSearchQuery('');
+              setSortBy('featured');
+            }}>
+              Clear Filters
+            </Button>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 
