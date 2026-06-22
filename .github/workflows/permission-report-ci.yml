@@ -1,0 +1,88 @@
+name: permission-report-ci
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday 03:17 UTC. This keeps portfolio governance current without noisy daily reports.
+    - cron: "17 3 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "docs/reports/data/**"
+      - "docs/reports/schema/**"
+      - ".github/scripts/src/permission-controls.mts"
+      - ".github/workflows/permission-report-ci.yml"
+      - "app/microservices/package.json"
+      - "app/microservices/pnpm-lock.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-permission-report-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-generate:
+    name: Validate permission controls and generate reports
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node from app toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: app/microservices/package.json
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.8.0 --activate
+
+      - name: Install app workspace
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:install
+
+      - name: Generate permission reports
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run reports:permissions
+
+      - name: Summarize permission report
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Permission controls report"
+            echo ""
+            echo "Generated artifacts from canonical JSON controls:"
+            echo ""
+            echo "- \`docs/reports/build/permission-report.md\`"
+            echo "- \`docs/reports/build/permission-analysis.json\`"
+            echo ""
+            node - <<'NODE'
+          const fs = require('node:fs');
+          const analysis = JSON.parse(fs.readFileSync('docs/reports/build/permission-analysis.json', 'utf8'));
+          console.log('| Metric | Value |');
+          console.log('| --- | ---: |');
+          console.log(`| Controls | ${analysis.totals.controls} |`);
+          console.log(`| Report views | ${analysis.totals.reportViews} |`);
+          for (const [status, count] of Object.entries(analysis.controlsByStatus)) {
+            console.log(`| ${status} | ${count} |`);
+          }
+          NODE
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload permission report artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: permission-controls-report-${{ github.run_id }}
+          path: docs/reports/build/
+          if-no-files-found: error

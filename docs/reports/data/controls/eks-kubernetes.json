@@ -1,0 +1,696 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataset": {
+    "id": "permission-controls.eks-kubernetes",
+    "title": "Permission controls: eks kubernetes",
+    "version": "1.0.0",
+    "domain": "eks_kubernetes",
+    "updatedAt": "2026-06-22"
+  },
+  "controls": [
+    {
+      "rationale": "Separate pod AWS permissions from node credentials by enabling IRSA federation.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The EKS module creates an IAM OIDC provider from the cluster issuer and restricts client_id_list to sts.amazonaws.com for IRSA use.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "runtime_isolation",
+          "least_privilege"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_oidc_provider",
+          "name": "EKS cluster OIDC provider"
+        },
+        {
+          "type": "aws_eks_cluster",
+          "name": "dev EKS cluster"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/eks/main.tf",
+          "summary": "EKS module creates the IAM OIDC provider and exposes OIDC outputs."
+        },
+        {
+          "path": "infra/modules/eks/outputs.tf",
+          "summary": "OIDC provider outputs support downstream IRSA roles."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "EKS OIDC",
+          "rowTitle": "Cluster OIDC provider",
+          "sortKey": 14
+        }
+      ],
+      "id": "sec.eks.cluster-oidc-provider",
+      "title": "EKS OIDC provider enables pod-to-AWS federation",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "runtime_operations"
+      ],
+      "actors": [
+        "devops",
+        "terraform_apply_role"
+      ],
+      "objective": "Separate pod AWS permissions from node credentials by enabling IRSA federation.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Prefer private or tightly scoped Kubernetes API access while acknowledging dev runner access constraints.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "EKS private endpoint access is enabled.",
+      "gapSummary": "Accepted risk: dev variables still allow public endpoint access from 0.0.0.0/0 for GitHub-hosted runners and workstation access rather than restricting to /32 or private runners.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "platform_boundaries",
+          "identity_governance"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_eks_cluster",
+          "name": "dev EKS API endpoint"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/envs/dev/platform/terraform.tfvars",
+          "summary": "Dev endpoint CIDR settings capture accepted public-access tradeoff."
+        },
+        {
+          "path": "infra/modules/eks/main.tf",
+          "summary": "EKS module configures public and private endpoint access."
+        },
+        {
+          "path": "docs/adr/0001-eks-network-redesign.md",
+          "summary": "Network redesign ADR discusses private networking direction."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "EKS API access",
+          "rowTitle": "Public endpoint CIDR",
+          "sortKey": 15
+        }
+      ],
+      "id": "sec.eks.api-endpoint-access",
+      "title": "EKS API public endpoint risk is accepted for dev",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "runtime_operations"
+      ],
+      "actors": [
+        "devops",
+        "github_actions_bot",
+        "operator"
+      ],
+      "objective": "Prefer private or tightly scoped Kubernetes API access while acknowledging dev runner access constraints.",
+      "status": "accepted_risk",
+      "risk": {
+        "impact": 4,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 4,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Allow one controller service account to reconcile ALB and Gateway resources without giving broad AWS access to workloads.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "IRSA trust is locked to kube-system/aws-load-balancer-controller and includes aud/sub conditions.",
+      "gapSummary": "The ELB/EC2 controller policy still requires many Resource='*' operations due to AWS API constraints.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence",
+          "reliability"
+        ],
+        "custom": [
+          "least_privilege",
+          "platform_boundaries"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_service_account",
+          "name": "kube-system/aws-load-balancer-controller"
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "AWS Load Balancer Controller IRSA"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/aws-load-balancer-controller/main.tf",
+          "summary": "Module defines the controller IRSA trust and IAM policy."
+        },
+        {
+          "path": "infra/modules/edge-gateway/main.tf",
+          "summary": "Gateway infrastructure depends on the controller boundary."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "IRSA",
+          "rowTitle": "AWS Load Balancer Controller",
+          "sortKey": 17
+        }
+      ],
+      "id": "sec.irsa.aws-load-balancer-controller",
+      "title": "AWS Load Balancer Controller uses dedicated IRSA",
+      "domain": "network_ingress",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "runtime_operations"
+      ],
+      "actors": [
+        "platform_controller"
+      ],
+      "objective": "Allow one controller service account to reconcile ALB and Gateway resources without giving broad AWS access to workloads.",
+      "status": "partial",
+      "risk": {
+        "impact": 4,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 3,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Allow DNS automation only for the authorized domain and hosted zone with explicit ownership controls.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "IRSA trust is locked to external-dns/external-dns; Route 53 mutation is limited to the configured hosted zone with domain filter, gateway-httproute source, and TXT ownership.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "least_privilege",
+          "platform_boundaries"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_service_account",
+          "name": "external-dns/external-dns"
+        },
+        {
+          "type": "aws_route53_hosted_zone",
+          "name": "noidilin.dev public hosted zone"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/external-dns/main.tf",
+          "summary": "ExternalDNS IRSA and hosted-zone permissions are declared in Terraform."
+        },
+        {
+          "path": "infra/envs/dev/platform/main.tf",
+          "summary": "Platform stack wires ExternalDNS to the public hosted zone and domain filter."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "IRSA",
+          "rowTitle": "ExternalDNS",
+          "sortKey": 18
+        }
+      ],
+      "id": "sec.irsa.external-dns",
+      "title": "ExternalDNS is scoped to the public hosted zone",
+      "domain": "network_ingress",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "runtime_operations"
+      ],
+      "actors": [
+        "platform_controller"
+      ],
+      "objective": "Allow DNS automation only for the authorized domain and hosted zone with explicit ownership controls.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Allow the log agent to write pod logs without reading or managing unrelated cloud resources.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "IRSA trust is locked to amazon-cloudwatch/aws-for-fluent-bit with aud/sub conditions, and the IAM policy only permits creating streams, describing streams, and writing events for the pod log group.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "least_privilege",
+          "incident_readiness"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_service_account",
+          "name": "amazon-cloudwatch/aws-for-fluent-bit"
+        },
+        {
+          "type": "aws_cloudwatch_log_group",
+          "name": "/eks/vintage/pods"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/fluent-bit/main.tf",
+          "summary": "Fluent Bit module defines log group, IRSA trust, and write-only log permissions."
+        },
+        {
+          "path": "docs/runbooks/platform/deploy-dev-platform.md",
+          "summary": "Deployment runbook includes platform observability validation context."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "IRSA",
+          "rowTitle": "Fluent Bit",
+          "sortKey": 19
+        }
+      ],
+      "id": "sec.irsa.fluent-bit",
+      "title": "Fluent Bit can only write pod logs",
+      "domain": "observability_incident",
+      "lifecyclePhases": [
+        "runtime_operations",
+        "incident_response"
+      ],
+      "actors": [
+        "platform_controller"
+      ],
+      "objective": "Allow the log agent to write pod logs without reading or managing unrelated cloud resources.",
+      "status": "implemented",
+      "risk": {
+        "impact": 3,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Allow the storage controller to manage EBS volumes through a dedicated identity with complete trust restrictions.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The EBS CSI add-on uses a dedicated IRSA role and AWS managed policy.",
+      "gapSummary": "The trust policy currently restricts sub but lacks aud=sts.amazonaws.com condition.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "reliability"
+        ],
+        "custom": [
+          "least_privilege",
+          "runtime_isolation"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_service_account",
+          "name": "kube-system/ebs-csi-controller-sa"
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "EBS CSI driver IRSA"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/eks/main.tf",
+          "summary": "EKS module configures the EBS CSI add-on and service account role."
+        },
+        {
+          "path": "gitops/k8s/database/statefulset.yml",
+          "summary": "PostgreSQL StatefulSet relies on Kubernetes storage provisioning."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "IRSA",
+          "rowTitle": "EBS CSI driver",
+          "sortKey": 20
+        }
+      ],
+      "id": "sec.irsa.ebs-csi-driver",
+      "title": "EBS CSI driver IRSA is missing aud condition",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "runtime_operations"
+      ],
+      "actors": [
+        "platform_controller"
+      ],
+      "objective": "Allow the storage controller to manage EBS volumes through a dedicated identity with complete trust restrictions.",
+      "status": "partial",
+      "risk": {
+        "impact": 4,
+        "likelihood": 3,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Default application pods should not inherit AWS or Kubernetes API permissions unless a dedicated least-privilege identity is declared.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Application manifests do not declare app IRSA, so workloads do not receive AWS API permissions by default. The app manifests also do not create Role, RoleBinding, or ClusterRoleBinding for app workloads.",
+      "gapSummary": "Workloads do not yet use dedicated service accounts and do not set automountServiceAccountToken: false to make the no-Kubernetes-API-token posture explicit.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "runtime_isolation",
+          "least_privilege"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_service_account",
+          "name": "application service accounts"
+        },
+        {
+          "type": "k8s_manifest",
+          "name": "gitops application manifests"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "gitops/k8s/backend/gateway.yml",
+          "summary": "Application deployments are defined without IRSA annotations or dedicated service account controls."
+        },
+        {
+          "path": "gitops/k8s/frontend/deployment.yml",
+          "summary": "Frontend deployment is part of the app workload set."
+        },
+        {
+          "path": "gitops/kustomization.yml",
+          "summary": "Kustomize deploys app manifests through GitOps."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "GitOps",
+          "rowTitle": "Application pod accesses cloud services",
+          "sortKey": 17
+        },
+        {
+          "report": "security_permission_design",
+          "section": "Kubernetes service accounts",
+          "rowTitle": "Application AWS permissions",
+          "sortKey": 21
+        },
+        {
+          "report": "security_permission_design",
+          "section": "Kubernetes RBAC",
+          "rowTitle": "Application RBAC",
+          "sortKey": 22
+        }
+      ],
+      "id": "sec.k8s.app-workload-isolation",
+      "title": "Application workloads have no AWS permissions but still need explicit service accounts",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "gitops_sync",
+        "runtime_operations"
+      ],
+      "actors": [
+        "application_workload",
+        "argo_cd_controller"
+      ],
+      "objective": "Default application pods should not inherit AWS or Kubernetes API permissions unless a dedicated least-privilege identity is declared.",
+      "status": "partial",
+      "risk": {
+        "impact": 4,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Prevent arbitrary namespaces from attaching public routes or mutating DNS records outside the authorized domain.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The shared Gateway listener only accepts routes from namespaces labeled for public-gateway access; vintage, argocd, and monitoring namespaces are explicitly labeled. DNS mutation is limited to the configured public hosted zone.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence",
+          "reliability"
+        ],
+        "custom": [
+          "platform_boundaries",
+          "least_privilege"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_gateway",
+          "name": "shared public Gateway"
+        },
+        {
+          "type": "k8s_namespace",
+          "name": "authorized route namespaces"
+        },
+        {
+          "type": "aws_route53_hosted_zone",
+          "name": "noidilin.dev"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/edge-gateway/chart/templates/gateway.yaml",
+          "summary": "Gateway listener restricts route attachment with namespace selectors."
+        },
+        {
+          "path": "gitops/namespace.yml",
+          "summary": "Application namespace declares the public gateway access label."
+        },
+        {
+          "path": "infra/modules/external-dns/main.tf",
+          "summary": "ExternalDNS is constrained to the configured hosted zone and domain."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Runtime platform",
+          "rowTitle": "Manage public ingress",
+          "sortKey": 18
+        },
+        {
+          "report": "security_permission_design",
+          "section": "Kubernetes Gateway API",
+          "rowTitle": "Cross-namespace route attachment",
+          "sortKey": 23
+        }
+      ],
+      "id": "sec.k8s.gateway-namespace-boundary",
+      "title": "Public Gateway route attachment is namespace-scoped",
+      "domain": "network_ingress",
+      "lifecyclePhases": [
+        "gitops_sync",
+        "runtime_operations"
+      ],
+      "actors": [
+        "platform_controller"
+      ],
+      "objective": "Prevent arbitrary namespaces from attaching public routes or mutating DNS records outside the authorized domain.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Limit GitOps reconciliation to authorized source paths, namespaces, and resource kinds.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Terraform installs an Argo CD Application that syncs the repository main branch gitops/ path and enables prune/selfHeal.",
+      "gapSummary": "The Application still uses the default project; no restrictive AppProject limits source, destination, namespace, or resource kinds.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "gitops_governance",
+          "platform_boundaries"
+        ]
+      },
+      "resources": [
+        {
+          "type": "argocd_application",
+          "name": "vintage GitOps application"
+        },
+        {
+          "type": "argocd_project",
+          "name": "default project"
+        },
+        {
+          "type": "k8s_manifest",
+          "name": "gitops/"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/argocd/application.yml",
+          "summary": "Application syncs the gitops path from main with automated prune and self-heal."
+        },
+        {
+          "path": "infra/modules/argocd/gitops-application/templates/application.yaml",
+          "summary": "Helm template creates the Argo CD Application."
+        },
+        {
+          "path": "gitops/kustomization.yml",
+          "summary": "GitOps tree defines the synced desired state."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "GitOps",
+          "rowTitle": "Synchronize application deployment",
+          "sortKey": 15
+        },
+        {
+          "report": "security_permission_design",
+          "section": "Argo CD",
+          "rowTitle": "GitOps permission boundary",
+          "sortKey": 24
+        }
+      ],
+      "id": "sec.argocd.project-boundary",
+      "title": "Argo CD GitOps boundary needs AppProject restrictions",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "gitops_sync"
+      ],
+      "actors": [
+        "argo_cd_controller"
+      ],
+      "objective": "Limit GitOps reconciliation to authorized source paths, namespaces, and resource kinds.",
+      "status": "partial",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 3,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Allow GitOps to create application resources while preventing privileged pods, high-privilege RBAC, or unauthorized cloud identities.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "GitOps creates Deployments, Services, StatefulSets, HTTPRoutes, ServiceMonitors, and other application resources.",
+      "gapSummary": "No policy/RBAC layer yet blocks high-privilege RBAC, privileged pods, or unauthorized service accounts.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "gitops_governance",
+          "runtime_isolation",
+          "platform_boundaries"
+        ]
+      },
+      "resources": [
+        {
+          "type": "k8s_manifest",
+          "name": "application manifests"
+        },
+        {
+          "type": "k8s_rbac",
+          "name": "cluster policy guardrails"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "gitops/kustomization.yml",
+          "summary": "Kustomize includes application, database, route, dashboard, and secret resources."
+        },
+        {
+          "path": "gitops/k8s/backend/service-monitor.yml",
+          "summary": "Application resources include monitoring custom resources."
+        },
+        {
+          "path": "infra/modules/gateway-api-crds/chart/templates/validatingadmissionpolicy-safe-upgrades.gateway.networking.k8s.io.yaml",
+          "summary": "Existing validation policy pattern could be extended to app resource guardrails."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "GitOps",
+          "rowTitle": "Create application resources",
+          "sortKey": 16
+        }
+      ],
+      "id": "sec.gitops.application-resource-policy",
+      "title": "Application resource creation lacks admission/RBAC policy guardrails",
+      "domain": "eks_kubernetes",
+      "lifecyclePhases": [
+        "gitops_sync",
+        "runtime_operations"
+      ],
+      "actors": [
+        "argo_cd_controller"
+      ],
+      "objective": "Allow GitOps to create application resources while preventing privileged pods, high-privilege RBAC, or unauthorized cloud identities.",
+      "status": "partial",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 4,
+        "deploymentRisk": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,590 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataset": {
+    "id": "permission-controls.sdlc-governance",
+    "title": "Permission controls: sdlc governance",
+    "version": "1.0.0",
+    "domain": "sdlc_governance",
+    "updatedAt": "2026-06-22"
+  },
+  "controls": [
+    {
+      "rationale": "Allow contributors to create and enrich requirements while keeping prioritization, deployment scope, and security exceptions under reviewer control.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Requirements and context can be captured through issues, pull request discussions, and repository documents.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "operational_excellence"
+        ],
+        "custom": [
+          "change_management",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "issue_tracker",
+          "name": "Issue tracker"
+        },
+        {
+          "type": "architecture_doc",
+          "name": "Product backlog and architecture notes"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/plan/infra-ci-workflow.md",
+          "summary": "Planning documents capture intended workflow behavior."
+        },
+        {
+          "path": "docs/onboard.md",
+          "summary": "Onboarding documentation orients contributors to project workflows."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Requirements",
+          "rowTitle": "Submit feature requirement",
+          "sortKey": 1
+        }
+      ],
+      "id": "sdlc.requirements.intake",
+      "title": "Controlled feature requirement intake",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "requirements"
+      ],
+      "actors": [
+        "junior_developer",
+        "senior_developer",
+        "devops",
+        "security_reviewer"
+      ],
+      "objective": "Allow contributors to create and enrich requirements while keeping prioritization, deployment scope, and security exceptions under reviewer control.",
+      "status": "implemented",
+      "risk": {
+        "impact": 2,
+        "likelihood": 2,
+        "exposure": 2,
+        "effort": 1,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Record risk labels and control requirements before implementation proceeds.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Architecture documents, ADRs, runbooks, and security reports can record risk context and controls.",
+      "gapSummary": "Security reviewer approval and risk labeling are not yet codified as GitHub rulesets or policy-as-code.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "change_management",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "issue_tracker",
+          "name": "Issue tracker"
+        },
+        {
+          "type": "architecture_doc",
+          "name": "Architecture documents"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/adr/0001-eks-network-redesign.md",
+          "summary": "ADR records network risk and design decisions."
+        },
+        {
+          "path": "docs/reports/schema/permission-controls.schema.json",
+          "summary": "This schema makes risk and status analysis explicit."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Requirements",
+          "rowTitle": "Assess requirement risk",
+          "sortKey": 2
+        }
+      ],
+      "id": "sdlc.requirements.risk-review",
+      "title": "Requirement risk review",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "risk_review"
+      ],
+      "actors": [
+        "senior_developer",
+        "devops",
+        "security_reviewer"
+      ],
+      "objective": "Record risk labels and control requirements before implementation proceeds.",
+      "status": "partial",
+      "risk": {
+        "impact": 4,
+        "likelihood": 3,
+        "exposure": 3,
+        "effort": 3,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Allow feature branch development while denying direct protected-main bypasses.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Development is organized around feature branches and pull requests; repository credentials that could bypass the main branch are not stored in the repo.",
+      "gapSummary": "Branch protection itself remains managed in GitHub settings rather than repository code.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "operational_excellence",
+          "security"
+        ],
+        "custom": [
+          "change_management",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_repository",
+          "name": "noidilin/hiraya"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "CI is scoped to pull requests and workflow dispatch for infrastructure checks."
+        },
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Image CI runs from main pushes or manual dispatch."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Source control",
+          "rowTitle": "Create development branch",
+          "sortKey": 3
+        }
+      ],
+      "id": "sdlc.source.branch-protection",
+      "title": "Feature branches protect mainline changes",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "source_control"
+      ],
+      "actors": [
+        "junior_developer",
+        "senior_developer"
+      ],
+      "objective": "Allow feature branch development while denying direct protected-main bypasses.",
+      "status": "implemented",
+      "risk": {
+        "impact": 3,
+        "likelihood": 2,
+        "exposure": 2,
+        "effort": 2,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Allow developers to push feature branch code without granting mutable cloud access or long-lived AWS credentials.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Developers can push to feature branches; CI defaults to contents read, and AWS access is only requested by OIDC jobs that need it.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "supply_chain_security",
+          "least_privilege"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_repository",
+          "name": "noidilin/hiraya"
+        },
+        {
+          "type": "github_workflow",
+          "name": "infra-ci"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "Workflow-level permissions are contents: read."
+        },
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "OIDC is requested only in the build-and-push job."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Source control",
+          "rowTitle": "Commit code",
+          "sortKey": 4
+        }
+      ],
+      "id": "sdlc.source.commit-guardrails",
+      "title": "Feature branch commits avoid cloud credential exposure",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "source_control",
+        "ci_validation"
+      ],
+      "actors": [
+        "junior_developer",
+        "senior_developer",
+        "github_actions_bot"
+      ],
+      "objective": "Allow developers to push feature branch code without granting mutable cloud access or long-lived AWS credentials.",
+      "status": "implemented",
+      "risk": {
+        "impact": 3,
+        "likelihood": 2,
+        "exposure": 2,
+        "effort": 1,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Allow contributors to open pull requests and receive validation feedback without giving untrusted code mutable cloud access.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Pull requests trigger static checks; trusted same-repository PRs can obtain a read-only Terraform plan, while fork PRs do not assume the AWS role.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "change_management",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "infra-ci"
+        },
+        {
+          "type": "github_repository",
+          "name": "Pull requests"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "trusted-platform-plan only runs for pull requests from the same repository."
+        },
+        {
+          "path": ".github/scripts/publish-terraform-plan-comment.sh",
+          "summary": "Plan output is published as review context rather than applied."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Pull request",
+          "rowTitle": "Open pull request",
+          "sortKey": 5
+        }
+      ],
+      "id": "sdlc.pull-request.open-readonly",
+      "title": "Pull requests trigger read-only validation first",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "pull_request",
+        "ci_validation"
+      ],
+      "actors": [
+        "junior_developer",
+        "senior_developer",
+        "github_actions_bot"
+      ],
+      "objective": "Allow contributors to open pull requests and receive validation feedback without giving untrusted code mutable cloud access.",
+      "status": "implemented",
+      "risk": {
+        "impact": 3,
+        "likelihood": 2,
+        "exposure": 2,
+        "effort": 1,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Validate Terraform, Kustomize, and Helm output without modifying AWS or deployment state.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Infra CI runs terraform fmt/validate/tests, kubectl kustomize, and Helm rendering without requesting id-token or cloud mutation permissions.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "operational_excellence",
+          "security"
+        ],
+        "custom": [
+          "change_management",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "infra-ci static checks"
+        },
+        {
+          "type": "terraform_module",
+          "name": "infra modules"
+        },
+        {
+          "type": "k8s_manifest",
+          "name": "gitops manifests"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "Static checks run before trusted plan and use only contents: read."
+        },
+        {
+          "path": "infra/modules/vpc/tests/private_network.tftest.hcl",
+          "summary": "Terraform module contract tests validate expected infrastructure behavior."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "CI validation",
+          "rowTitle": "Run PR static checks",
+          "sortKey": 6
+        }
+      ],
+      "id": "sdlc.ci.static-validation",
+      "title": "Static validation does not mutate cloud state",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "ci_validation"
+      ],
+      "actors": [
+        "github_actions_bot"
+      ],
+      "objective": "Validate Terraform, Kustomize, and Helm output without modifying AWS or deployment state.",
+      "status": "implemented",
+      "risk": {
+        "impact": 3,
+        "likelihood": 2,
+        "exposure": 2,
+        "effort": 1,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Permit approval, change requests, and recommendations while denying forced release of unreviewed or failing changes.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Pull request reviews can use workflow results, plan artifacts, and scan summaries as review evidence.",
+      "gapSummary": "Required review enforcement remains delegated to GitHub repository settings.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "operational_excellence",
+          "security"
+        ],
+        "custom": [
+          "change_management",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_repository",
+          "name": "Pull request reviews"
+        },
+        {
+          "type": "github_workflow",
+          "name": "CI reports"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/runbooks/platform/validate-infra-pr-plan.md",
+          "summary": "Runbook defines how reviewers validate infrastructure PR plans."
+        },
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "CI publishes PR plan context for review."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Pull request",
+          "rowTitle": "Review code",
+          "sortKey": 8
+        }
+      ],
+      "id": "sdlc.review.code-review-gate",
+      "title": "Code review gate uses CI and plan evidence",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "pull_request",
+        "risk_review"
+      ],
+      "actors": [
+        "senior_developer",
+        "security_reviewer"
+      ],
+      "objective": "Permit approval, change requests, and recommendations while denying forced release of unreviewed or failing changes.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 1
+      }
+    },
+    {
+      "rationale": "Ensure network, identity, and permission-boundary changes are reviewed against explicit security expectations.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Pull requests provide Terraform plan, static validation, and documentation context for DevOps and security review.",
+      "gapSummary": "Policy-as-code does not yet automatically block overly broad IAM, network, or high-privilege changes.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "least_privilege",
+          "change_management"
+        ]
+      },
+      "resources": [
+        {
+          "type": "terraform_module",
+          "name": "infra"
+        },
+        {
+          "type": "architecture_doc",
+          "name": "Architecture design"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "Terraform plan and validation jobs are available as review inputs."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl",
+          "summary": "Tests assert important OIDC role behaviors."
+        },
+        {
+          "path": "docs/reports/schema/permission-controls.schema.json",
+          "summary": "Risk scoring supports priority analysis for missing controls."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Pull request",
+          "rowTitle": "Review infrastructure change",
+          "sortKey": 9
+        }
+      ],
+      "id": "sdlc.review.infrastructure-policy",
+      "title": "Infrastructure review still needs policy-as-code guardrails",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "risk_review",
+        "pull_request"
+      ],
+      "actors": [
+        "devops",
+        "security_reviewer"
+      ],
+      "objective": "Ensure network, identity, and permission-boundary changes are reviewed against explicit security expectations.",
+      "status": "partial",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 4,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Only merged, reviewed, and passing changes should reach main-triggered build and deployment workflows.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The design depends on successful checks and reviewer approval before main branch workflows advance image build or deployment.",
+      "gapSummary": "Branch protection details are managed in GitHub settings rather than Terraform or repository code.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "operational_excellence",
+          "security"
+        ],
+        "custom": [
+          "change_management",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_repository",
+          "name": "main branch"
+        },
+        {
+          "type": "github_workflow",
+          "name": "main branch workflows"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Image CI is triggered by main branch pushes."
+        },
+        {
+          "path": "docs/runbooks/platform/enforce-app-baseline-required-check.md",
+          "summary": "Runbook documents required check enforcement for the app baseline."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Pull request",
+          "rowTitle": "Merge pull request",
+          "sortKey": 10
+        }
+      ],
+      "id": "sdlc.source.merge-gate",
+      "title": "Main branch merge gate precedes deployment automation",
+      "domain": "sdlc_governance",
+      "lifecyclePhases": [
+        "pull_request",
+        "source_control"
+      ],
+      "actors": [
+        "senior_developer"
+      ],
+      "objective": "Only merged, reviewed, and passing changes should reach main-triggered build and deployment workflows.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    }
+  ]
+}
