@@ -50,3 +50,5 @@ The verified changed-service detector source is `.github/scripts/src/detect-chan
 The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `Vintage Storefront app baseline / app-baseline`.
 
 The workflow runs for pull requests that touch the app workspace, GitOps manifests, the workflow itself, CI helper scripts, or the service catalog. It grants only read-only repository contents permission, does not request OIDC or cloud secrets, activates the pinned Node/pnpm app toolchain, summarizes impacted services through the service catalog changed-service detector, and runs `pnpm run app:baseline` from this workspace.
+
+The same changed-service detector also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the detector emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.

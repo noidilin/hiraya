@@ -18,9 +18,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changed-service-images:
+    name: changed-service-images
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-services.outputs.matrix }}
+      has_changes: ${{ steps.changed-services.outputs.has_changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node from app toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: app/microservices/package.json
+          cache: pnpm
+          cache-dependency-path: app/microservices/pnpm-lock.yaml
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.8.0 --activate
+
+      - name: Install app workspace
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:install
+
+      - name: Detect changed services
+        id: changed-services
+        shell: bash
+        working-directory: app/microservices
+        run: |
+          set -euo pipefail
+          git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" > /tmp/hiraya-pr-changed-files.txt
+          pnpm run app:changed -- --files-from /tmp/hiraya-pr-changed-files.txt --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
+
+          {
+            echo "### Changed service image inputs"
+            echo ""
+            echo "Changed services detected from the service catalog:"
+            echo ""
+            echo '```json'
+            cat /tmp/hiraya-app-service-matrix.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   app-baseline:
     name: app-baseline
     runs-on: ubuntu-latest
+    needs: changed-service-images
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -48,20 +100,18 @@ jobs:
         run: pnpm run app:install
 
       - name: Summarize changed app services
+        env:
+          MATRIX: ${{ needs.changed-service-images.outputs.matrix }}
         shell: bash
-        working-directory: app/microservices
         run: |
           set -euo pipefail
-          git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" > /tmp/hiraya-pr-changed-files.txt
-          pnpm run app:changed -- --files-from /tmp/hiraya-pr-changed-files.txt > /tmp/hiraya-app-service-matrix.json
-
           {
             echo "### Vintage Storefront app baseline inputs"
             echo ""
             echo "Changed services detected from the service catalog:"
             echo ""
             echo '```json'
-            cat /tmp/hiraya-app-service-matrix.json
+            printf '%s\n' "$MATRIX"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -69,3 +119,46 @@ jobs:
         shell: bash
         working-directory: app/microservices
         run: pnpm run app:baseline
+
+  image-build-only:
+    name: image-build-only (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: changed-service-images
+    if: ${{ needs.changed-service-images.outputs.has_changes == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changed-service-images.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a # v3.11.1
+
+      - name: Build Docker image without push
+        uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e # v6.18.0
+        with:
+          context: ${{ matrix.build_context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: hiraya-pr-build/${{ matrix.service }}:${{ github.sha }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=pr-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=pr-${{ matrix.service }}
+
+      - name: Summarize build-only image gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Build-only Docker image gate — ${{ matrix.service }}"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Context | \`${{ matrix.build_context }}\` |"
+            echo "| Dockerfile | \`${{ matrix.dockerfile }}\` |"
+            echo "| Push | \`false\` |"
+            echo "| AWS credentials | Not requested |"
+          } >> "$GITHUB_STEP_SUMMARY"

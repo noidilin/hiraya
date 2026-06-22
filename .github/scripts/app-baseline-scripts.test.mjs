@@ -133,6 +133,22 @@ test('legacy path-filter metadata is documented as transitional', async () => {
 });
 
 
+test('app PR baseline workflow builds changed service images without AWS or registry push', async () => {
+  const workflow = await readFile(appPrBaselineWorkflowPath, 'utf8');
+
+  assert.match(workflow, /outputs:\n\s+matrix: \$\{\{ steps\.changed-services\.outputs\.matrix \}\}\n\s+has_changes: \$\{\{ steps\.changed-services\.outputs\.has_changes \}\}/);
+  assert.match(workflow, /id: changed-services/);
+  assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-pr-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
+  assert.match(workflow, /image-build-only:/);
+  assert.match(workflow, /if: \$\{\{ needs\.changed-service-images\.outputs\.has_changes == 'true' \}\}/);
+  assert.match(workflow, /matrix: \$\{\{ fromJson\(needs\.changed-service-images\.outputs\.matrix\) \}\}/);
+  assert.match(workflow, /docker\/build-push-action@/);
+  assert.match(workflow, /context: \$\{\{ matrix\.build_context \}\}/);
+  assert.match(workflow, /file: \$\{\{ matrix\.dockerfile \}\}/);
+  assert.match(workflow, /push: false/);
+  assert.doesNotMatch(workflow, /docker login|aws ecr|get-login-password/);
+});
+
 test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
   const [workflow, scripts, readme] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
