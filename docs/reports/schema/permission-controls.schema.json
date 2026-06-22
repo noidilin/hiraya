@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiraya.local/schemas/permission-controls.schema.json",
+  "title": "Hiraya Permission Controls Dataset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "dataset", "controls"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "version", "domain", "updatedAt"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "domain": { "$ref": "#/$defs/domain" },
+        "updatedAt": { "type": "string", "format": "date" }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/control" }
+    }
+  },
+  "$defs": {
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "domain",
+        "lifecyclePhases",
+        "actors",
+        "resources",
+        "objective",
+        "rationale",
+        "boundarySummary",
+        "implementedSummary",
+        "gapSummary",
+        "status",
+        "risk",
+        "frameworks",
+        "evidence",
+        "reportViews"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+        "title": { "type": "string", "minLength": 1 },
+        "domain": { "$ref": "#/$defs/domain" },
+        "lifecyclePhases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/lifecyclePhase" }
+        },
+        "actors": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/actor" }
+        },
+        "resources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/resourceRef" }
+        },
+        "objective": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "boundarySummary": { "type": "string", "minLength": 1 },
+        "implementedSummary": { "type": "string", "minLength": 1 },
+        "gapSummary": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["impact", "likelihood", "exposure", "effort", "deploymentRisk"],
+          "properties": {
+            "impact": { "$ref": "#/$defs/score" },
+            "likelihood": { "$ref": "#/$defs/score" },
+            "exposure": { "$ref": "#/$defs/score" },
+            "effort": { "$ref": "#/$defs/score" },
+            "deploymentRisk": { "$ref": "#/$defs/score" }
+          }
+        },
+        "frameworks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["awsWellArchitected", "custom"],
+          "properties": {
+            "awsWellArchitected": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/awsWellArchitectedPillar" }
+            },
+            "custom": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/customFramework" }
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidence" }
+        },
+        "reportViews": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/reportView" }
+        }
+      }
+    },
+    "resourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "name"],
+      "properties": {
+        "type": { "$ref": "#/$defs/resourceType" },
+        "name": { "type": "string", "minLength": 1 },
+        "scope": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "summary"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "reportView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["report", "section", "rowTitle"],
+      "properties": {
+        "report": { "$ref": "#/$defs/reportName" },
+        "section": { "type": "string", "minLength": 1 },
+        "rowTitle": { "type": "string", "minLength": 1 },
+        "sortKey": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "score": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "status": {
+      "type": "string",
+      "enum": ["implemented", "partial", "not_implemented", "accepted_risk", "external_dependency"]
+    },
+    "reportName": {
+      "type": "string",
+      "enum": ["sdlc_permission_lifecycle", "security_permission_design"]
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "identity_access",
+        "github_supply_chain",
+        "eks_kubernetes",
+        "network_ingress",
+        "observability_incident",
+        "secrets_audit",
+        "terraform_state",
+        "sdlc_governance"
+      ]
+    },
+    "lifecyclePhase": {
+      "type": "string",
+      "enum": [
+        "requirements",
+        "risk_review",
+        "source_control",
+        "pull_request",
+        "ci_validation",
+        "image_build",
+        "image_scan",
+        "registry_publish",
+        "gitops_update",
+        "gitops_sync",
+        "infrastructure_deploy",
+        "infrastructure_destroy",
+        "runtime_operations",
+        "incident_response",
+        "audit"
+      ]
+    },
+    "actor": {
+      "type": "string",
+      "enum": [
+        "junior_developer",
+        "senior_developer",
+        "devops",
+        "security_reviewer",
+        "github_actions_bot",
+        "argo_cd_controller",
+        "platform_controller",
+        "application_workload",
+        "kira_aiops",
+        "terraform_apply_role",
+        "operator",
+        "auditor"
+      ]
+    },
+    "resourceType": {
+      "type": "string",
+      "enum": [
+        "issue_tracker",
+        "architecture_doc",
+        "github_repository",
+        "github_workflow",
+        "github_environment",
+        "github_token",
+        "terraform_module",
+        "terraform_state",
+        "aws_iam_role",
+        "aws_iam_policy",
+        "aws_iam_identity_center",
+        "aws_oidc_provider",
+        "aws_ecr_repository",
+        "aws_eks_cluster",
+        "aws_cloudwatch_log_group",
+        "aws_route53_hosted_zone",
+        "aws_secrets_manager",
+        "aws_kms_key",
+        "k8s_namespace",
+        "k8s_service_account",
+        "k8s_rbac",
+        "k8s_gateway",
+        "k8s_manifest",
+        "argocd_application",
+        "argocd_project",
+        "admin_ui",
+        "observability_tool",
+        "runbook"
+      ]
+    },
+    "awsWellArchitectedPillar": {
+      "type": "string",
+      "enum": [
+        "operational_excellence",
+        "security",
+        "reliability",
+        "performance_efficiency",
+        "cost_optimization",
+        "sustainability"
+      ]
+    },
+    "customFramework": {
+      "type": "string",
+      "enum": [
+        "least_privilege",
+        "supply_chain_security",
+        "change_management",
+        "gitops_governance",
+        "platform_boundaries",
+        "runtime_isolation",
+        "secret_management",
+        "auditability",
+        "incident_readiness",
+        "identity_governance"
+      ]
+    }
+  }
+}

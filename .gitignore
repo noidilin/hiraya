@@ -35,6 +35,7 @@ backend.hcl
 
 # project
 aiops/
+docs/reports/build/
 
 # AI
 AGENTS.md

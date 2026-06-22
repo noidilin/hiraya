@@ -1,0 +1,621 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataset": {
+    "id": "permission-controls.github-supply-chain",
+    "title": "Permission controls: github supply chain",
+    "version": "1.0.0",
+    "domain": "github_supply_chain",
+    "updatedAt": "2026-06-22"
+  },
+  "controls": [
+    {
+      "rationale": "Remove static AWS credentials from CI/CD and use auditable, job-scoped federation.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "AWS workflow jobs request id-token only when needed and use aws-actions/configure-aws-credentials to assume roles.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "least_privilege",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "AWS workflows"
+        },
+        {
+          "type": "aws_oidc_provider",
+          "name": "GitHub OIDC provider"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Build-and-push requests id-token and assumes the image push role."
+        },
+        {
+          "path": ".github/workflows/infra-deploy.yml",
+          "summary": "Deploy workflow uses OIDC role assumption instead of static keys."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "Bootstrap stack defines GitHub OIDC IAM roles."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "No long-lived AWS keys",
+          "sortKey": 4
+        }
+      ],
+      "id": "sec.github-oidc.no-long-lived-keys",
+      "title": "GitHub Actions uses short-lived AWS credentials",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "ci_validation",
+        "infrastructure_deploy",
+        "registry_publish"
+      ],
+      "actors": [
+        "github_actions_bot"
+      ],
+      "objective": "Remove static AWS credentials from CI/CD and use auditable, job-scoped federation.",
+      "status": "implemented",
+      "risk": {
+        "impact": 5,
+        "likelihood": 2,
+        "exposure": 4,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Prevent other repositories from assuming this project's AWS roles.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "OIDC trust policies restrict the audience to sts.amazonaws.com and subject patterns to the noidilin/hiraya repository.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security"
+        ],
+        "custom": [
+          "least_privilege",
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_iam_role",
+          "name": "GitHub OIDC roles"
+        },
+        {
+          "type": "github_repository",
+          "name": "noidilin/hiraya"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "GitHub OIDC role trust policies are declared in Terraform."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl",
+          "summary": "Tests validate expected OIDC role trust behavior."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Repository trust restriction",
+          "sortKey": 5
+        }
+      ],
+      "id": "sec.github-oidc.repo-trust",
+      "title": "Repository-scoped OIDC trust",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "ci_validation",
+        "infrastructure_deploy",
+        "registry_publish"
+      ],
+      "actors": [
+        "github_actions_bot"
+      ],
+      "objective": "Prevent other repositories from assuming this project's AWS roles.",
+      "status": "implemented",
+      "risk": {
+        "impact": 5,
+        "likelihood": 2,
+        "exposure": 4,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Allow trusted pull requests to preview Terraform changes without modifying AWS resources or Terraform state.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The plan role can read limited Terraform state and AWS describe/list/get APIs, publishes a plan artifact, and posts a sticky review comment.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "least_privilege",
+          "change_management",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_iam_role",
+          "name": "infra-plan role"
+        },
+        {
+          "type": "terraform_state",
+          "name": "platform state"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "Trusted same-repository pull requests assume the plan role and publish the plan artifact."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl",
+          "summary": "Tests cover plan role state access limitations."
+        },
+        {
+          "path": ".github/scripts/publish-terraform-plan-comment.sh",
+          "summary": "Script publishes plan context to the pull request."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "CI validation",
+          "rowTitle": "Run PR infrastructure preview",
+          "sortKey": 7
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Infra plan trust",
+          "sortKey": 7
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Plan role least privilege",
+          "sortKey": 9
+        }
+      ],
+      "id": "sec.github-oidc.plan-readonly",
+      "title": "Terraform plan role is read-only",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "pull_request",
+        "ci_validation"
+      ],
+      "actors": [
+        "github_actions_bot",
+        "security_reviewer",
+        "devops"
+      ],
+      "objective": "Allow trusted pull requests to preview Terraform changes without modifying AWS resources or Terraform state.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Separate high-risk deploy and destroy actions from ordinary CI through branch restrictions and GitHub Environment approval.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Deploy and destroy workflows restrict execution to main, use the dev environment gate, generate a preflight plan, and then assume the apply role.",
+      "gapSummary": "No explicit gap recorded for the dev environment workflow.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence",
+          "reliability"
+        ],
+        "custom": [
+          "least_privilege",
+          "change_management"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "infra-deploy and infra-destroy"
+        },
+        {
+          "type": "github_environment",
+          "name": "dev"
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "infra-apply role"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-deploy.yml",
+          "summary": "Deploy workflow uses main branch and environment approval before apply."
+        },
+        {
+          "path": ".github/workflows/infra-destroy.yml",
+          "summary": "Destroy workflow requires explicit manual confirmation and environment approval."
+        },
+        {
+          "path": "docs/runbooks/platform/deploy-dev-platform.md",
+          "summary": "Runbook documents controlled platform deployment."
+        },
+        {
+          "path": "docs/runbooks/platform/destroy-dev-platform.md",
+          "summary": "Runbook documents controlled platform destruction."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Infrastructure",
+          "rowTitle": "Deploy infrastructure",
+          "sortKey": 19
+        },
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Infrastructure",
+          "rowTitle": "Destroy development platform",
+          "sortKey": 20
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Infra apply trust",
+          "sortKey": 8
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Apply role scoped mutation",
+          "sortKey": 10
+        }
+      ],
+      "id": "sec.github-oidc.apply-env-gate",
+      "title": "Infrastructure apply requires environment gate",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "infrastructure_destroy"
+      ],
+      "actors": [
+        "devops",
+        "github_actions_bot"
+      ],
+      "objective": "Separate high-risk deploy and destroy actions from ordinary CI through branch restrictions and GitHub Environment approval.",
+      "status": "implemented",
+      "risk": {
+        "impact": 5,
+        "likelihood": 2,
+        "exposure": 4,
+        "effort": 3,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Build and publish immutable images only from trusted main-branch content and authorized repositories.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Image CI runs from main push or manual dispatch, uses Buildx linux/amd64, tags images with the commit SHA, assumes an OIDC image-push role, and publishes to authorized ECR repositories with immutable tags.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "supply_chain_security",
+          "least_privilege"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "image-ci"
+        },
+        {
+          "type": "aws_ecr_repository",
+          "name": "Hiraya service repositories"
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "image-push role"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Image pipeline detects changed services, builds images, and pushes via OIDC."
+        },
+        {
+          "path": ".github/utils/services.json",
+          "summary": "Service catalog defines allowed image repositories and manifest paths."
+        },
+        {
+          "path": "infra/modules/ecr/main.tf",
+          "summary": "ECR repositories are managed by Terraform."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "Image-push role trust is scoped in Terraform."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Container supply chain",
+          "rowTitle": "Build container image",
+          "sortKey": 11
+        },
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Container supply chain",
+          "rowTitle": "Push container image",
+          "sortKey": 13
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions OIDC",
+          "rowTitle": "Image push trust",
+          "sortKey": 6
+        }
+      ],
+      "id": "sec.image.build-publish-trust",
+      "title": "Image build and publish trust boundary",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "image_build",
+        "registry_publish"
+      ],
+      "actors": [
+        "github_actions_bot"
+      ],
+      "objective": "Build and publish immutable images only from trusted main-branch content and authorized repositories.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Detect high and critical CVEs before vulnerable images become trusted deployment inputs.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "ECR scan-on-push is enabled, tags are immutable, and image CI produces Trivy HIGH/CRITICAL reports.",
+      "gapSummary": "Trivy is currently advisory-only and does not fail the pipeline or require an exception approval for high-risk CVEs.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "supply_chain_security",
+          "change_management"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "image-ci"
+        },
+        {
+          "type": "aws_ecr_repository",
+          "name": "ECR scan-on-push"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Image pipeline runs Trivy and records scan output."
+        },
+        {
+          "path": "infra/modules/ecr/main.tf",
+          "summary": "ECR repositories configure image scanning and tag behavior."
+        },
+        {
+          "path": "docs/runbooks/services/rollback-dev-service-image.md",
+          "summary": "Rollback runbook supports response to bad service images."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Container supply chain",
+          "rowTitle": "Scan container image",
+          "sortKey": 12
+        },
+        {
+          "report": "security_permission_design",
+          "section": "ECR security",
+          "rowTitle": "Image scanning",
+          "sortKey": 13
+        }
+      ],
+      "id": "sec.image.vulnerability-scan",
+      "title": "Container image vulnerability scanning",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "image_scan",
+        "registry_publish"
+      ],
+      "actors": [
+        "github_actions_bot",
+        "security_reviewer"
+      ],
+      "objective": "Detect high and critical CVEs before vulnerable images become trusted deployment inputs.",
+      "status": "partial",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 2,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Permit controlled image-version updates while avoiding unrelated repository writes or mixed infrastructure/application changes.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The update-manifests job limits contents: write to the minimal job that rewrites GitOps image fields and commits back to main.",
+      "gapSummary": "Accepted risk: the checkout write token must persist for rebase and push, so the job remains a high-value credential exposure point.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "supply_chain_security",
+          "gitops_governance"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "image-ci update-manifests"
+        },
+        {
+          "type": "github_token",
+          "name": "GITHUB_TOKEN contents: write"
+        },
+        {
+          "type": "k8s_manifest",
+          "name": "gitops image fields"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Only update-manifests needs contents: write and pushes manifest changes."
+        },
+        {
+          "path": "gitops/kustomization.yml",
+          "summary": "GitOps source is a narrow manifest tree."
+        },
+        {
+          "path": ".github/utils/services.json",
+          "summary": "Service catalog constrains manifest update targets."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "GitOps",
+          "rowTitle": "Update deployment version",
+          "sortKey": 14
+        },
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions",
+          "rowTitle": "Manifest update token",
+          "sortKey": 11
+        }
+      ],
+      "id": "sec.github.manifest-update-token",
+      "title": "Manifest update write-token exposure is bounded",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "gitops_update"
+      ],
+      "actors": [
+        "github_actions_bot",
+        "devops"
+      ],
+      "objective": "Permit controlled image-version updates while avoiding unrelated repository writes or mixed infrastructure/application changes.",
+      "status": "accepted_risk",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 3,
+        "deploymentRisk": 2
+      }
+    },
+    {
+      "rationale": "Reduce supply-chain drift from third-party GitHub Actions by pinning dependencies to immutable revisions.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "Major third-party actions are pinned to commit SHA revisions and checkout usually disables persisted credentials.",
+      "gapSummary": "No explicit gap recorded.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security"
+        ],
+        "custom": [
+          "supply_chain_security"
+        ]
+      },
+      "resources": [
+        {
+          "type": "github_workflow",
+          "name": "Repository workflows"
+        }
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/infra-ci.yml",
+          "summary": "Actions are referenced by commit SHA and checkout disables persisted credentials."
+        },
+        {
+          "path": ".github/workflows/image-ci.yml",
+          "summary": "Image CI pins third-party actions and scopes credentials."
+        },
+        {
+          "path": ".github/workflows/infra-deploy.yml",
+          "summary": "Deployment workflow pins actions."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "GitHub Actions",
+          "rowTitle": "Third-party action pinning",
+          "sortKey": 12
+        }
+      ],
+      "id": "sec.github.actions-pinning",
+      "title": "Third-party GitHub Actions are pinned",
+      "domain": "github_supply_chain",
+      "lifecyclePhases": [
+        "ci_validation",
+        "image_build",
+        "infrastructure_deploy"
+      ],
+      "actors": [
+        "github_actions_bot",
+        "security_reviewer"
+      ],
+      "objective": "Reduce supply-chain drift from third-party GitHub Actions by pinning dependencies to immutable revisions.",
+      "status": "implemented",
+      "risk": {
+        "impact": 4,
+        "likelihood": 2,
+        "exposure": 3,
+        "effort": 2,
+        "deploymentRisk": 1
+      }
+    }
+  ]
+}

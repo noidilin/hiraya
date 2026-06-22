@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataset": {
+    "id": "permission-controls.identity-access",
+    "title": "Permission controls: identity access",
+    "version": "1.0.0",
+    "domain": "identity_access",
+    "updatedAt": "2026-06-22"
+  },
+  "controls": [
+    {
+      "rationale": "Centralize human AWS access with MFA, role/group assignment, review, and auditability.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "No repository-managed implementation exists for IAM Identity Center access governance.",
+      "gapSummary": "The repo does not define IAM Identity Center permission sets, groups, assignments, or account access boundaries; human AWS access remains externally and manually governed.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "identity_governance",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_iam_identity_center",
+          "name": "IAM Identity Center"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "Bootstrap IAM roles are codified, but IAM Identity Center resources are absent."
+        },
+        {
+          "path": "docs/reports/report-zhTW.md",
+          "summary": "Architecture report identifies security improvements for production readiness."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "AWS IAM Identity Center",
+          "rowTitle": "Human operator access model",
+          "sortKey": 1
+        }
+      ],
+      "id": "sec.identity-center.human-access",
+      "title": "Human AWS access is not yet codified",
+      "domain": "identity_access",
+      "lifecyclePhases": [
+        "runtime_operations",
+        "audit"
+      ],
+      "actors": [
+        "devops",
+        "security_reviewer",
+        "operator"
+      ],
+      "objective": "Centralize human AWS access with MFA, role/group assignment, review, and auditability.",
+      "status": "not_implemented",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 4,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Make Kubernetes API ownership explicit and versioned instead of relying on creator privileges or temporary admin users.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "The GitHub apply role has permissions to create EKS access entries; if GitHub creates the cluster it can become the consistent cluster owner. Terraform/GitHub apply can manage the platform through the EKS API.",
+      "gapSummary": "Terraform does not yet declare named operator access entries, aws-auth mappings, Identity Center role mappings, or Kubernetes RBAC for human operators.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security",
+          "operational_excellence"
+        ],
+        "custom": [
+          "identity_governance",
+          "least_privilege",
+          "auditability"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_eks_cluster",
+          "name": "dev EKS cluster"
+        },
+        {
+          "type": "aws_iam_identity_center",
+          "name": "operator identity source"
+        },
+        {
+          "type": "k8s_rbac",
+          "name": "operator RBAC"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/eks/main.tf",
+          "summary": "EKS cluster module defines cluster access mode and access-related settings."
+        },
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "Apply role includes permissions needed for EKS access entry management."
+        },
+        {
+          "path": "docs/runbooks/troubleshooting/eks-github-runner-access.md",
+          "summary": "Runbook captures EKS access troubleshooting context."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "AWS IAM Identity Center",
+          "rowTitle": "EKS human administrator mapping",
+          "sortKey": 2
+        },
+        {
+          "report": "security_permission_design",
+          "section": "EKS access control",
+          "rowTitle": "Access entries",
+          "sortKey": 16
+        },
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Operations",
+          "rowTitle": "Access Kubernetes API",
+          "sortKey": 21
+        }
+      ],
+      "id": "sec.eks.operator-access-entries",
+      "title": "EKS operator access entries are incomplete",
+      "domain": "identity_access",
+      "lifecyclePhases": [
+        "runtime_operations",
+        "audit"
+      ],
+      "actors": [
+        "devops",
+        "operator",
+        "terraform_apply_role"
+      ],
+      "objective": "Make Kubernetes API ownership explicit and versioned instead of relying on creator privileges or temporary admin users.",
+      "status": "partial",
+      "risk": {
+        "impact": 5,
+        "likelihood": 3,
+        "exposure": 4,
+        "effort": 3,
+        "deploymentRisk": 3
+      }
+    },
+    {
+      "rationale": "Limit the maximum permissions of automation and runtime roles even when Terraform creates or updates IAM identities.",
+      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
+      "implementedSummary": "GitHub OIDC roles, EKS cluster and node roles, and controller IRSA roles apply the lab-devops-permissions-boundary. IAM roles and policies are Terraform-managed and visible in PR plans.",
+      "gapSummary": "The boundary policy itself is managed outside this repository, and policy-as-code does not yet automatically block overly broad permissions or wildcard pass-role exceptions.",
+      "frameworks": {
+        "awsWellArchitected": [
+          "security"
+        ],
+        "custom": [
+          "least_privilege",
+          "identity_governance"
+        ]
+      },
+      "resources": [
+        {
+          "type": "aws_iam_policy",
+          "name": "lab-devops-permissions-boundary"
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "GitHub, EKS, node, and controller roles"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "infra/envs/dev/bootstrap/main.tf",
+          "summary": "Bootstrap roles attach the configured permissions boundary."
+        },
+        {
+          "path": "infra/modules/eks/main.tf",
+          "summary": "EKS roles are configured with a permission boundary."
+        },
+        {
+          "path": "infra/modules/aws-load-balancer-controller/main.tf",
+          "summary": "Controller IRSA role is bounded."
+        },
+        {
+          "path": "infra/modules/external-dns/main.tf",
+          "summary": "ExternalDNS IRSA role is bounded."
+        }
+      ],
+      "reportViews": [
+        {
+          "report": "security_permission_design",
+          "section": "AWS IAM",
+          "rowTitle": "Permission boundary",
+          "sortKey": 3
+        },
+        {
+          "report": "sdlc_permission_lifecycle",
+          "section": "Audit and governance",
+          "rowTitle": "Modify IAM permissions",
+          "sortKey": 26
+        }
+      ],
+      "id": "sec.iam.permission-boundary",
+      "title": "Permission boundary constrains project IAM roles",
+      "domain": "identity_access",
+      "lifecyclePhases": [
+        "infrastructure_deploy",
+        "audit"
+      ],
+      "actors": [
+        "devops",
+        "security_reviewer",
+        "github_actions_bot"
+      ],
+      "objective": "Limit the maximum permissions of automation and runtime roles even when Terraform creates or updates IAM identities.",
+      "status": "external_dependency",
+      "risk": {
+        "impact": 5,
+        "likelihood": 2,
+        "exposure": 4,
+        "effort": 3,
+        "deploymentRisk": 3
+      }
+    }
+  ]
+}
