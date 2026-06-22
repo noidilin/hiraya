@@ -190,6 +190,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.doesNotMatch(workflow, /id-token:\s*write/);
   assert.doesNotMatch(workflow, /configure-aws-credentials|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|role-to-assume/);
   assert.match(workflow, /node-version-file: app\/microservices\/package\.json/);
+  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache requires pnpm before Corepack activation');
   assert.match(workflow, /corepack prepare pnpm@11\.8\.0 --activate/);
   assert.match(workflow, /pnpm run app:install/);
   assert.match(workflow, /pnpm run app:baseline/);
@@ -229,6 +230,7 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
   assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
+  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache requires pnpm before Corepack activation');
   assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
   assert.match(workflow, /name: Run app baseline before image push/);
   assert.match(workflow, /pnpm run app:baseline/);
