@@ -10,6 +10,8 @@ const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/pack
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
 
+const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
+
 async function readWorkspaceScripts() {
   const packageJson = JSON.parse(await readFile(workspacePackagePath, 'utf8'));
   return packageJson.scripts ?? {};
@@ -81,7 +83,7 @@ test('Storefront unit tests run through Vitest and are part of the app baseline'
   assert.match(readme, /Storefront Vitest unit tests/i);
 });
 
-test('implemented contract baseline command runs shared validation while future browser command fails clearly', async () => {
+test('implemented contract and browser baseline commands run shared validation', async () => {
   const scripts = await readWorkspaceScripts();
 
   assert.match(
@@ -91,8 +93,8 @@ test('implemented contract baseline command runs shared validation while future 
   );
   assert.doesNotMatch(scripts['app:test:contract'], /not implemented|exit\(1\)|exit 1/i);
 
-  assert.match(scripts['app:test:browser'], /not implemented/i, 'app:test:browser should explain that the slice is not implemented yet');
-  assert.match(scripts['app:test:browser'], /exit\(1\)|exit 1/, 'app:test:browser should fail until implemented');
+  assert.match(scripts['app:test:browser'], /playwright test --config playwright\.config\.mjs/, 'app:test:browser should run the Storefront Playwright baseline');
+  assert.doesNotMatch(scripts['app:test:browser'], /not implemented|exit\(1\)|exit 1/i);
 });
 
 test('backend contract baseline command names and gates each active Storefront suite', async () => {
@@ -128,4 +130,37 @@ test('legacy path-filter metadata is documented as transitional', async () => {
   assert.match(appReadme, /changed-service detector/i, 'app README should name the verified detector path');
   assert.match(appReadme, /compiled runtime/i, 'app README should explain that TypeScript CI scripts run from compiled JavaScript');
   assert.match(appReadme, /legacy path-filter/i, 'app README should tell agents how to handle the legacy filters');
+});
+
+
+test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
+  const [workflow, scripts, readme] = await Promise.all([
+    readFile(appPrBaselineWorkflowPath, 'utf8'),
+    readWorkspaceScripts(),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  assert.match(workflow, /^name: Vintage Storefront app baseline$/m);
+  assert.match(workflow, /^  pull_request:$/m, 'workflow should run on pull requests');
+  for (const pathPattern of [
+    'app/microservices/**',
+    'gitops/**',
+    '.github/workflows/app-pr-baseline.yml',
+    '.github/scripts/**',
+    '.github/utils/services.json',
+  ]) {
+    assert.match(workflow, new RegExp(`      - "${pathPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*\\\*/g, '.*')}"`));
+  }
+
+  assert.match(workflow, /permissions:\n  contents: read\n/);
+  assert.doesNotMatch(workflow, /id-token:\s*write/);
+  assert.doesNotMatch(workflow, /configure-aws-credentials|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|role-to-assume/);
+  assert.match(workflow, /node-version-file: app\/microservices\/package\.json/);
+  assert.match(workflow, /corepack prepare pnpm@11\.8\.0 --activate/);
+  assert.match(workflow, /pnpm run app:install/);
+  assert.match(workflow, /pnpm run app:baseline/);
+  assert.match(workflow, /pnpm run app:changed -- --files-from/);
+  assert.match(scripts['app:baseline'], /app:catalog/);
+  assert.match(readme, /Vintage Storefront app baseline \/ app-baseline/i);
+  assert.match(readme, /required branch protection/i);
 });
