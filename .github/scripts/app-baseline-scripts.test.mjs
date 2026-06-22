@@ -197,7 +197,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /pnpm run app:changed -- --files-from/);
   assert.match(scripts['app:baseline'], /app:catalog/);
   assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
-  assert.match(readme, /Vintage Storefront app baseline \/ app-baseline/i);
+  assert.match(readme, /required branch protection status is `app-baseline`/i);
   assert.match(readme, /required branch protection/i);
 });
 
@@ -208,7 +208,7 @@ test('required app baseline branch rule is documented with non-AWS evidence', as
     readFile(appBaselineRequiredCheckRunbookPath, 'utf8'),
   ]);
 
-  const requiredCheck = 'Vintage Storefront app baseline / app-baseline';
+  const requiredCheck = 'app-baseline';
 
   assert.match(workflow, /^  pull_request:$/m, 'required check must run on pull requests');
   assert.doesNotMatch(workflow, /pull_request:\n\s+paths:/, 'required check must not depend on path filters');

@@ -6,7 +6,7 @@ This runbook records the branch rule that must be in place before the Vintage St
 
 - Protected branch: `main`
 - GitHub repository ruleset: `require-vintage-storefront-app-baseline`
-- Required status check: `Vintage Storefront app baseline / app-baseline`
+- Required status check: `app-baseline`
 - Workflow source: `.github/workflows/app-pr-baseline.yml`
 - Configuration surface: GitHub repository **Settings → Rules → Rulesets**
 
@@ -49,7 +49,7 @@ gh api repos/noidilin/hiraya/rulesets \
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
           {
-            "context": "Vintage Storefront app baseline / app-baseline"
+            "context": "app-baseline"
           }
         ]
       }
@@ -68,7 +68,7 @@ Live repository settings evidence captured on 2026-06-22:
 - `enforcement`: `active`
 - `target`: `branch`
 - `conditions.ref_name.include`: `["~DEFAULT_BRANCH"]`
-- Required check contexts: `["Vintage Storefront app baseline / app-baseline"]`
+- Required check contexts: `["app-baseline"]`
 - No AWS-backed workflow context is present in the required status checks list.
 
 Verify the live rule with:
@@ -84,5 +84,5 @@ Expected evidence:
 - `target` is `branch`.
 - `conditions.ref_name.include` contains `~DEFAULT_BRANCH`.
 - `rules` contains `required_status_checks`.
-- `required_status_checks[].context` is exactly `Vintage Storefront app baseline / app-baseline`.
+- `required_status_checks[].context` is exactly `app-baseline`.
 - No AWS-backed workflow context appears in the required status checks list.
