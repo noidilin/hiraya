@@ -264,6 +264,7 @@ const ProductDetail: React.FC = () => {
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <IconButton
+                          aria-label={`Decrease quantity for ${product.name}`}
                           onClick={() => handleQuantityChange(-1)}
                           disabled={quantity <= 1}
                           sx={{
@@ -289,6 +290,7 @@ const ProductDetail: React.FC = () => {
                           {quantity}
                         </Typography>
                         <IconButton
+                          aria-label={`Increase quantity for ${product.name}`}
                           onClick={() => handleQuantityChange(1)}
                           disabled={quantity >= product.inventory}
                           sx={{
