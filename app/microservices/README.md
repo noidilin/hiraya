@@ -15,6 +15,7 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run app:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
 | `pnpm run app:static` | Run Storefront build, typecheck, and lint checks, then the backend build. Lint errors block while warnings remain allowed initially. |
 | `pnpm run app:gitops` | Render GitOps desired state with `kubectl kustomize gitops` and run targeted GitOps render assertions without Kubernetes cluster credentials. |
+| `pnpm run app:smoke:public` | Run the read-only public deploy smoke against `STOREFRONT_PUBLIC_URL` (default `https://hiraya.noidilin.dev`) by checking `/` for the Storefront shell and `/api/products` for a successful product envelope. |
 | `pnpm run storefront:build` | Build the Vintage Storefront production bundle through the frontend package. |
 | `pnpm run storefront:typecheck` | Run the Vintage Storefront TypeScript checker without emitting files. |
 | `pnpm run storefront:lint` | Run the Vintage Storefront ESLint check. Errors fail the command; warnings are permitted for now. |
@@ -55,3 +56,7 @@ The workflow runs for pull requests that touch the app workspace, GitOps manifes
 `app:baseline` includes the GitOps render assertions from `.github/scripts/src/assert-gitops-render.mts`. The assertion gate renders repository desired state only, then verifies the Vintage Storefront HTTPRoute hostname and frontend backend reference, the frontend ClusterIP Service and container target port, gateway environment URLs for active Storefront APIs, and every rendered Deployment/Service targetPort-to-containerPort pair, including legacy deployed services outside active behavior tests.
 
 The same changed-service detector also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the detector emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.
+
+## Public deploy smoke
+
+`.github/scripts/storefront-public-smoke.mjs` is the reusable public deploy smoke for the post-GitOps path. It performs only read-only HTTP GET checks: `/` must return the Storefront shell document and `/api/products` must return the minimal `{ success: true, data: ... }` product envelope. The normal main image/GitOps update workflow runs this smoke after manifest updates are pushed, and the manual service rollback escape hatch runs the same smoke after an applied rollback commit. Smoke failures fail the workflow for visibility only; recovery remains manual and no automatic rollback or manifest revert is attempted.

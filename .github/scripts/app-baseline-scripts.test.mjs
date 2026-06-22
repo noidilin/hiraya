@@ -12,6 +12,8 @@ const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md'
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
 const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
+const rollbackWorkflowPath = path.join(repoRoot, '.github/workflows/service-image-dev-rollback.yml');
+const publicSmokeScriptPath = path.join(repoRoot, '.github/scripts/storefront-public-smoke.mjs');
 const gitopsAssertSourcePath = path.join(repoRoot, '.github/scripts/src/assert-gitops-render.mts');
 
 async function readWorkspaceScripts() {
@@ -35,6 +37,7 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:changed',
     'app:static',
     'app:gitops',
+    'app:smoke:public',
     'storefront:build',
     'storefront:typecheck',
     'storefront:lint',
@@ -220,4 +223,35 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /Configure AWS credentials with OIDC[\s\S]*?role-to-assume: \$\{\{ env\.IMAGE_PUSH_ROLE_ARN \}\}/);
   assert.match(workflow, /### Main image push baseline validation/);
   assert.match(workflow, /### Image build and push/);
+});
+
+test('public Storefront deploy smoke is reusable and read-only', async () => {
+  const [scripts, smokeScript, readme] = await Promise.all([
+    readWorkspaceScripts(),
+    readFile(publicSmokeScriptPath, 'utf8'),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  assert.match(scripts['app:smoke:public'], /storefront-public-smoke\.mjs/, 'workspace should expose the public deploy smoke script');
+  assert.match(smokeScript, /STORE_FRONT_PUBLIC_URL|STOREFRONT_PUBLIC_URL/, 'smoke script should accept a configurable public URL');
+  assert.match(smokeScript, /\/api\/products/, 'smoke script should call the public products API route');
+  assert.match(smokeScript, /success[\s\S]*true/, 'smoke script should validate the success envelope');
+  assert.match(smokeScript, /Array\.isArray/, 'smoke script should validate product data is an array');
+  assert.match(smokeScript, /<div id="root"><\/div>|id="root"/, 'smoke script should verify the Storefront shell document');
+  assert.doesNotMatch(smokeScript, /aws |kubectl|argocd|terraform|EKS|KUBECONFIG/i, 'public smoke must not require cloud or cluster credentials');
+  assert.match(readme, /public deploy smoke/i);
+  assert.match(readme, /read-only/i);
+});
+
+test('manifest update workflows run or document the public smoke escape hatch', async () => {
+  const [imageWorkflow, rollbackWorkflow] = await Promise.all([
+    readFile(imageCiWorkflowPath, 'utf8'),
+    readFile(rollbackWorkflowPath, 'utf8'),
+  ]);
+
+  assert.match(imageWorkflow, /Commit and push manifest updates[\s\S]*?Run public Storefront deploy smoke/, 'main manifest update path should smoke after pushing manifests');
+  assert.match(imageWorkflow, /pnpm run app:smoke:public/, 'main manifest update path should reuse the workspace smoke command');
+  assert.doesNotMatch(imageWorkflow, /revert|reset --hard|rollback/i, 'smoke failure should not trigger automatic rollback or manifest revert');
+  assert.match(rollbackWorkflow, /Commit and push rollback[\s\S]*?Run public Storefront deploy smoke/, 'manual rollback escape hatch should smoke after pushing manifests');
+  assert.match(rollbackWorkflow, /pnpm run app:smoke:public/, 'manual rollback path should reuse the same smoke command');
 });
