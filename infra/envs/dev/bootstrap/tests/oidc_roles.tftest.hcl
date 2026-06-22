@@ -2,9 +2,11 @@ run "creates_scoped_infra_oidc_roles" {
   command = plan
 
   variables {
-    github_repository               = "example/hiraya"
-    state_bucket_name               = "hiraya-tf-state"
-    repositories                    = ["hiraya-frontend"]
+    github_repository              = "example/hiraya"
+    state_bucket_name              = "hiraya-tf-state"
+    repositories                   = ["hiraya-frontend"]
+    manage_platform_cluster_access = true
+
     skip_aws_credentials_validation = true
   }
 
@@ -56,5 +58,58 @@ run "creates_scoped_infra_oidc_roles" {
   assert {
     condition     = length([for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : statement if try(contains(tolist(statement.Action), "iam:PassRole"), false) && statement.Resource == "*"]) == 0
     error_message = "The apply policy must not allow wildcard iam:PassRole."
+  }
+
+  assert {
+    condition = anytrue([
+      for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(contains(tolist(statement.Action), "ec2:DisassociateAddress"), false)
+      if statement.Sid == "AllowPlatformInfrastructureMutation"
+    ])
+    error_message = "The apply policy must allow EC2 EIP disassociation during VPC destroy."
+  }
+
+  assert {
+    condition     = aws_iam_role.github_infra_plan.permissions_boundary == null && aws_iam_role.github_infra_apply.permissions_boundary == null
+    error_message = "The infra plan/apply roles must not attach the runtime permissions boundary because it explicitly denies IAM reads required by Terraform refresh."
+  }
+
+  assert {
+    condition = length([
+      for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : statement
+      if statement.Sid == "AllowTerraformStateBucketAccessCheck" && try(statement.Resource, "") == "arn:aws:s3:::hiraya-tf-state" && !can(statement.Condition)
+    ]) == 1
+    error_message = "The apply policy must allow unprefixed S3 bucket access checks used by destroy verification."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowTerraformStateMutation"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+    )
+    error_message = "The apply policy must allow Terraform S3 native lock-file mutation for the platform state."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(tolist(statement.Condition.StringLike["s3:prefix"]), [statement.Condition.StringLike["s3:prefix"]])
+        if statement.Sid == "AllowTerraformStateBucketList"
+      ]),
+      "devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+    )
+    error_message = "The apply policy must allow listing Terraform S3 native lock-file keys."
+  }
+
+  assert {
+    condition     = aws_eks_access_entry.github_infra_apply_cluster_admin[0].cluster_name == "devops-hiraya-dev-eks" && aws_eks_access_entry.github_infra_apply_cluster_admin[0].type == "STANDARD"
+    error_message = "The apply role must be registered as a standard EKS access entry for the disposable dev cluster."
+  }
+
+  assert {
+    condition     = aws_eks_access_policy_association.github_infra_apply_cluster_admin[0].policy_arn == "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy" && aws_eks_access_policy_association.github_infra_apply_cluster_admin[0].access_scope[0].type == "cluster"
+    error_message = "The apply role must have cluster-scoped EKS cluster-admin access for Terraform Kubernetes and Helm resources."
   }
 }

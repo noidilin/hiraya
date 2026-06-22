@@ -53,9 +53,8 @@ resource "aws_iam_role_policy_attachment" "github_image_push" {
 }
 
 resource "aws_iam_role" "github_infra_plan" {
-  name                 = "${local.name_prefix}-github-infra-plan"
-  permissions_boundary = local.runtime_boundary_arn
-  assume_role_policy   = data.aws_iam_policy_document.github_infra_plan_assume_role.json
+  name               = "${local.name_prefix}-github-infra-plan"
+  assume_role_policy = data.aws_iam_policy_document.github_infra_plan_assume_role.json
 
   tags = local.common_tags
 }
@@ -83,7 +82,7 @@ resource "aws_iam_policy" "github_infra_plan" {
         Resource = "arn:aws:s3:::${var.state_bucket_name}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.terraform_state_prefixes
+            "s3:prefix" = local.terraform_state_keys
           }
         }
       },
@@ -130,9 +129,8 @@ resource "aws_iam_role_policy_attachment" "github_infra_plan" {
 }
 
 resource "aws_iam_role" "github_infra_apply" {
-  name                 = "${local.name_prefix}-github-infra-apply"
-  permissions_boundary = local.runtime_boundary_arn
-  assume_role_policy   = data.aws_iam_policy_document.github_infra_apply_assume_role.json
+  name               = "${local.name_prefix}-github-infra-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_infra_apply_assume_role.json
 
   tags = local.common_tags
 }
@@ -153,7 +151,13 @@ resource "aws_iam_policy" "github_infra_apply" {
           "s3:GetObjectVersion",
           "s3:PutObject"
         ]
-        Resource = local.terraform_state_object_arns
+        Resource = local.terraform_state_mutation_object_arns
+      },
+      {
+        Sid      = "AllowTerraformStateBucketAccessCheck"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = "arn:aws:s3:::${var.state_bucket_name}"
       },
       {
         Sid      = "AllowTerraformStateBucketList"
@@ -162,7 +166,7 @@ resource "aws_iam_policy" "github_infra_apply" {
         Resource = "arn:aws:s3:::${var.state_bucket_name}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.terraform_state_prefixes
+            "s3:prefix" = local.terraform_state_list_prefixes
           }
         }
       },
@@ -233,6 +237,7 @@ resource "aws_iam_policy" "github_infra_apply" {
           "ec2:DeleteVpc",
           "ec2:DeleteVpcEndpoints",
           "ec2:DetachInternetGateway",
+          "ec2:DisassociateAddress",
           "ec2:DisassociateRouteTable",
           "ec2:ModifySubnetAttribute",
           "ec2:ModifyVpcAttribute",
@@ -360,5 +365,29 @@ resource "aws_iam_policy" "github_infra_apply" {
 resource "aws_iam_role_policy_attachment" "github_infra_apply" {
   role       = aws_iam_role.github_infra_apply.name
   policy_arn = aws_iam_policy.github_infra_apply.arn
+}
+
+resource "aws_eks_access_entry" "github_infra_apply_cluster_admin" {
+  count = var.manage_platform_cluster_access ? 1 : 0
+
+  cluster_name  = var.platform_cluster_name
+  principal_arn = aws_iam_role.github_infra_apply.arn
+  type          = "STANDARD"
+
+  tags = local.common_tags
+}
+
+resource "aws_eks_access_policy_association" "github_infra_apply_cluster_admin" {
+  count = var.manage_platform_cluster_access ? 1 : 0
+
+  cluster_name  = var.platform_cluster_name
+  policy_arn    = local.eks_cluster_admin_policy_arn
+  principal_arn = aws_iam_role.github_infra_apply.arn
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.github_infra_apply_cluster_admin]
 }
 
