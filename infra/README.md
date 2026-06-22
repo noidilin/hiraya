@@ -55,7 +55,7 @@ The broad `0.0.0.0/0` public EKS API CIDR in dev is temporary workstation access
 
 The platform stack also installs cluster add-ons as separate modules:
 
-- vendored upstream Gateway API core CRDs from `infra/modules/gateway-api-crds`, with optional Gateway API validation resources; use `docs/runbooks/gateway-api-crd-cutover.md` for the live dev cutover checklist
+- vendored upstream Gateway API core CRDs from `infra/modules/gateway-api-crds`, with optional Gateway API validation resources; use `docs/runbooks/platform/gateway-api-crd-cutover.md` for the live dev cutover checklist
 - AWS Load Balancer Controller for the shared public edge, with AWS-specific CRDs installed by its Helm chart
 - ExternalDNS in `external-dns`, using IRSA, Route 53 permissions scoped to `noidilin.dev`, `gateway-httproute` sources, `sync` policy, and TXT registry ownership
 - `kube-prometheus-stack` in `monitoring`

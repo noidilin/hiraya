@@ -1,7 +1,7 @@
 # Infra CI/CD Workflow Implementation Plan
 
 Status: planned
-Related: [`TODO.md`](../../TODO.md), [`docs/adr/0001-eks-network-redesign.md`](../adr/0001-eks-network-redesign.md), [`docs/runbooks/dev-platform-cutover.md`](../runbooks/dev-platform-cutover.md), [`infra/README.md`](../../infra/README.md)
+Related: [`TODO.md`](../../TODO.md), [`docs/adr/0001-eks-network-redesign.md`](../adr/0001-eks-network-redesign.md), [`docs/runbooks/README.md`](../runbooks/README.md), [`infra/README.md`](../../infra/README.md)
 
 ## Goal
 
