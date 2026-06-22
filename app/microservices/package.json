@@ -19,7 +19,7 @@
     "app:test:contract": "corepack pnpm@11.8.0 --filter @hiraya/storefront-contracts test",
     "app:test:backend-contract": "corepack pnpm@11.8.0 --filter @hiraya/storefront-contracts test:backend-contract",
     "app:test:frontend": "corepack pnpm@11.8.0 --filter frontend test",
-    "app:test:browser": "node -e \"console.error('app:test:browser not implemented yet; implement the browser behavior baseline slice before enabling this command.'); process.exit(1)\"",
+    "app:test:browser": "playwright test --config playwright.config.mjs",
     "install:all": "corepack pnpm@11.8.0 run app:install",
     "check:workspace": "corepack pnpm@11.8.0 run app:workspace",
     "catalog:validate": "node ../../.github/scripts/dist/validate-service-catalog.mjs ../../.github/utils/services.json --root ../..",
@@ -43,6 +43,8 @@
     "docker:down": "docker-compose down"
   },
   "devDependencies": {
+    "@hiraya/storefront-contracts": "workspace:*",
+    "@playwright/test": "^1.61.0",
     "@types/node": "^24.13.2",
     "concurrently": "^8.2.2",
     "typescript": "^5.9.3"
