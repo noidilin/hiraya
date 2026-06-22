@@ -14,6 +14,7 @@ const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/p
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
 const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
 const rollbackWorkflowPath = path.join(repoRoot, '.github/workflows/service-image-dev-rollback.yml');
+const deploySmokeWorkflowPath = path.join(repoRoot, '.github/workflows/deploy-smoke.yml');
 const publicSmokeScriptPath = path.join(repoRoot, '.github/scripts/storefront-public-smoke.mjs');
 const gitopsAssertSourcePath = path.join(repoRoot, '.github/scripts/src/assert-gitops-render.mts');
 
@@ -225,7 +226,7 @@ test('required app baseline branch rule is documented with non-AWS evidence', as
 test('main image CI gates ECR pushes and manifest updates behind the app baseline', async () => {
   const workflow = await readFile(imageCiWorkflowPath, 'utf8');
 
-  assert.match(workflow, /gitops\/\*\*/, 'main image CI should rerun when GitOps baseline inputs change');
+  assert.doesNotMatch(workflow, /- "gitops\/\*\*"/, 'main image CI should not rerun from its generated GitOps manifest PR merges');
   assert.match(workflow, /\.github\/scripts\/\*\*/, 'main image CI should rerun when baseline helper scripts change');
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
@@ -236,6 +237,11 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /build-and-push:[\s\S]*?needs:\n\s+- detect-changes\n\s+- app-baseline/, 'image push job must need the baseline job');
   assert.match(workflow, /update-manifests:[\s\S]*?needs:[\s\S]*?- app-baseline/, 'manifest update job must also be gated by the baseline job');
+  assert.match(workflow, /actions\/create-github-app-token@/, 'manifest promotion should use a GitHub App token so PR checks trigger');
+  assert.match(workflow, /PROMOTION_BRANCH: ci\/update-manifests-dev/, 'manifest promotion should use a rolling dev branch');
+  assert.match(workflow, /gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'manifest promotion PR should enable squash auto-merge');
+  assert.doesNotMatch(workflow, /git push origin HEAD:main/, 'manifest promotion must not push directly to protected main');
+  assert.doesNotMatch(workflow, /\[skip ci\]/, 'manifest promotion commits must allow the required PR check to run');
   assert.match(workflow, /Configure AWS credentials with OIDC[\s\S]*?role-to-assume: \$\{\{ env\.IMAGE_PUSH_ROLE_ARN \}\}/);
   assert.match(workflow, /### Main image push baseline validation/);
   assert.match(workflow, /### Image build and push/);
@@ -259,15 +265,23 @@ test('public Storefront deploy smoke is reusable and read-only', async () => {
   assert.match(readme, /read-only/i);
 });
 
-test('manifest update workflows run or document the public smoke escape hatch', async () => {
-  const [imageWorkflow, rollbackWorkflow] = await Promise.all([
+test('manifest update workflows use protected bot PRs and post-merge smoke', async () => {
+  const [imageWorkflow, rollbackWorkflow, smokeWorkflow] = await Promise.all([
     readFile(imageCiWorkflowPath, 'utf8'),
     readFile(rollbackWorkflowPath, 'utf8'),
+    readFile(deploySmokeWorkflowPath, 'utf8'),
   ]);
 
-  assert.match(imageWorkflow, /Commit and push manifest updates[\s\S]*?Run public Storefront deploy smoke/, 'main manifest update path should smoke after pushing manifests');
-  assert.match(imageWorkflow, /pnpm run app:smoke:public/, 'main manifest update path should reuse the workspace smoke command');
-  assert.doesNotMatch(imageWorkflow, /revert|reset --hard|rollback/i, 'smoke failure should not trigger automatic rollback or manifest revert');
-  assert.match(rollbackWorkflow, /Commit and push rollback[\s\S]*?Run public Storefront deploy smoke/, 'manual rollback escape hatch should smoke after pushing manifests');
-  assert.match(rollbackWorkflow, /pnpm run app:smoke:public/, 'manual rollback path should reuse the same smoke command');
+  assert.match(imageWorkflow, /Open or update manifest promotion PR[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'main manifest update path should create a squash auto-merge PR');
+  assert.match(imageWorkflow, /HIRAYA_BOT_APP_ID[\s\S]*?HIRAYA_BOT_PRIVATE_KEY/, 'main manifest update path should fail fast without GitHub App credentials');
+  assert.doesNotMatch(imageWorkflow, /git push origin HEAD:main/, 'main manifest update path must not push directly to protected main');
+  assert.match(rollbackWorkflow, /Open rollback PR and enable auto-merge[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'manual rollback should create a squash auto-merge PR');
+  assert.match(rollbackWorkflow, /ROLLBACK_BRANCH: ci\/rollback-/, 'manual rollback should use unique rollback branches');
+  assert.doesNotMatch(rollbackWorkflow, /git push origin HEAD:main/, 'manual rollback must not push directly to protected main');
+  assert.doesNotMatch(`${imageWorkflow}\n${rollbackWorkflow}`, /\[skip ci\]/, 'bot PR commits must allow required PR checks to run');
+
+  assert.match(smokeWorkflow, /^name: deploy-smoke$/m);
+  assert.match(smokeWorkflow, /push:[\s\S]*?branches: \[main\][\s\S]*?- "gitops\/\*\*"/, 'post-merge smoke should run on GitOps pushes to main');
+  assert.match(smokeWorkflow, /pnpm run app:smoke:public/, 'post-merge smoke should reuse the workspace smoke command');
+  assert.doesNotMatch(smokeWorkflow, /revert|reset --hard|rollback/i, 'smoke failure should not trigger automatic rollback or manifest revert');
 });

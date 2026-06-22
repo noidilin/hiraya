@@ -6,7 +6,6 @@ on:
     branches: [main]
     paths:
       - "app/microservices/**"
-      - "gitops/**"
       - ".github/workflows/image-ci.yml"
       - ".github/scripts/**"
       - ".github/utils/services.json"
@@ -274,16 +273,45 @@ jobs:
       - build-and-push
     if: ${{ github.ref == 'refs/heads/main' && needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
-      contents: write
+      contents: read
+
+    env:
+      PROMOTION_BRANCH: ci/update-manifests-dev
 
     steps:
+      - name: Validate GitHub App secrets
+        env:
+          APP_ID: ${{ secrets.HIRAYA_BOT_APP_ID }}
+          PRIVATE_KEY: ${{ secrets.HIRAYA_BOT_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$APP_ID" || -z "$PRIVATE_KEY" ]]; then
+            echo "Missing HIRAYA_BOT_APP_ID or HIRAYA_BOT_PRIVATE_KEY repository secret." >&2
+            echo "Create and install the Hiraya GitHub App before enabling manifest promotion." >&2
+            exit 1
+          fi
+
+      - name: Create Hiraya bot token
+        id: bot-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.HIRAYA_BOT_APP_ID }}
+          private-key: ${{ secrets.HIRAYA_BOT_PRIVATE_KEY }}
+
       - name: Checkout main
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: main
-          # Intentionally persist the write-scoped token for the rebase/push retry loop below.
-          # Risk accepted: later steps in this job can use repo write credentials; keep this job minimal.
-          persist-credentials: true
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Prepare rolling promotion branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$PROMOTION_BRANCH:refs/remotes/origin/$PROMOTION_BRANCH" || true
+          git checkout -B "$PROMOTION_BRANCH" origin/main
 
       - name: Update image tags
         env:
@@ -314,58 +342,85 @@ jobs:
           set -euo pipefail
           kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
 
-      - name: Commit and push manifest updates
+      - name: Commit manifest updates
+        id: commit-manifests
         shell: bash
         run: |
           set -euo pipefail
 
           if git diff --quiet -- gitops/; then
-            echo "No manifest changes to commit."
+            echo "No manifest changes to promote."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "hiraya-bot[bot]"
+          git config user.email "hiraya-bot[bot]@users.noreply.github.com"
           git add gitops/
-          git commit -m "ci: update image tags for ${IMAGE_TAG} [skip ci]"
+          git commit -m "ci: update image tags for ${IMAGE_TAG}"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
-          max_retries=5
-          attempt=1
-          while [[ "$attempt" -le "$max_retries" ]]; do
-            git fetch origin main
-
-            if git rebase origin/main; then
-              if git push origin HEAD:main; then
-                echo "Push succeeded on attempt ${attempt}."
-                exit 0
-              fi
-            else
-              echo "Rebase failed on attempt ${attempt}; aborting rebase before retry."
-              git rebase --abort || true
-            fi
-
-            sleep_time=$(( 2 ** (attempt - 1) + RANDOM % 3 ))
-            echo "Push failed on attempt ${attempt}; retrying in ${sleep_time}s."
-            sleep "$sleep_time"
-            attempt=$(( attempt + 1 ))
-          done
-
-          echo "Push failed after ${max_retries} attempts." >&2
-          exit 1
-
-      - name: Set up Node from app toolchain
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version-file: app/microservices/package.json
-
-      - name: Activate pinned pnpm
+      - name: Push manifest promotion branch
+        if: ${{ steps.commit-manifests.outputs.has_changes == 'true' }}
+        env:
+          BOT_TOKEN: ${{ steps.bot-token.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.8.0 --activate
+          git remote set-url origin "https://x-access-token:${BOT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force-with-lease origin "HEAD:${PROMOTION_BRANCH}"
 
-      - name: Run public Storefront deploy smoke
+      - name: Open or update manifest promotion PR
+        if: ${{ steps.commit-manifests.outputs.has_changes == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+          PR_TITLE: "ci: promote dev images for ${{ env.IMAGE_TAG }}"
+          MATRIX: ${{ needs.detect-changes.outputs.matrix }}
         shell: bash
-        working-directory: app/microservices
-        run: pnpm run app:smoke:public
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/hiraya-manifest-promotion-pr.md <<EOF
+          ## Dev image promotion
+
+          Promotes images built and pushed by image-ci run ${GITHUB_RUN_ID}.
+
+          - Source commit: ${IMAGE_TAG}
+          - Promotion branch: ${PROMOTION_BRANCH}
+          - Required check before merge: app-baseline
+          - Merge method: squash auto-merge
+
+          ### Changed service images
+
+          \`\`\`json
+          ${MATRIX}
+          \`\`\`
+          EOF
+
+          existing_pr=$(gh pr list \
+            --base main \
+            --head "$PROMOTION_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number // ""')
+
+          if [[ -z "$existing_pr" ]]; then
+            pr_url=$(gh pr create \
+              --base main \
+              --head "$PROMOTION_BRANCH" \
+              --title "$PR_TITLE" \
+              --body-file /tmp/hiraya-manifest-promotion-pr.md)
+          else
+            gh pr edit "$existing_pr" \
+              --title "$PR_TITLE" \
+              --body-file /tmp/hiraya-manifest-promotion-pr.md
+            pr_url=$(gh pr view "$existing_pr" --json url --jq '.url')
+          fi
+
+          gh pr merge "$pr_url" --auto --squash --delete-branch
+
+          {
+            echo "### Manifest promotion PR"
+            echo ""
+            echo "Opened or updated ${pr_url} and enabled squash auto-merge after required checks pass."
+          } >> "$GITHUB_STEP_SUMMARY"
