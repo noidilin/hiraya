@@ -1,0 +1,320 @@
+name: service-image-dev-rollback
+
+run-name: Rollback ${{ inputs.service }} to ${{ inputs.rollback_to_tag }} by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target GitHub Environment for approval gates"
+        required: true
+        default: dev
+        type: environment
+      service:
+        description: "Service to roll back"
+        required: true
+        type: choice
+        options:
+          - auth
+          - gateway
+          - orders
+          - order-service
+          - product-service
+          - user-service
+          - frontend
+      rollback_to_tag:
+        description: "Existing ECR image tag to roll back to, usually a previous commit SHA"
+        required: true
+        type: string
+      reason:
+        description: "Why are we rolling back?"
+        required: true
+        type: string
+      dry_run:
+        description: "Preview only; do not commit"
+        required: true
+        default: true
+        type: boolean
+      confirm:
+        description: "For apply runs only, type ROLLBACK"
+        required: true
+        default: DRY_RUN
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-rollback-${{ inputs.environment }}-${{ inputs.service }}
+  cancel-in-progress: false
+
+env:
+  # Single-account dev deployment values. Keep these aligned with infra/envs/dev/bootstrap/*.tfvars.
+  AWS_REGION: ap-northeast-1
+  AWS_ACCOUNT_ID: "549475122024"
+  IMAGE_READ_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-image-push
+
+jobs:
+  preview:
+    name: Preview rollback
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      repository: ${{ steps.service.outputs.repository }}
+      manifest: ${{ steps.service.outputs.manifest }}
+      current_image: ${{ steps.images.outputs.current_image }}
+      target_image: ${{ steps.images.outputs.target_image }}
+
+    steps:
+      - name: Require main branch workflow run
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "Rollback must be run from the main branch. Current ref: ${GITHUB_REF}" >&2
+            exit 1
+          fi
+
+      - name: Validate operator inputs
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM: ${{ inputs.confirm }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$ROLLBACK_TO_TAG" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+            echo "rollback_to_tag must be a valid Docker/ECR tag." >&2
+            exit 1
+          fi
+
+          if [[ "$DRY_RUN" != "true" && "$CONFIRM" != "ROLLBACK" ]]; then
+            echo "Set dry_run=true for preview, or type ROLLBACK in confirm to apply." >&2
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Resolve service metadata
+        id: service
+        env:
+          SERVICE: ${{ inputs.service }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          service_json=$(jq -cer --arg name "$SERVICE" '.services[] | select(.name == $name)' .github/utils/services.json)
+          repository=$(jq -r '.image.repository' <<< "$service_json")
+          manifest=$(jq -r '.manifest.path' <<< "$service_json")
+
+          if [[ -z "$repository" || "$repository" == "null" ]]; then
+            echo "Missing image.repository for service ${SERVICE}." >&2
+            exit 1
+          fi
+
+          if [[ -z "$manifest" || "$manifest" == "null" || ! -f "$manifest" ]]; then
+            echo "Missing manifest.path for service ${SERVICE}: ${manifest}" >&2
+            exit 1
+          fi
+
+          echo "repository=$repository" >> "$GITHUB_OUTPUT"
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.IMAGE_READ_ROLE_ARN }}
+          role-session-name: hiraya-rollback-preview-${{ github.run_id }}-${{ inputs.service }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify target image exists in ECR
+        env:
+          REPOSITORY: ${{ steps.service.outputs.repository }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecr describe-images \
+            --repository-name "$REPOSITORY" \
+            --image-ids "imageTag=${ROLLBACK_TO_TAG}" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text
+
+      - name: Render rollback diff
+        id: images
+        env:
+          REPOSITORY: ${{ steps.service.outputs.repository }}
+          MANIFEST: ${{ steps.service.outputs.manifest }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_line_count=$(grep -Ec '^[[:space:]]*image: ' "$MANIFEST" || true)
+          if [[ "$image_line_count" -ne 1 ]]; then
+            echo "Expected exactly one image field in ${MANIFEST}, found ${image_line_count}." >&2
+            exit 1
+          fi
+
+          current_image=$(awk '/^[[:space:]]*image: / { print $2 }' "$MANIFEST")
+          target_image="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}:${ROLLBACK_TO_TAG}"
+
+          echo "current_image=$current_image" >> "$GITHUB_OUTPUT"
+          echo "target_image=$target_image" >> "$GITHUB_OUTPUT"
+
+          sed -i -E "s|^([[:space:]]*image: ).*|\1${target_image}|" "$MANIFEST"
+          git --no-pager diff -- "$MANIFEST" | tee /tmp/hiraya-rollback.diff
+
+      - name: Validate rendered GitOps manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+
+      - name: Publish rollback summary
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          SERVICE: ${{ inputs.service }}
+          REPOSITORY: ${{ steps.service.outputs.repository }}
+          MANIFEST: ${{ steps.service.outputs.manifest }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+          REASON: ${{ inputs.reason }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CURRENT_IMAGE: ${{ steps.images.outputs.current_image }}
+          TARGET_IMAGE: ${{ steps.images.outputs.target_image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Rollback preview"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Environment | \`${ENVIRONMENT}\` |"
+            echo "| Service | \`${SERVICE}\` |"
+            echo "| ECR repository | \`${REPOSITORY}\` |"
+            echo "| Manifest | \`${MANIFEST}\` |"
+            echo "| Current image | \`${CURRENT_IMAGE}\` |"
+            echo "| Target image | \`${TARGET_IMAGE}\` |"
+            echo "| Dry run | \`${DRY_RUN}\` |"
+            echo "| Operator | @${GITHUB_ACTOR} |"
+            echo "| Reason | ${REASON} |"
+            echo ""
+            echo "<details><summary>Manifest diff</summary>"
+            echo ""
+            echo '```diff'
+            cat /tmp/hiraya-rollback.diff
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: Apply rollback
+    runs-on: ubuntu-latest
+    needs: preview
+    if: ${{ inputs.dry_run == false }}
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Re-check rollback confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRM" != "ROLLBACK" ]]; then
+            echo "Apply requires confirm=ROLLBACK." >&2
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: main
+          # Intentionally persist the write-scoped token for the rebase/push retry loop below.
+          # Risk accepted: later steps in this job can use repo write credentials; keep this job minimal.
+          persist-credentials: true
+
+      - name: Apply image rollback
+        env:
+          MANIFEST: ${{ needs.preview.outputs.manifest }}
+          TARGET_IMAGE: ${{ needs.preview.outputs.target_image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_line_count=$(grep -Ec '^[[:space:]]*image: ' "$MANIFEST" || true)
+          if [[ "$image_line_count" -ne 1 ]]; then
+            echo "Expected exactly one image field in ${MANIFEST}, found ${image_line_count}." >&2
+            exit 1
+          fi
+
+          sed -i -E "s|^([[:space:]]*image: ).*|\1${TARGET_IMAGE}|" "$MANIFEST"
+          git --no-pager diff -- "$MANIFEST"
+
+      - name: Validate rendered GitOps manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+
+      - name: Commit and push rollback
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          SERVICE: ${{ inputs.service }}
+          ROLLBACK_TO_TAG: ${{ inputs.rollback_to_tag }}
+          REASON: ${{ inputs.reason }}
+          MANIFEST: ${{ needs.preview.outputs.manifest }}
+          CURRENT_IMAGE: ${{ needs.preview.outputs.current_image }}
+          TARGET_IMAGE: ${{ needs.preview.outputs.target_image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- "$MANIFEST"; then
+            echo "No manifest changes to commit. ${SERVICE} is already at ${TARGET_IMAGE}."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$MANIFEST"
+          git commit \
+            -m "rollback(${ENVIRONMENT}): ${SERVICE} to ${ROLLBACK_TO_TAG} [skip ci]" \
+            -m "Reason: ${REASON}" \
+            -m "Operator: @${GITHUB_ACTOR}" \
+            -m "Previous image: ${CURRENT_IMAGE}" \
+            -m "Target image: ${TARGET_IMAGE}"
+
+          max_retries=5
+          attempt=1
+          while [[ "$attempt" -le "$max_retries" ]]; do
+            git fetch origin main
+
+            if git rebase origin/main; then
+              if git push origin HEAD:main; then
+                echo "Push succeeded on attempt ${attempt}."
+                exit 0
+              fi
+            else
+              echo "Rebase failed on attempt ${attempt}; aborting rebase before retry."
+              git rebase --abort || true
+            fi
+
+            sleep_time=$(( 2 ** (attempt - 1) + RANDOM % 3 ))
+            echo "Push failed on attempt ${attempt}; retrying in ${sleep_time}s."
+            sleep "$sleep_time"
+            attempt=$(( attempt + 1 ))
+          done
+
+          echo "Push failed after ${max_retries} attempts." >&2
+          exit 1
