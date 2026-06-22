@@ -44,3 +44,9 @@ The verified changed-service detector source is `.github/scripts/src/detect-chan
 - Update `services.json` first for any service metadata or ownership change.
 - Update `file-filters.yml` too only when the current legacy image workflow must keep matching those paths before it is migrated to the catalog-driven detector.
 - Do not add new duplicated service metadata elsewhere.
+
+## PR baseline workflow
+
+The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `Vintage Storefront app baseline / app-baseline`.
+
+The workflow runs for pull requests that touch the app workspace, GitOps manifests, the workflow itself, CI helper scripts, or the service catalog. It grants only read-only repository contents permission, does not request OIDC or cloud secrets, activates the pinned Node/pnpm app toolchain, summarizes impacted services through the service catalog changed-service detector, and runs `pnpm run app:baseline` from this workspace.
