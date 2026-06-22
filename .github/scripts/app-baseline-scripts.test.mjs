@@ -11,6 +11,7 @@ const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
+const gitopsAssertSourcePath = path.join(repoRoot, '.github/scripts/src/assert-gitops-render.mts');
 
 async function readWorkspaceScripts() {
   const packageJson = JSON.parse(await readFile(workspacePackagePath, 'utf8'));
@@ -32,6 +33,7 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:catalog',
     'app:changed',
     'app:static',
+    'app:gitops',
     'storefront:build',
     'storefront:typecheck',
     'storefront:lint',
@@ -149,6 +151,25 @@ test('app PR baseline workflow builds changed service images without AWS or regi
   assert.doesNotMatch(workflow, /docker login|aws ecr|get-login-password/);
 });
 
+test('GitOps render assertions cover Storefront deploy invariants', async () => {
+  const [scripts, assertSource, readme] = await Promise.all([
+    readWorkspaceScripts(),
+    readFile(gitopsAssertSourcePath, 'utf8'),
+    readFile(appWorkspaceReadmePath, 'utf8'),
+  ]);
+
+  assert.match(scripts['app:gitops'], /kubectl kustomize gitops/, 'app:gitops should render desired state without cluster credentials');
+  assert.match(scripts['app:gitops'], /assert-gitops-render\.mjs/, 'app:gitops should run targeted render assertions');
+  assert.match(assertSource, /hiraya\.noidilin\.dev/, 'assertions should pin the public Storefront hostname');
+  assert.match(assertSource, /HTTPRoute\/frontend must target the frontend Service on port/, 'assertions should verify frontend HTTPRoute backend port');
+  assert.match(assertSource, /Service\/frontend must remain ClusterIP/, 'assertions should verify frontend Service type');
+  assert.match(assertSource, /AUTH_SERVICE_URL/, 'assertions should verify gateway active API wiring');
+  assert.match(assertSource, /ORDERS_SERVICE_URL/, 'assertions should verify active orders wiring');
+  assert.match(assertSource, /targetPort .* must match a Deployment\//, 'assertions should verify deployed Deployment/Service port consistency');
+  assert.match(readme, /GitOps render assertions/i);
+  assert.match(readme, /without Kubernetes cluster credentials/i);
+});
+
 test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
   const [workflow, scripts, readme] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
@@ -177,6 +198,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /pnpm run app:changed -- --files-from/);
   assert.match(scripts['app:baseline'], /app:catalog/);
+  assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
   assert.match(readme, /Vintage Storefront app baseline \/ app-baseline/i);
   assert.match(readme, /required branch protection/i);
 });
