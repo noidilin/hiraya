@@ -11,6 +11,7 @@ const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
+const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
 const gitopsAssertSourcePath = path.join(repoRoot, '.github/scripts/src/assert-gitops-render.mts');
 
 async function readWorkspaceScripts() {
@@ -201,4 +202,22 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
   assert.match(readme, /Vintage Storefront app baseline \/ app-baseline/i);
   assert.match(readme, /required branch protection/i);
+});
+
+test('main image CI gates ECR pushes and manifest updates behind the app baseline', async () => {
+  const workflow = await readFile(imageCiWorkflowPath, 'utf8');
+
+  assert.match(workflow, /gitops\/\*\*/, 'main image CI should rerun when GitOps baseline inputs change');
+  assert.match(workflow, /\.github\/scripts\/\*\*/, 'main image CI should rerun when baseline helper scripts change');
+  assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
+  assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
+  assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
+  assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
+  assert.match(workflow, /name: Run app baseline before image push/);
+  assert.match(workflow, /pnpm run app:baseline/);
+  assert.match(workflow, /build-and-push:[\s\S]*?needs:\n\s+- detect-changes\n\s+- app-baseline/, 'image push job must need the baseline job');
+  assert.match(workflow, /update-manifests:[\s\S]*?needs:[\s\S]*?- app-baseline/, 'manifest update job must also be gated by the baseline job');
+  assert.match(workflow, /Configure AWS credentials with OIDC[\s\S]*?role-to-assume: \$\{\{ env\.IMAGE_PUSH_ROLE_ARN \}\}/);
+  assert.match(workflow, /### Main image push baseline validation/);
+  assert.match(workflow, /### Image build and push/);
 });

@@ -6,8 +6,10 @@ on:
     branches: [main]
     paths:
       - "app/microservices/**"
+      - "gitops/**"
       - ".github/workflows/image-ci.yml"
-      - ".github/utils/file-filters.yml"
+      - ".github/scripts/**"
+      - ".github/utils/services.json"
 
 permissions:
   contents: read
@@ -34,83 +36,117 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node from app toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: app/microservices/package.json
+          cache: pnpm
+          cache-dependency-path: app/microservices/pnpm-lock.yaml
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.8.0 --activate
+
+      - name: Install app workspace
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:install
 
       - name: Detect changed services
-        id: filter
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          filters: .github/utils/file-filters.yml
-
-      - name: Build service matrix
         id: service-matrix
         shell: bash
+        working-directory: app/microservices
         run: |
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            services='["auth","gateway","orders","order-service","product-service","user-service","frontend"]'
+            pnpm run app:changed -- --all --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
           else
-            services='${{ steps.filter.outputs.changes }}'
+            before="${{ github.event.before }}"
+            if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
+              git diff --name-only HEAD~1..HEAD > /tmp/hiraya-main-changed-files.txt
+            else
+              git diff --name-only "${before}...${{ github.sha }}" > /tmp/hiraya-main-changed-files.txt
+            fi
+            pnpm run app:changed -- --files-from /tmp/hiraya-main-changed-files.txt --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
           fi
 
-          matrix=$(jq -cn --argjson services "$services" '
-            def repository($service): {
-              "auth": "hiraya-auth",
-              "gateway": "hiraya-gateway",
-              "orders": "hiraya-orders",
-              "order-service": "hiraya-order-service",
-              "product-service": "hiraya-product-service",
-              "user-service": "hiraya-user-service",
-              "frontend": "hiraya-frontend"
-            }[$service];
+          {
+            echo "### Main image CI changed service inputs"
+            echo ""
+            echo "Changed services detected from the service catalog:"
+            echo ""
+            echo '```json'
+            cat /tmp/hiraya-app-service-matrix.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-            def dockerfile($service):
-              if $service == "frontend" then
-                "app/microservices/frontend/Dockerfile"
-              else
-                "app/microservices/backend/services/\($service)/Dockerfile"
-              end;
+  app-baseline:
+    name: Run app baseline before image push
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
-            def manifest($service): {
-              "auth": "gitops/k8s/backend/auth.yml",
-              "gateway": "gitops/k8s/backend/gateway.yml",
-              "orders": "gitops/k8s/backend/orders.yml",
-              "order-service": "gitops/k8s/backend/order-service.yml",
-              "product-service": "gitops/k8s/backend/product-service.yml",
-              "user-service": "gitops/k8s/backend/user-service.yml",
-              "frontend": "gitops/k8s/frontend/deployment.yml"
-            }[$service];
+      - name: Set up Node from app toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: app/microservices/package.json
+          cache: pnpm
+          cache-dependency-path: app/microservices/pnpm-lock.yaml
 
-            {
-              include: [
-                $services[]
-                | {
-                    service: .,
-                    repository: repository(.),
-                    build_context: "app/microservices",
-                    dockerfile: dockerfile(.),
-                    manifest: manifest(.)
-                  }
-              ]
-            }
-          ')
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.8.0 --activate
 
-          count=$(jq -r '.include | length' <<< "$matrix")
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          if [[ "$count" -gt 0 ]]; then
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Summarize baseline gate
+        env:
+          MATRIX: ${{ needs.detect-changes.outputs.matrix }}
+          HAS_CHANGES: ${{ needs.detect-changes.outputs.has_changes }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Main image push baseline validation"
+            echo ""
+            echo "The reusable Vintage Storefront app baseline runs before AWS OIDC, ECR login, image push, or GitOps manifest updates."
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Changed service images | \`${HAS_CHANGES}\` |"
+            echo ""
+            echo '```json'
+            printf '%s\n' "$MATRIX"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "Selected services: $services"
-          echo "Matrix: $matrix"
+      - name: Install app workspace
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:install
+
+      - name: Run app baseline
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:baseline
 
   build-and-push:
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs:
+      - detect-changes
+      - app-baseline
     if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
       contents: read
@@ -125,6 +161,22 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
+
+      - name: Summarize image push gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Image build and push — ${{ matrix.service }}"
+            echo ""
+            echo "Baseline validation passed; this job may now request AWS OIDC credentials, log in to ECR, build, scan, and push the image."
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Repository | \`${{ matrix.repository }}\` |"
+            echo "| Context | \`${{ matrix.build_context }}\` |"
+            echo "| Dockerfile | \`${{ matrix.dockerfile }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
@@ -222,6 +274,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - detect-changes
+      - app-baseline
       - build-and-push
     if: ${{ github.ref == 'refs/heads/main' && needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
@@ -303,4 +356,3 @@ jobs:
 
           echo "Push failed after ${max_retries} attempts." >&2
           exit 1
-
