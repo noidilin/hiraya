@@ -8,7 +8,7 @@
         "repository": "hiraya-auth"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/auth/Dockerfile"
       },
       "manifest": {
@@ -18,9 +18,10 @@
         "app/microservices/backend/services/auth/**",
         "app/microservices/backend/shared/**",
         "app/microservices/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
@@ -36,7 +37,7 @@
         "repository": "hiraya-gateway"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/gateway/Dockerfile"
       },
       "manifest": {
@@ -46,9 +47,10 @@
         "app/microservices/backend/services/gateway/**",
         "app/microservices/backend/shared/**",
         "app/microservices/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
@@ -64,7 +66,7 @@
         "repository": "hiraya-orders"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/orders/Dockerfile"
       },
       "manifest": {
@@ -74,9 +76,10 @@
         "app/microservices/backend/services/orders/**",
         "app/microservices/backend/shared/**",
         "app/microservices/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
@@ -92,7 +95,7 @@
         "repository": "hiraya-order-service"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/order-service/Dockerfile"
       },
       "manifest": {
@@ -100,9 +103,10 @@
       },
       "pathOwnership": [
         "app/microservices/backend/services/order-service/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json",
         "app/microservices/backend/shared/**"
       ],
@@ -119,7 +123,7 @@
         "repository": "hiraya-product-service"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/product-service/Dockerfile"
       },
       "manifest": {
@@ -129,9 +133,10 @@
         "app/microservices/backend/services/product-service/**",
         "app/microservices/backend/shared/**",
         "app/microservices/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
@@ -147,7 +152,7 @@
         "repository": "hiraya-user-service"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/backend/services/user-service/Dockerfile"
       },
       "manifest": {
@@ -156,9 +161,10 @@
       "pathOwnership": [
         "app/microservices/backend/services/user-service/**",
         "app/microservices/backend/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore",
         "app/microservices/backend/package.json"
       ],
       "vintageStorefrontBaseline": {
@@ -174,7 +180,7 @@
         "repository": "hiraya-frontend"
       },
       "build": {
-        "context": "app/microservices",
+        "context": ".",
         "dockerfile": "app/microservices/frontend/Dockerfile"
       },
       "manifest": {
@@ -183,9 +189,10 @@
       "pathOwnership": [
         "app/microservices/frontend/**",
         "app/microservices/shared/**",
-        "app/microservices/package.json",
-        "app/microservices/pnpm-lock.yaml",
-        "app/microservices/pnpm-workspace.yaml"
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".dockerignore"
       ],
       "vintageStorefrontBaseline": {
         "active": true,

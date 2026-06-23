@@ -68,7 +68,7 @@ function service(name, overrides) {
     workspace: overrides.workspace,
     image: { repository: overrides.repository },
     build: {
-      context: overrides.workspace,
+      context: '.',
       dockerfile: overrides.dockerfile,
     },
     manifest: { path: overrides.manifest },
@@ -105,7 +105,7 @@ test('emits a GitHub Actions matrix for a changed frontend file', async () => {
     package_name: 'frontend',
     workspace: 'app/microservices/frontend',
     repository: 'hiraya-frontend',
-    build_context: 'app/microservices/frontend',
+    build_context: '.',
     dockerfile: 'app/microservices/frontend/Dockerfile',
     manifest: 'gitops/k8s/frontend/deployment.yml',
     critical: true,
@@ -159,21 +159,24 @@ test('fans out shared Storefront contracts to active contract consumers', async 
   assert.deepEqual(serviceNames(matrix), ['frontend', 'auth', 'orders']);
 });
 
-test('fans out workflow, script, and catalog changes to all catalog services', async () => {
+test('fans out root image build inputs, workflow, script, and catalog changes to all catalog services', async () => {
   const { root, catalogPath } = await createCatalogFixture();
 
-  assert.deepEqual(
-    serviceNames(detect(catalogPath, root, ['.github/utils/services.json'])),
-    ['frontend', 'auth', 'orders'],
-  );
-  assert.deepEqual(
-    serviceNames(detect(catalogPath, root, ['.github/scripts/src/detect-changed-services.mts'])),
-    ['frontend', 'auth', 'orders'],
-  );
-  assert.deepEqual(
-    serviceNames(detect(catalogPath, root, ['.github/workflows/image-ci.yml'])),
-    ['frontend', 'auth', 'orders'],
-  );
+  for (const changedFile of [
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    '.dockerignore',
+    '.github/utils/services.json',
+    '.github/scripts/src/detect-changed-services.mts',
+    '.github/workflows/image-ci.yml',
+  ]) {
+    assert.deepEqual(
+      serviceNames(detect(catalogPath, root, [changedFile])),
+      ['frontend', 'auth', 'orders'],
+      changedFile,
+    );
+  }
 });
 
 test('handles no-change and unknown paths with an empty matrix', async () => {
