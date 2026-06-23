@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0.0",
+  "standard": {
+    "id": "cis_aws_foundations_benchmark",
+    "title": "CIS AWS Foundations Benchmark",
+    "version": "high-level mapping",
+    "referenceUrl": "https://www.cisecurity.org/benchmark/amazon_web_services"
+  },
+  "mappings": [
+    {
+      "standardControlId": "CIS-AWS-IAM",
+      "standardControlTitle": "IAM identity governance and credential hygiene",
+      "standardControlFamily": "Identity and access management",
+      "projectControlIds": [
+        "sec.identity-center.human-access",
+        "sec.github-oidc.no-long-lived-keys",
+        "sec.github-oidc.repo-trust"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "CI avoids long-lived AWS keys and limits OIDC trust to this repository, but human AWS access is not represented as code in this repo.",
+      "gapSummary": "Codify IAM Identity Center groups, permission sets, MFA-dependent access, and review evidence.",
+      "sortKey": 10
+    },
+    {
+      "standardControlId": "CIS-AWS-LEAST-PRIVILEGE",
+      "standardControlTitle": "Least-privilege automation roles",
+      "standardControlFamily": "Identity and access management",
+      "projectControlIds": [
+        "sec.github-oidc.plan-readonly",
+        "sec.github-oidc.apply-env-gate",
+        "sec.iam.permission-boundary"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Terraform plan/apply roles are separated and permission boundaries are applied to project roles, but the boundary policy is external and wildcard policy checks are not automated.",
+      "gapSummary": "Bring boundary expectations into repository tests or policy-as-code and block overly broad IAM changes before merge.",
+      "sortKey": 20
+    },
+    {
+      "standardControlId": "CIS-AWS-LOGGING",
+      "standardControlTitle": "Logging, monitoring, and audit evidence",
+      "standardControlFamily": "Logging and monitoring",
+      "projectControlIds": [
+        "sec.irsa.fluent-bit",
+        "ops.monitoring.read-access",
+        "sec.audit.permission-deployment-records"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Pod logs, dashboards, workflow logs, and CloudTrail can support audit evidence, but immutable retention and reviewer-only audit permissions are not codified.",
+      "gapSummary": "Define retention, archival, alerting, and read-only audit access for security evidence.",
+      "sortKey": 30
+    },
+    {
+      "standardControlId": "CIS-AWS-NETWORKING",
+      "standardControlTitle": "Restrict administrative network exposure",
+      "standardControlFamily": "Networking",
+      "projectControlIds": [
+        "sec.eks.api-endpoint-access",
+        "sec.admin-ui.operator-auth",
+        "sec.k8s.gateway-namespace-boundary"
+      ],
+      "alignmentStatus": "accepted_risk",
+      "notes": "The public Gateway namespace boundary is explicit, but the dev EKS endpoint accepts broad public CIDRs and admin routes need SSO/source restrictions.",
+      "gapSummary": "Use private runners or narrow CIDRs for EKS API access and enforce SSO/IP allowlists for admin surfaces.",
+      "sortKey": 40
+    },
+    {
+      "standardControlId": "CIS-AWS-SECRETS",
+      "standardControlTitle": "Protect secrets and sensitive state",
+      "standardControlFamily": "Data protection",
+      "projectControlIds": [
+        "sec.secrets.storage-permissions",
+        "sec.secrets.rotation",
+        "sec.terraform.state-access"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Terraform state access is split and generated admin values are marked sensitive, but application secrets remain in Git and rotation is not automated.",
+      "gapSummary": "Adopt Secrets Manager/KMS-backed delivery, remove plaintext Kubernetes secret sources from Git, and define rotation.",
+      "sortKey": 50
+    },
+    {
+      "standardControlId": "CIS-AWS-CHANGE-CONTROL",
+      "standardControlTitle": "Review infrastructure and security configuration changes",
+      "standardControlFamily": "Governance",
+      "projectControlIds": [
+        "sdlc.pull-request.open-readonly",
+        "sdlc.review.code-review-gate",
+        "sdlc.review.infrastructure-policy"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Pull requests provide validation and plan evidence, but automated policy checks for high-risk IAM and network changes are still missing.",
+      "gapSummary": "Add policy-as-code checks and required security-review signals for privileged infrastructure changes.",
+      "sortKey": 60
+    }
+  ]
+}

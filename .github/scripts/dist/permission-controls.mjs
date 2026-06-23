@@ -95,6 +95,21 @@ const CUSTOM_FRAMEWORK_VALUES = [
     'incident_readiness',
     'identity_governance',
 ];
+const STANDARD_VALUES = [
+    'aws_well_architected_security_pillar',
+    'cis_aws_foundations_benchmark',
+    'cis_kubernetes_eks_benchmark',
+    'nist_csf_2',
+    'slsa',
+];
+const ALIGNMENT_STATUS_VALUES = [
+    'aligned',
+    'partially_aligned',
+    'not_aligned',
+    'not_applicable',
+    'accepted_risk',
+    'external_dependency',
+];
 const EXPECTED_REPORT_ROWS = {
     sdlc_permission_lifecycle: 27,
     security_permission_design: 27,
@@ -103,13 +118,21 @@ const REPORT_TITLES = {
     sdlc_permission_lifecycle: 'SDLC Permission Lifecycle',
     security_permission_design: 'Security Permission Design',
 };
+const STANDARD_TITLES = {
+    aws_well_architected_security_pillar: 'AWS Well-Architected Security Pillar',
+    cis_aws_foundations_benchmark: 'CIS AWS Foundations Benchmark',
+    cis_kubernetes_eks_benchmark: 'CIS Kubernetes / EKS Benchmark',
+    nist_csf_2: 'NIST Cybersecurity Framework 2.0',
+    slsa: 'SLSA',
+};
 function usage() {
-    return 'Usage: permission-controls.mjs [--root repo-root] [--data-dir docs/reports/data/controls] [--output-dir docs/reports/build] [--validate-only]';
+    return 'Usage: permission-controls.mjs [--root repo-root] [--data-dir docs/reports/data/controls] [--standards-dir docs/reports/data/standards] [--output-dir docs/reports/build] [--validate-only]';
 }
 function parseArgs(argv) {
     const args = [...argv];
     let root = process.cwd();
     let dataDir = 'docs/reports/data/controls';
+    let standardsDir = 'docs/reports/data/standards';
     let outputDir = 'docs/reports/build';
     let validateOnly = false;
     while (args.length > 0) {
@@ -126,6 +149,13 @@ function parseArgs(argv) {
             if (!value)
                 throw new Error(`--data-dir requires a value\n${usage()}`);
             dataDir = value;
+            continue;
+        }
+        if (arg === '--standards-dir') {
+            const value = args.shift();
+            if (!value)
+                throw new Error(`--standards-dir requires a value\n${usage()}`);
+            standardsDir = value;
             continue;
         }
         if (arg === '--output-dir') {
@@ -145,6 +175,7 @@ function parseArgs(argv) {
     return {
         root: resolvedRoot,
         dataDir: path.resolve(resolvedRoot, dataDir),
+        standardsDir: path.resolve(resolvedRoot, standardsDir),
         outputDir: path.resolve(resolvedRoot, outputDir),
         validateOnly,
     };
@@ -314,6 +345,71 @@ function validateControl(control, prefix) {
     }
     return errors;
 }
+function validateStandardFileShape(file, sourceFile) {
+    const errors = [];
+    if (!isRecord(file))
+        return { errors: [`${sourceFile}: root must be an object`] };
+    if (!isString(file.schemaVersion))
+        errors.push(`${sourceFile}: schemaVersion is required`);
+    if (!isRecord(file.standard)) {
+        errors.push(`${sourceFile}: standard is required`);
+    }
+    else {
+        for (const field of ['id', 'title', 'version', 'referenceUrl']) {
+            if (!isString(file.standard[field]))
+                errors.push(`${sourceFile}: standard.${field} is required`);
+        }
+        if (isString(file.standard.id)) {
+            const invalid = enumError(file.standard.id, STANDARD_VALUES, `${sourceFile}: standard.id`);
+            if (invalid)
+                errors.push(invalid);
+        }
+    }
+    if (!Array.isArray(file.mappings) || file.mappings.length === 0) {
+        errors.push(`${sourceFile}: mappings must be a non-empty array`);
+    }
+    if (errors.length > 0)
+        return { errors };
+    return { file: file, errors };
+}
+function validateStandardMapping(mapping, prefix) {
+    const errors = [];
+    if (!isRecord(mapping))
+        return [`${prefix} must be an object`];
+    for (const field of ['standardControlId', 'standardControlTitle', 'standardControlFamily', 'alignmentStatus', 'notes', 'gapSummary']) {
+        if (!isString(mapping[field]))
+            errors.push(`${prefix}.${field} is required`);
+    }
+    if (isString(mapping.alignmentStatus)) {
+        const invalid = enumError(mapping.alignmentStatus, ALIGNMENT_STATUS_VALUES, `${prefix}.alignmentStatus`);
+        if (invalid)
+            errors.push(invalid);
+    }
+    if (!Array.isArray(mapping.projectControlIds)) {
+        errors.push(`${prefix}.projectControlIds must be an array`);
+    }
+    else {
+        const seen = new Set();
+        for (const [index, projectControlId] of mapping.projectControlIds.entries()) {
+            if (!isString(projectControlId)) {
+                errors.push(`${prefix}.projectControlIds[${index}] must be a non-empty string`);
+                continue;
+            }
+            if (!/^[a-z0-9]+(\.[a-z0-9-]+)+$/.test(projectControlId))
+                errors.push(`${prefix}.projectControlIds[${index}] must use domain slug format`);
+            if (seen.has(projectControlId))
+                errors.push(`${prefix}.projectControlIds[${index}] duplicates '${projectControlId}'`);
+            seen.add(projectControlId);
+        }
+        if (mapping.alignmentStatus !== 'not_applicable' && mapping.projectControlIds.length === 0) {
+            errors.push(`${prefix}.projectControlIds must include evidence-backed project controls unless alignmentStatus is not_applicable`);
+        }
+    }
+    if (mapping.sortKey !== undefined && (!Number.isInteger(mapping.sortKey) || Number(mapping.sortKey) < 1)) {
+        errors.push(`${prefix}.sortKey must be a positive integer`);
+    }
+    return errors;
+}
 async function pathExistsInsideRoot(root, relativePath) {
     if (path.isAbsolute(relativePath))
         return false;
@@ -387,7 +483,88 @@ async function loadControls(options) {
     }
     return { controls, errors };
 }
+function uniqueEvidence(controls) {
+    const evidence = new Map();
+    for (const control of controls) {
+        for (const item of control.evidence)
+            evidence.set(`${item.path}\n${item.summary}`, item);
+    }
+    return [...evidence.values()].sort((a, b) => a.path.localeCompare(b.path));
+}
+async function loadStandardMappings(options, controls) {
+    const errors = [];
+    const mappings = [];
+    const controlsById = new Map(controls.map((control) => [control.id, control]));
+    const fileNames = (await readdir(options.standardsDir)).filter((file) => file.endsWith('.json')).sort();
+    if (fileNames.length === 0) {
+        return { mappings, errors: [`No JSON standards mapping files found in ${path.relative(options.root, options.standardsDir)}`] };
+    }
+    const seenStandards = new Set();
+    const seenMappings = new Set();
+    for (const fileName of fileNames) {
+        const absolutePath = path.join(options.standardsDir, fileName);
+        const sourceFile = path.relative(options.root, absolutePath);
+        let parsed;
+        try {
+            parsed = JSON.parse(await readFile(absolutePath, 'utf8'));
+        }
+        catch (error) {
+            errors.push(`${sourceFile}: invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+            continue;
+        }
+        const shape = validateStandardFileShape(parsed, sourceFile);
+        errors.push(...shape.errors);
+        if (!shape.file)
+            continue;
+        if (shape.file.standard.title !== STANDARD_TITLES[shape.file.standard.id]) {
+            errors.push(`${sourceFile}: standard.title must be '${STANDARD_TITLES[shape.file.standard.id]}' for ${shape.file.standard.id}`);
+        }
+        if (seenStandards.has(shape.file.standard.id))
+            errors.push(`Duplicate standards file for ${shape.file.standard.id}`);
+        seenStandards.add(shape.file.standard.id);
+        shape.file.mappings.forEach((mapping, index) => {
+            errors.push(...validateStandardMapping(mapping, `${sourceFile}.mappings[${index}]`));
+        });
+        for (const mapping of shape.file.mappings) {
+            const key = `${shape.file.standard.id}:${mapping.standardControlId}`;
+            if (seenMappings.has(key))
+                errors.push(`Duplicate standards mapping: ${key}`);
+            seenMappings.add(key);
+            const projectControls = mapping.projectControlIds.flatMap((projectControlId) => {
+                const control = controlsById.get(projectControlId);
+                if (!control) {
+                    errors.push(`${sourceFile}:${mapping.standardControlId} references unknown project control '${projectControlId}'`);
+                    return [];
+                }
+                return [control];
+            });
+            if (mapping.alignmentStatus !== 'not_applicable' && projectControls.length === 0) {
+                errors.push(`${sourceFile}:${mapping.standardControlId} must map to at least one existing evidence-backed project control`);
+            }
+            if (mapping.alignmentStatus !== 'not_applicable' && projectControls.some((control) => control.evidence.length === 0)) {
+                errors.push(`${sourceFile}:${mapping.standardControlId} maps to a project control without evidence`);
+            }
+            mappings.push({
+                ...mapping,
+                standard: shape.file.standard,
+                sourceFile,
+                projectControls,
+                evidence: uniqueEvidence(projectControls),
+                riskScore: projectControls.length > 0 ? Math.max(...projectControls.map((control) => control.riskScore)) : 0,
+                priorityScore: projectControls.length > 0 ? Math.max(...projectControls.map((control) => control.priorityScore)) : 0,
+            });
+        }
+    }
+    for (const standard of STANDARD_VALUES) {
+        if (!seenStandards.has(standard))
+            errors.push(`Missing standards mapping file for ${standard}`);
+    }
+    return { mappings, errors };
+}
 function statusLabel(status) {
+    return status.replaceAll('_', ' ');
+}
+function alignmentStatusLabel(status) {
     return status.replaceAll('_', ' ');
 }
 function markdownTableEscape(value) {
@@ -476,25 +653,137 @@ function renderReport(controls, analysis) {
     }
     return `${lines.join('\n')}\n`;
 }
+function summarizeStandards(mappings) {
+    const standards = STANDARD_VALUES.map((standard) => {
+        const standardMappings = mappings.filter((mapping) => mapping.standard.id === standard);
+        return {
+            id: standard,
+            title: STANDARD_TITLES[standard],
+            mappings: standardMappings.length,
+            countsByAlignmentStatus: Object.fromEntries(ALIGNMENT_STATUS_VALUES.map((status) => [status, standardMappings.filter((mapping) => mapping.alignmentStatus === status).length])),
+            priorityGaps: standardMappings
+                .filter((mapping) => !['aligned', 'not_applicable'].includes(mapping.alignmentStatus))
+                .sort((a, b) => b.priorityScore - a.priorityScore || b.riskScore - a.riskScore)
+                .slice(0, 5)
+                .map((mapping) => ({
+                standardControlId: mapping.standardControlId,
+                alignmentStatus: mapping.alignmentStatus,
+                riskScore: mapping.riskScore,
+                priorityScore: mapping.priorityScore,
+                gapSummary: mapping.gapSummary,
+                projectControlIds: mapping.projectControlIds,
+            })),
+        };
+    });
+    return {
+        generatedAt: new Date().toISOString(),
+        totals: {
+            standards: STANDARD_VALUES.length,
+            mappings: mappings.length,
+            projectControlsReferenced: new Set(mappings.flatMap((mapping) => mapping.projectControlIds)).size,
+        },
+        countsByAlignmentStatus: Object.fromEntries(ALIGNMENT_STATUS_VALUES.map((status) => [status, mappings.filter((mapping) => mapping.alignmentStatus === status).length])),
+        standards,
+    };
+}
+function standardMappingJson(mapping) {
+    return {
+        standard: mapping.standard,
+        standardControlId: mapping.standardControlId,
+        standardControlTitle: mapping.standardControlTitle,
+        standardControlFamily: mapping.standardControlFamily,
+        alignmentStatus: mapping.alignmentStatus,
+        notes: mapping.notes,
+        gapSummary: mapping.gapSummary,
+        riskScore: mapping.riskScore,
+        priorityScore: mapping.priorityScore,
+        sourceFile: mapping.sourceFile,
+        projectControls: mapping.projectControls.map((control) => ({
+            id: control.id,
+            title: control.title,
+            status: control.status,
+            riskScore: control.riskScore,
+            priorityScore: control.priorityScore,
+            gapSummary: control.gapSummary,
+            evidence: control.evidence,
+        })),
+        evidence: mapping.evidence,
+    };
+}
+function renderStandardsAlignmentReport(mappings, analysis) {
+    const lines = [];
+    lines.push('# Standards Alignment Report');
+    lines.push('');
+    lines.push('Generated from canonical JSON control data and standards mapping files. Do not hand-edit generated artifacts.');
+    lines.push('');
+    lines.push('This report describes evidence-based standards alignment, not formal compliance or audit certification.');
+    lines.push('');
+    lines.push('## Summary');
+    lines.push('');
+    lines.push('```json');
+    lines.push(JSON.stringify(analysis, null, 2));
+    lines.push('```');
+    lines.push('');
+    const priorityGaps = mappings
+        .filter((mapping) => !['aligned', 'not_applicable'].includes(mapping.alignmentStatus))
+        .sort((a, b) => b.priorityScore - a.priorityScore || b.riskScore - a.riskScore);
+    lines.push('## Priority gaps across standards');
+    lines.push('');
+    lines.push('| Priority | Standard | Standard control | Alignment | Project controls | Gap | Risk priority |');
+    lines.push('| ---: | --- | --- | --- | --- | --- | ---: |');
+    priorityGaps.forEach((mapping, index) => {
+        lines.push(`| ${index + 1} | ${markdownTableEscape(mapping.standard.title)} | \`${mapping.standardControlId}\` ${markdownTableEscape(mapping.standardControlTitle)} | ${alignmentStatusLabel(mapping.alignmentStatus)} | ${mapping.projectControls.map((control) => `\`${control.id}\``).join('<br>')} | ${markdownTableEscape(mapping.gapSummary)} | ${mapping.priorityScore} |`);
+    });
+    lines.push('');
+    for (const standard of STANDARD_VALUES) {
+        const standardMappings = mappings
+            .filter((mapping) => mapping.standard.id === standard)
+            .sort((a, b) => (a.sortKey ?? 9999) - (b.sortKey ?? 9999) || a.standardControlId.localeCompare(b.standardControlId));
+        if (standardMappings.length === 0)
+            continue;
+        lines.push(`## ${STANDARD_TITLES[standard]}`);
+        lines.push('');
+        lines.push(`Reference: ${standardMappings[0]?.standard.referenceUrl}`);
+        lines.push('');
+        lines.push('| Standard control/family | Project control(s) | Alignment status | Evidence | Gap | Risk priority |');
+        lines.push('| --- | --- | --- | --- | --- | ---: |');
+        for (const mapping of standardMappings) {
+            const standardCell = `\`${mapping.standardControlId}\` ${mapping.standardControlTitle}<br>${mapping.standardControlFamily}`;
+            const projectCell = mapping.projectControls.map((control) => `\`${control.id}\` ${markdownTableEscape(control.title)} (${statusLabel(control.status)})`).join('<br>') || 'None';
+            const evidenceCell = mapping.evidence.map((item) => `\`${item.path}\``).join('<br>') || 'None';
+            lines.push(`| ${standardCell} | ${projectCell} | ${alignmentStatusLabel(mapping.alignmentStatus)} | ${evidenceCell} | ${markdownTableEscape(mapping.gapSummary)} | ${mapping.priorityScore} |`);
+        }
+        lines.push('');
+    }
+    return `${lines.join('\n')}\n`;
+}
 async function main() {
     const options = parseArgs(process.argv.slice(2));
-    const { controls, errors } = await loadControls(options);
+    const { controls, errors: controlErrors } = await loadControls(options);
+    const { mappings, errors: standardsErrors } = await loadStandardMappings(options, controls);
+    const errors = [...controlErrors, ...standardsErrors];
     if (errors.length > 0) {
-        console.error(`Permission controls validation failed with ${errors.length} error(s):`);
+        console.error(`Report validation failed with ${errors.length} error(s):`);
         for (const error of errors)
             console.error(`- ${error}`);
         process.exitCode = 1;
         return;
     }
     console.log(`Validated ${controls.length} permission controls with ${controls.reduce((count, control) => count + control.reportViews.length, 0)} report views.`);
+    console.log(`Validated ${mappings.length} standards mappings across ${STANDARD_VALUES.length} standards.`);
     if (options.validateOnly)
         return;
     const analysis = summarize(controls);
+    const standardsAnalysis = summarizeStandards(mappings);
     await mkdir(options.outputDir, { recursive: true });
     await writeFile(path.join(options.outputDir, 'permission-analysis.json'), `${JSON.stringify({ ...analysis, controls }, null, 2)}\n`);
     await writeFile(path.join(options.outputDir, 'permission-report.md'), renderReport(controls, analysis));
+    await writeFile(path.join(options.outputDir, 'standards-alignment.json'), `${JSON.stringify({ ...standardsAnalysis, mappings: mappings.map(standardMappingJson) }, null, 2)}\n`);
+    await writeFile(path.join(options.outputDir, 'standards-alignment.md'), renderStandardsAlignmentReport(mappings, standardsAnalysis));
     console.log(`Wrote ${path.relative(options.root, path.join(options.outputDir, 'permission-analysis.json'))}`);
     console.log(`Wrote ${path.relative(options.root, path.join(options.outputDir, 'permission-report.md'))}`);
+    console.log(`Wrote ${path.relative(options.root, path.join(options.outputDir, 'standards-alignment.json'))}`);
+    console.log(`Wrote ${path.relative(options.root, path.join(options.outputDir, 'standards-alignment.md'))}`);
 }
 main().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));

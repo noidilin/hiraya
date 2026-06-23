@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0.0",
+  "standard": {
+    "id": "cis_kubernetes_eks_benchmark",
+    "title": "CIS Kubernetes / EKS Benchmark",
+    "version": "high-level mapping",
+    "referenceUrl": "https://www.cisecurity.org/benchmark/kubernetes"
+  },
+  "mappings": [
+    {
+      "standardControlId": "CIS-K8S-API-ACCESS",
+      "standardControlTitle": "Control Kubernetes API access",
+      "standardControlFamily": "Control plane access",
+      "projectControlIds": [
+        "sec.eks.api-endpoint-access",
+        "sec.eks.operator-access-entries",
+        "sec.identity-center.human-access"
+      ],
+      "alignmentStatus": "accepted_risk",
+      "notes": "Private endpoint access is enabled and GitHub can own platform changes, but broad public endpoint access is accepted for dev and human operator access is not fully codified.",
+      "gapSummary": "Restrict public API CIDRs or move CI to private runners, then define named operator access entries and RBAC.",
+      "sortKey": 10
+    },
+    {
+      "standardControlId": "CIS-K8S-SERVICE-ACCOUNTS",
+      "standardControlTitle": "Use least-privilege service accounts",
+      "standardControlFamily": "RBAC and service accounts",
+      "projectControlIds": [
+        "sec.eks.cluster-oidc-provider",
+        "sec.k8s.app-workload-isolation",
+        "sec.irsa.ebs-csi-driver"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "IRSA is enabled and workloads do not declare AWS permissions, but application service accounts and token automount restrictions are not explicit and one trust policy lacks an audience condition.",
+      "gapSummary": "Declare dedicated app service accounts, set automountServiceAccountToken intentionally, and complete IRSA trust conditions.",
+      "sortKey": 20
+    },
+    {
+      "standardControlId": "CIS-K8S-CONTROLLER-PERMISSIONS",
+      "standardControlTitle": "Limit add-on and controller cloud permissions",
+      "standardControlFamily": "Controller permissions",
+      "projectControlIds": [
+        "sec.irsa.aws-load-balancer-controller",
+        "sec.irsa.external-dns",
+        "sec.irsa.fluent-bit"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Controllers use dedicated IRSA roles and scoped trust; ExternalDNS and Fluent Bit have narrow policies, while the load balancer controller still needs broad AWS API actions.",
+      "gapSummary": "Document and test unavoidable wildcard scope and add guardrails for controller policy expansion.",
+      "sortKey": 30
+    },
+    {
+      "standardControlId": "CIS-K8S-POD-POLICY",
+      "standardControlTitle": "Prevent privileged or unauthorized workloads",
+      "standardControlFamily": "Pod security and admission",
+      "projectControlIds": [
+        "sec.gitops.application-resource-policy",
+        "sec.argocd.project-boundary",
+        "sec.k8s.app-workload-isolation"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "GitOps owns application resources, but there is no restrictive AppProject or admission/RBAC layer blocking privileged pods, high-privilege RBAC, or unauthorized service accounts.",
+      "gapSummary": "Add AppProject restrictions plus admission policy for privileged pods, RBAC escalation, and unauthorized identities.",
+      "sortKey": 40
+    },
+    {
+      "standardControlId": "CIS-K8S-NETWORK-BOUNDARY",
+      "standardControlTitle": "Restrict public routing and administrative surfaces",
+      "standardControlFamily": "Network exposure",
+      "projectControlIds": [
+        "sec.k8s.gateway-namespace-boundary",
+        "sec.admin-ui.operator-auth"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Gateway route attachment is namespace-scoped, but Argo CD and Grafana routes still require stronger operator authentication and source restrictions.",
+      "gapSummary": "Add SSO, IP allowlists, and granular RBAC to admin interfaces.",
+      "sortKey": 50
+    },
+    {
+      "standardControlId": "CIS-K8S-AUDIT-LOGGING",
+      "standardControlTitle": "Collect runtime logs and retain audit evidence",
+      "standardControlFamily": "Audit and logging",
+      "projectControlIds": [
+        "sec.irsa.fluent-bit",
+        "ops.monitoring.read-access",
+        "sec.audit.permission-deployment-records"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Fluent Bit writes pod logs and monitoring is deployed, but centralized audit retention and reviewer-only audit access are not codified.",
+      "gapSummary": "Define audit retention, immutable storage, and access boundaries for Kubernetes and deployment evidence.",
+      "sortKey": 60
+    },
+    {
+      "standardControlId": "CIS-K8S-SECRETS",
+      "standardControlTitle": "Protect Kubernetes secrets",
+      "standardControlFamily": "Secrets management",
+      "projectControlIds": [
+        "sec.secrets.storage-permissions",
+        "sec.secrets.rotation"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Admin passwords are generated and marked sensitive, but application database values are still committed through Kubernetes secret manifests and rotation is missing.",
+      "gapSummary": "Replace Git-managed plaintext secret manifests with external secret delivery and add rotation/revocation.",
+      "sortKey": 70
+    }
+  ]
+}

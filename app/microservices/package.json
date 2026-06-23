@@ -11,6 +11,8 @@
     "app:install": "corepack pnpm@11.8.0 install --frozen-lockfile",
     "app:workspace": "corepack pnpm@11.8.0 run app:install && corepack pnpm@11.8.0 list --recursive --depth -1",
     "scripts:build": "tsc -p ../../.github/scripts/tsconfig.json",
+    "reports:permissions": "corepack pnpm@11.8.0 run scripts:build && node ../../.github/scripts/dist/permission-controls.mjs --root ../..",
+    "reports:permissions:validate": "corepack pnpm@11.8.0 run scripts:build && node ../../.github/scripts/dist/permission-controls.mjs --root ../.. --validate-only",
     "app:catalog": "corepack pnpm@11.8.0 run scripts:build && corepack pnpm@11.8.0 run catalog:validate && node --test ../../.github/scripts/validate-service-catalog.test.mjs ../../.github/scripts/detect-changed-services.test.mjs ../../.github/scripts/app-baseline-scripts.test.mjs ../../.github/scripts/storefront-public-smoke.test.mjs",
     "app:changed": "corepack pnpm@11.8.0 run scripts:build && node ../../.github/scripts/dist/detect-changed-services.mjs --catalog ../../.github/utils/services.json --root ../..",
     "app:static": "corepack pnpm@11.8.0 run storefront:static && corepack pnpm@11.8.0 run build:backend",
