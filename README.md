@@ -14,6 +14,27 @@
 | Log Forwarding | AWS Fluent Bit → CloudWatch |
 | AIOps | AWS Bedrock Agent (Kira) |
 
+## Root pnpm monorepo
+
+The repository root is the only pnpm workspace. Run package-manager, report, app baseline, changed-service, and Docker/Compose commands from the repository root.
+
+```sh
+corepack enable
+corepack prepare pnpm@11.8.0 --activate
+pnpm install --frozen-lockfile
+```
+
+Common root commands:
+
+| Command | Purpose |
+| --- | --- |
+| `pnpm run app:baseline` | Run the no-AWS Vintage Storefront baseline used by PR checks. |
+| `pnpm run reports:permissions:validate` | Validate report control data and standards mappings. |
+| `pnpm run reports:permissions` | Generate ignored report artifacts under `docs/reports/build/`. |
+| `pnpm run services:changed -- --all` | Render the full service image matrix. Pass changed file paths instead of `--all` for targeted detection. |
+| `pnpm run docker:build` | Build the Docker Compose stack using the root build context and `app/microservices/docker-compose.yml`. |
+| `pnpm run docker:up` / `pnpm run docker:down` | Start or stop the local Compose stack from the repository root. |
+
 ## Structure
 
 - Terraform owns AWS infra + EKS platform add-ons

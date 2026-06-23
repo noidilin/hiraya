@@ -17,7 +17,7 @@ The JSON schemas define the external data contract. The TypeScript report genera
 
 ## Local commands
 
-Run from `app/microservices/`:
+Run report commands from the repository root:
 
 ```sh
 pnpm run reports:permissions:validate

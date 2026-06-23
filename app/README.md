@@ -49,11 +49,12 @@ Expected result: AWS returns `ResourceNotFoundException`.
 Before deploying to the cloud, you can run the entire application locally using Docker Compose. This is the fastest way to test changes.
 
 ```bash
-# Start with Docker Compose
-cd app/microservices
-docker-compose -f docker-compose.yml up -d
-docker-compose -f docker-compose.yml down # Stop all services
+# Start with Docker Compose from the repository root
+pnpm run docker:up
+pnpm run docker:down # Stop all services
 ```
+
+The Compose file remains colocated with the Vintage Storefront stack at `app/microservices/docker-compose.yml`, while root scripts provide the canonical command surface.
 
 ---
 
