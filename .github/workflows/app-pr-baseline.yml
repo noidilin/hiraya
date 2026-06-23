@@ -1,4 +1,4 @@
-name: Vintage Storefront app baseline
+name: storefront-app-baseline
 
 on:
   pull_request:
@@ -18,30 +18,30 @@ jobs:
       matrix: ${{ steps.changed-services.outputs.matrix }}
       has_changes: ${{ steps.changed-services.outputs.has_changes }}
     steps:
-      - name: Checkout code
+      - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Set up Node from app toolchain
+      - name: set-up-node-from-app-toolchain
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: app/microservices/package.json
 
-      - name: Activate pinned pnpm
+      - name: activate-pinned-pnpm
         shell: bash
         run: |
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.8.0 --activate
 
-      - name: Install app workspace
+      - name: install-app-workspace
         shell: bash
         working-directory: app/microservices
         run: pnpm run app:install
 
-      - name: Detect changed services
+      - name: detect-changed-services
         id: changed-services
         shell: bash
         working-directory: app/microservices
@@ -65,37 +65,37 @@ jobs:
     runs-on: ubuntu-latest
     needs: changed-service-images
     steps:
-      - name: Checkout code
+      - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Set up Node from app toolchain
+      - name: set-up-node-from-app-toolchain
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: app/microservices/package.json
 
-      - name: Activate pinned pnpm
+      - name: activate-pinned-pnpm
         shell: bash
         run: |
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.8.0 --activate
 
-      - name: Install app workspace
+      - name: install-app-workspace
         shell: bash
         working-directory: app/microservices
         run: pnpm run app:install
 
-      - name: Summarize changed app services
+      - name: summarize-changed-app-services
         env:
           MATRIX: ${{ needs.changed-service-images.outputs.matrix }}
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo "### Vintage Storefront app baseline inputs"
+            echo "### storefront-app-baseline inputs"
             echo ""
             echo "Changed services detected from the service catalog:"
             echo ""
@@ -104,13 +104,13 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run app baseline
+      - name: run-app-baseline
         shell: bash
         working-directory: app/microservices
         run: pnpm run app:baseline
 
   image-build-only:
-    name: image-build-only (${{ matrix.service }})
+    name: image-build-only-${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: changed-service-images
     if: ${{ needs.changed-service-images.outputs.has_changes == 'true' }}
@@ -118,16 +118,16 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.changed-service-images.outputs.matrix) }}
     steps:
-      - name: Checkout code
+      - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a # v3.11.1
+      - name: set-up-docker-buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
-      - name: Build Docker image without push
-        uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e # v6.18.0
+      - name: build-docker-image-without-push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: ${{ matrix.build_context }}
           file: ${{ matrix.dockerfile }}
@@ -137,7 +137,7 @@ jobs:
           cache-from: type=gha,scope=pr-${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=pr-${{ matrix.service }}
 
-      - name: Summarize build-only image gate
+      - name: summarize-build-only-image-gate
         shell: bash
         run: |
           set -euo pipefail

@@ -183,7 +183,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
     readFile(appWorkspaceReadmePath, 'utf8'),
   ]);
 
-  assert.match(workflow, /^name: Vintage Storefront app baseline$/m);
+  assert.match(workflow, /^name: storefront-app-baseline$/m);
   assert.match(workflow, /^  pull_request:$/m, 'workflow should run on pull requests');
   assert.doesNotMatch(workflow, /pull_request:\n\s+paths:/, 'required-check candidate must not be skipped by path filters');
 
@@ -226,14 +226,14 @@ test('required app baseline branch rule is documented with non-AWS evidence', as
 test('main image CI gates ECR pushes and manifest updates behind the app baseline', async () => {
   const workflow = await readFile(imageCiWorkflowPath, 'utf8');
 
-  assert.doesNotMatch(workflow, /- "gitops\/\*\*"/, 'main image CI should not rerun from its generated GitOps manifest PR merges');
+  assert.doesNotMatch(workflow, /-\s*["']?gitops\/\*\*["']?/, 'main image CI should not rerun from its generated GitOps manifest PR merges');
   assert.match(workflow, /\.github\/scripts\/\*\*/, 'main image CI should rerun when baseline helper scripts change');
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
   assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
   assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache requires pnpm before Corepack activation');
   assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
-  assert.match(workflow, /name: Run app baseline before image push/);
+  assert.match(workflow, /name: run-app-baseline-before-image-push/);
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /build-and-push:[\s\S]*?needs:\n\s+- detect-changes\n\s+- app-baseline/, 'image push job must need the baseline job');
   assert.match(workflow, /update-manifests:[\s\S]*?needs:[\s\S]*?- app-baseline/, 'manifest update job must also be gated by the baseline job');
@@ -242,7 +242,7 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'manifest promotion PR should enable squash auto-merge');
   assert.doesNotMatch(workflow, /git push origin HEAD:main/, 'manifest promotion must not push directly to protected main');
   assert.doesNotMatch(workflow, /\[skip ci\]/, 'manifest promotion commits must allow the required PR check to run');
-  assert.match(workflow, /Configure AWS credentials with OIDC[\s\S]*?role-to-assume: \$\{\{ env\.IMAGE_PUSH_ROLE_ARN \}\}/);
+  assert.match(workflow, /configure-aws-credentials-with-oidc[\s\S]*?role-to-assume: \$\{\{ env\.IMAGE_PUSH_ROLE_ARN \}\}/);
   assert.match(workflow, /### Main image push baseline validation/);
   assert.match(workflow, /### Image build and push/);
 });
@@ -272,10 +272,10 @@ test('manifest update workflows use protected bot PRs and post-merge smoke', asy
     readFile(deploySmokeWorkflowPath, 'utf8'),
   ]);
 
-  assert.match(imageWorkflow, /Open or update manifest promotion PR[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'main manifest update path should create a squash auto-merge PR');
+  assert.match(imageWorkflow, /open-or-update-manifest-promotion-pr[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'main manifest update path should create a squash auto-merge PR');
   assert.match(imageWorkflow, /HIRAYA_BOT_APP_ID[\s\S]*?HIRAYA_BOT_PRIVATE_KEY/, 'main manifest update path should fail fast without GitHub App credentials');
   assert.doesNotMatch(imageWorkflow, /git push origin HEAD:main/, 'main manifest update path must not push directly to protected main');
-  assert.match(rollbackWorkflow, /Open rollback PR and enable auto-merge[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'manual rollback should create a squash auto-merge PR');
+  assert.match(rollbackWorkflow, /open-rollback-pr-and-enable-auto-merge[\s\S]*?gh pr merge "\$pr_url" --auto --squash --delete-branch/, 'manual rollback should create a squash auto-merge PR');
   assert.match(rollbackWorkflow, /ROLLBACK_BRANCH: ci\/rollback-/, 'manual rollback should use unique rollback branches');
   assert.doesNotMatch(rollbackWorkflow, /git push origin HEAD:main/, 'manual rollback must not push directly to protected main');
   assert.doesNotMatch(`${imageWorkflow}\n${rollbackWorkflow}`, /\[skip ci\]/, 'bot PR commits must allow required PR checks to run');

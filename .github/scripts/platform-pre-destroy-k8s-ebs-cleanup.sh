@@ -39,17 +39,36 @@ wait_until() {
 }
 
 cluster_is_active() {
+  local output
   local status
+  local exit_code
+
   set +e
-  status=$(aws eks describe-cluster \
+  output=$(aws eks describe-cluster \
     --region "$AWS_REGION" \
     --name "$CLUSTER_NAME" \
     --query 'cluster.status' \
-    --output text 2>/dev/null)
-  local exit_code=$?
+    --output text 2>&1)
+  exit_code=$?
   set -e
 
-  [[ "$exit_code" -eq 0 && "$status" == "ACTIVE" ]]
+  if [[ "$exit_code" -ne 0 ]]; then
+    if grep -q "ResourceNotFoundException" <<<"$output"; then
+      return 1
+    fi
+
+    echo "Failed to describe EKS cluster ${CLUSTER_NAME}; refusing to skip Kubernetes EBS cleanup on an ambiguous AWS API error:" >&2
+    echo "$output" >&2
+    exit "$exit_code"
+  fi
+
+  status=$(awk 'NF { print $1; exit }' <<<"$output")
+  if [[ -z "$status" || "$status" == "None" ]]; then
+    echo "EKS describe-cluster returned an empty status for ${CLUSTER_NAME}; refusing to skip Kubernetes EBS cleanup." >&2
+    exit 1
+  fi
+
+  [[ "$status" == "ACTIVE" ]]
 }
 
 namespace_gone() {
