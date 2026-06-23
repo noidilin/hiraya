@@ -6,6 +6,8 @@ TF_STATE_BUCKET="${TF_STATE_BUCKET:-devops-hiraya-dev-tf-state}"
 CLUSTER_NAME="${CLUSTER_NAME:-}"
 VPC_ID="${VPC_ID:-}"
 EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
+K8S_EBS_CLEANUP_VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
+HIRAYA_EBS_CLUSTER_TAG_KEY="${HIRAYA_EBS_CLUSTER_TAG_KEY:-HirayaCluster}"
 
 ECR_REPOSITORIES=(
   hiraya-frontend
@@ -86,11 +88,75 @@ load_balancer_gone() {
     --output text >/dev/null 2>&1
 }
 
+volume_deleted() {
+  local volume_id="$1"
+  local output
+  local exit_code
+
+  set +e
+  output=$(aws ec2 describe-volumes \
+    --region "$AWS_REGION" \
+    --volume-ids "$volume_id" \
+    --query 'Volumes[0].State' \
+    --output text 2>&1)
+  exit_code=$?
+  set -e
+
+  if [[ "$exit_code" -ne 0 ]]; then
+    grep -q "InvalidVolume.NotFound" <<<"$output"
+    return $?
+  fi
+
+  echo "EBS volume ${volume_id} still exists with state: ${output}"
+  return 1
+}
+
+captured_kubernetes_ebs_volumes_gone() {
+  if [[ -z "$K8S_EBS_CLEANUP_VOLUME_IDS_FILE" || ! -s "$K8S_EBS_CLEANUP_VOLUME_IDS_FILE" ]]; then
+    return 0
+  fi
+
+  local volume_id
+  while IFS= read -r volume_id; do
+    [[ -n "$volume_id" ]] || continue
+    if ! volume_deleted "$volume_id"; then
+      return 1
+    fi
+  done <"$K8S_EBS_CLEANUP_VOLUME_IDS_FILE"
+
+  return 0
+}
+
+hiraya_tagged_ebs_volumes_gone() {
+  local count
+  count=$(aws ec2 describe-volumes \
+    --region "$AWS_REGION" \
+    --filters "Name=tag:${HIRAYA_EBS_CLUSTER_TAG_KEY},Values=${CLUSTER_NAME}" \
+    --query 'length(Volumes)' \
+    --output text)
+
+  [[ "$count" == "0" ]]
+}
+
+legacy_kubernetes_ebs_volumes_gone() {
+  local count
+  count=$(aws ec2 describe-volumes \
+    --region "$AWS_REGION" \
+    --filters "Name=tag:kubernetes.io/cluster/${CLUSTER_NAME},Values=owned" \
+    --query 'length(Volumes)' \
+    --output text)
+
+  [[ "$count" == "0" ]]
+}
+
 require_value CLUSTER_NAME "$CLUSTER_NAME"
 require_value VPC_ID "$VPC_ID"
 require_value EDGE_LOAD_BALANCER_NAME "$EDGE_LOAD_BALANCER_NAME"
 
 wait_until "EKS cluster ${CLUSTER_NAME} is gone or not ACTIVE" 60 30 cluster_gone_or_inactive
+wait_until "captured Kubernetes EBS volume IDs are deleted" 20 30 captured_kubernetes_ebs_volumes_gone
+wait_until "Hiraya-tagged Kubernetes EBS volumes for cluster ${CLUSTER_NAME} are deleted" 20 30 hiraya_tagged_ebs_volumes_gone
+wait_until "legacy Kubernetes EBS volumes tagged for cluster ${CLUSTER_NAME} are deleted" 20 30 legacy_kubernetes_ebs_volumes_gone
 wait_until "VPC ${VPC_ID} is deleted" 60 30 vpc_gone
 wait_until "shared public load balancer ${EDGE_LOAD_BALANCER_NAME} is deleted" 60 30 load_balancer_gone
 

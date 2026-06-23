@@ -48,7 +48,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: gp2
+        storageClassName: hiraya-ebs-gp3
         resources:
           requests:
             storage: 10Gi

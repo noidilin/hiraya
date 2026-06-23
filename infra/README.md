@@ -59,6 +59,7 @@ The platform stack also installs cluster add-ons as separate modules:
 - AWS Load Balancer Controller for the shared public edge, with AWS-specific CRDs installed by its Helm chart
 - ExternalDNS in `external-dns`, using IRSA, Route 53 permissions scoped to `noidilin.dev`, `gateway-httproute` sources, `sync` policy, and TXT registry ownership
 - `kube-prometheus-stack` in `monitoring`
+- `hiraya-ebs-gp3` StorageClass, using the AWS EBS CSI driver with `Delete` reclaim policy, `WaitForFirstConsumer`, and Hiraya-specific EBS tags for destroy verification
 - Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
 - `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
 

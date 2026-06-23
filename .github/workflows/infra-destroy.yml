@@ -103,6 +103,14 @@ jobs:
           capture_output vpc_id
           capture_output edge_load_balancer_name
 
+      - name: Delete Kubernetes EBS volumes before EKS teardown
+        env:
+          CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
+          CLUSTER_ADMIN_PRINCIPAL_ARN: ${{ env.INFRA_APPLY_ROLE_ARN }}
+          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
+        shell: bash
+        run: .github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh
+
       - name: Destroy disposable platform stack
         shell: bash
         run: terraform -chdir=infra/envs/dev/platform destroy -input=false -auto-approve
@@ -112,5 +120,6 @@ jobs:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           VPC_ID: ${{ steps.platform.outputs.vpc_id }}
           EDGE_LOAD_BALANCER_NAME: ${{ steps.platform.outputs.edge_load_balancer_name }}
+          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
         shell: bash
         run: .github/scripts/platform-destroy-verify.sh
