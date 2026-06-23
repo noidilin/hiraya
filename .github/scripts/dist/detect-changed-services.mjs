@@ -139,6 +139,10 @@ function isGlobalChange(file, catalogPath, root) {
     const catalogRelativePath = normalizePath(path.relative(root, catalogPath));
     return file === catalogRelativePath
         || file === '.github/utils/services.json'
+        || file === 'package.json'
+        || file === 'pnpm-lock.yaml'
+        || file === 'pnpm-workspace.yaml'
+        || file === '.dockerignore'
         || file.startsWith('.github/scripts/')
         || file.startsWith('.github/workflows/');
 }
