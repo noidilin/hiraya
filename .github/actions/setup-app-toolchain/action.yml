@@ -1,0 +1,30 @@
+name: setup-app-toolchain
+description: Set up the pinned Node, Corepack pnpm, and pnpm store cache for app workflows.
+
+runs:
+  using: composite
+  steps:
+    - name: set-up-node-from-app-toolchain
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      with:
+        node-version-file: app/microservices/package.json
+
+    - name: activate-pinned-pnpm
+      shell: bash
+      run: |
+        set -euo pipefail
+        corepack enable
+        corepack prepare pnpm@11.8.0 --activate
+
+    - name: resolve-pnpm-store-path
+      id: pnpm-store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: restore-pnpm-store-cache
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('app/microservices/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-

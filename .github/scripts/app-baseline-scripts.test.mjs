@@ -12,7 +12,9 @@ const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md'
 const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/platform/enforce-app-baseline-required-check.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
+const setupAppToolchainActionPath = path.join(repoRoot, '.github/actions/setup-app-toolchain/action.yml');
 const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
+const infraCiWorkflowPath = path.join(repoRoot, '.github/workflows/infra-ci.yml');
 const rollbackWorkflowPath = path.join(repoRoot, '.github/workflows/service-image-dev-rollback.yml');
 const deploySmokeWorkflowPath = path.join(repoRoot, '.github/workflows/deploy-smoke.yml');
 const publicSmokeScriptPath = path.join(repoRoot, '.github/scripts/storefront-public-smoke.mjs');
@@ -144,7 +146,9 @@ test('legacy path-filter metadata is documented as transitional', async () => {
 test('app PR baseline workflow builds changed service images without AWS or registry push', async () => {
   const workflow = await readFile(appPrBaselineWorkflowPath, 'utf8');
 
+  assert.match(workflow, /changed-service-images:[\s\S]*?needs: classify-pr[\s\S]*?if: \$\{\{ needs\.classify-pr\.outputs\.bot_manifest_promotion_only != 'true' \}\}/);
   assert.match(workflow, /outputs:\n\s+matrix: \$\{\{ steps\.changed-services\.outputs\.matrix \}\}\n\s+has_changes: \$\{\{ steps\.changed-services\.outputs\.has_changes \}\}/);
+  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-app-toolchain/);
   assert.match(workflow, /id: changed-services/);
   assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-pr-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /image-build-only:/);
@@ -177,8 +181,9 @@ test('GitOps render assertions cover Storefront deploy invariants', async () => 
 });
 
 test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
-  const [workflow, scripts, readme] = await Promise.all([
+  const [workflow, setupAppToolchainAction, scripts, readme] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
+    readFile(setupAppToolchainActionPath, 'utf8'),
     readWorkspaceScripts(),
     readFile(appWorkspaceReadmePath, 'utf8'),
   ]);
@@ -190,11 +195,25 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /permissions:\n  contents: read\n/);
   assert.doesNotMatch(workflow, /id-token:\s*write/);
   assert.doesNotMatch(workflow, /configure-aws-credentials|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|role-to-assume/);
-  assert.match(workflow, /node-version-file: app\/microservices\/package\.json/);
-  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache requires pnpm before Corepack activation');
-  assert.match(workflow, /corepack prepare pnpm@11\.8\.0 --activate/);
+  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-app-toolchain/, 'workflow should share app toolchain setup through a local composite action');
+  assert.match(setupAppToolchainAction, /node-version-file: app\/microservices\/package\.json/);
+  assert.doesNotMatch(`${workflow}\n${setupAppToolchainAction}`, /cache: pnpm/, 'setup-node pnpm cache should not run before Corepack activation');
+  assert.match(setupAppToolchainAction, /corepack prepare pnpm@11\.8\.0 --activate/);
+  assert.match(setupAppToolchainAction, /pnpm store path --silent/, 'workflow should resolve the pnpm store after Corepack activation');
+  assert.match(setupAppToolchainAction, /actions\/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4/, 'workflow should cache the pnpm store with a pinned action');
   assert.match(workflow, /pnpm run app:install/);
   assert.match(workflow, /pnpm run app:baseline/);
+  assert.match(workflow, /run-manifest-promotion-baseline[\s\S]*?kubectl kustomize gitops[\s\S]*?assert-gitops-render\.mjs/, 'bot manifest PRs should have a fast GitOps render baseline');
+  assert.match(workflow, /classify-manifest-promotion-pr/, 'manifest promotion classification should live in a dedicated step');
+  assert.match(workflow, /bot_manifest_promotion_only: \$\{\{ steps\.classify-manifest-promotion-pr\.outputs\.bot_manifest_promotion_only \}\}/, 'bot manifest promotion detection should be a job output');
+  assert.match(workflow, /manifest-promotion-baseline:[\s\S]*?if: \$\{\{ needs\.classify-pr\.outputs\.bot_manifest_promotion_only == 'true' \}\}/, 'bot manifest promotion PRs should branch to a dedicated fast-path job');
+  assert.match(workflow, /run-app-baseline:[\s\S]*?if: \$\{\{ needs\.classify-pr\.outputs\.bot_manifest_promotion_only != 'true' \}\}/, 'normal PRs should branch to a dedicated full baseline job');
+  assert.match(workflow, /app-baseline:[\s\S]*?if: \$\{\{ always\(\) \}\}/, 'stable required check should aggregate the branched jobs');
+  assert.match(workflow, /PR_AUTHOR: \$\{\{ github\.event\.pull_request\.user\.login \}\}/, 'fast path should pass the PR author through env to avoid script injection');
+  assert.match(workflow, /PR_HEAD_REF: \$\{\{ github\.head_ref \}\}/, 'fast path should pass the PR head ref through env to avoid script injection');
+  assert.match(workflow, /\$PR_AUTHOR" == "app\/hiraya-bot"/, 'fast path should be limited to the Hiraya bot');
+  assert.match(workflow, /\$PR_HEAD_REF" == "ci\/update-manifests-dev"/, 'fast path should be limited to the manifest promotion branch');
+  assert.match(workflow, /Non-image GitOps diff line/, 'fast path should reject non-image GitOps diffs');
   assert.match(workflow, /pnpm run app:changed -- --files-from/);
   assert.match(scripts['app:baseline'], /app:catalog/);
   assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
@@ -231,7 +250,9 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
   assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
-  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache requires pnpm before Corepack activation');
+  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache should not run before Corepack activation');
+  assert.match(workflow, /pnpm store path --silent/, 'main image CI should resolve the pnpm store after Corepack activation');
+  assert.match(workflow, /actions\/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4/, 'main image CI should cache the pnpm store with a pinned action');
   assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
   assert.match(workflow, /name: run-app-baseline-before-image-push/);
   assert.match(workflow, /pnpm run app:baseline/);
@@ -266,8 +287,9 @@ test('public Storefront deploy smoke is reusable and read-only', async () => {
 });
 
 test('manifest update workflows use protected bot PRs and post-merge smoke', async () => {
-  const [imageWorkflow, rollbackWorkflow, smokeWorkflow] = await Promise.all([
+  const [imageWorkflow, infraWorkflow, rollbackWorkflow, smokeWorkflow] = await Promise.all([
     readFile(imageCiWorkflowPath, 'utf8'),
+    readFile(infraCiWorkflowPath, 'utf8'),
     readFile(rollbackWorkflowPath, 'utf8'),
     readFile(deploySmokeWorkflowPath, 'utf8'),
   ]);
@@ -279,6 +301,8 @@ test('manifest update workflows use protected bot PRs and post-merge smoke', asy
   assert.match(rollbackWorkflow, /ROLLBACK_BRANCH: ci\/rollback-/, 'manual rollback should use unique rollback branches');
   assert.doesNotMatch(rollbackWorkflow, /git push origin HEAD:main/, 'manual rollback must not push directly to protected main');
   assert.doesNotMatch(`${imageWorkflow}\n${rollbackWorkflow}`, /\[skip ci\]/, 'bot PR commits must allow required PR checks to run');
+  assert.match(infraWorkflow, /github\.head_ref == 'ci\/update-manifests-dev'/, 'bot manifest PRs should not spend time on Terraform planning');
+  assert.match(infraWorkflow, /github\.event\.pull_request\.user\.login == 'app\/hiraya-bot'/, 'Terraform plan skip should be scoped to the Hiraya bot');
 
   assert.match(smokeWorkflow, /^name: deploy-smoke$/m);
   assert.match(smokeWorkflow, /push:[\s\S]*?branches: \[main\][\s\S]*?- "gitops\/\*\*"/, 'post-merge smoke should run on GitOps pushes to main');

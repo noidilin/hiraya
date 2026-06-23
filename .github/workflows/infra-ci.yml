@@ -89,7 +89,7 @@ jobs:
 
   trusted-platform-plan:
     name: trusted-pr-terraform-plan
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !(github.head_ref == 'ci/update-manifests-dev' && github.event.pull_request.user.login == 'app/hiraya-bot')
     runs-on: ubuntu-latest
     needs: static-checks
     permissions:
