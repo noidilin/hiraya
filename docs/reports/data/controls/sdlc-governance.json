@@ -4,7 +4,7 @@
     "id": "permission-controls.sdlc-governance",
     "title": "Permission controls: sdlc governance",
     "version": "1.0.0",
-    "domain": "sdlc_governance",
+    "domains": ["sdlc_governance", "github_supply_chain"],
     "updatedAt": "2026-06-22"
   },
   "controls": [
