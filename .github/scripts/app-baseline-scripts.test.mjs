@@ -152,6 +152,9 @@ test('app PR baseline workflow builds changed service images without AWS or regi
   assert.match(workflow, /id: changed-services/);
   assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-pr-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /image-build-only:/);
+  assert.match(workflow, /app-baseline:[\s\S]*?needs:\n\s+- classify-pr\n\s+- changed-service-images\n\s+- image-build-only\n\s+- manifest-promotion-baseline\n\s+- run-app-baseline/, 'stable gate must wait for changed service image builds');
+  assert.match(workflow, /IMAGE_BUILD_ONLY_RESULT: \$\{\{ needs\.image-build-only\.result \}\}/, 'stable gate must inspect the image-build-only result');
+  assert.match(workflow, /expected_image_build_only_result="success"/, 'stable gate must require image builds when service images changed');
   assert.match(workflow, /if: \$\{\{ needs\.changed-service-images\.outputs\.has_changes == 'true' \}\}/);
   assert.match(workflow, /matrix: \$\{\{ fromJson\(needs\.changed-service-images\.outputs\.matrix\) \}\}/);
   assert.match(workflow, /docker\/build-push-action@/);
@@ -213,6 +216,7 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /PR_HEAD_REF: \$\{\{ github\.head_ref \}\}/, 'fast path should pass the PR head ref through env to avoid script injection');
   assert.match(workflow, /\$PR_AUTHOR" == "app\/hiraya-bot"/, 'fast path should be limited to the Hiraya bot');
   assert.match(workflow, /\$PR_HEAD_REF" == "ci\/update-manifests-dev"/, 'fast path should be limited to the manifest promotion branch');
+  assert.match(workflow, /'\\\\ No newline at end of file'/, 'fast path should allow standard no-newline diff metadata');
   assert.match(workflow, /Non-image GitOps diff line/, 'fast path should reject non-image GitOps diffs');
   assert.match(workflow, /pnpm run app:changed -- --files-from/);
   assert.match(scripts['app:baseline'], /app:catalog/);
