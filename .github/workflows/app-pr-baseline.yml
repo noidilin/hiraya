@@ -11,11 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  classify-pr:
-    name: classify-pr
+  plan-app-pr:
+    name: plan-app-pr
     runs-on: ubuntu-latest
     outputs:
-      bot_manifest_promotion_only: ${{ steps.classify-manifest-promotion-pr.outputs.bot_manifest_promotion_only }}
+      pr_kind: ${{ steps.classify-app-pr.outputs.pr_kind }}
+      bot_manifest_promotion_only: ${{ steps.classify-app-pr.outputs.bot_manifest_promotion_only }}
+      microservice_related: ${{ steps.classify-app-pr.outputs.microservice_related }}
+      run_app_baseline: ${{ steps.classify-app-pr.outputs.run_app_baseline }}
+      run_manifest_baseline: ${{ steps.classify-app-pr.outputs.run_manifest_baseline }}
+      matrix: ${{ steps.classify-app-pr.outputs.matrix }}
+      services: ${{ steps.classify-app-pr.outputs.services }}
+      has_changes: ${{ steps.classify-app-pr.outputs.has_changes }}
+      has_changed_service_images: ${{ steps.classify-app-pr.outputs.has_changed_service_images }}
+      reason: ${{ steps.classify-app-pr.outputs.reason }}
     steps:
       - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -23,8 +32,8 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: classify-manifest-promotion-pr
-        id: classify-manifest-promotion-pr
+      - name: classify-app-pr
+        id: classify-app-pr
         shell: bash
         env:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
@@ -33,93 +42,27 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          git diff --name-only "${PR_BASE_SHA}...${PR_HEAD_SHA}" > /tmp/hiraya-pr-changed-files.txt
-
-          bot_manifest_promotion_only=false
-          if [[ "$PR_AUTHOR" == "app/hiraya-bot" && "$PR_HEAD_REF" == "ci/update-manifests-dev" ]]; then
-            if [[ -s /tmp/hiraya-pr-changed-files.txt ]] && ! grep -Ev '^(gitops/|$)' /tmp/hiraya-pr-changed-files.txt >/dev/null; then
-              git diff --unified=0 "${PR_BASE_SHA}...${PR_HEAD_SHA}" -- gitops > /tmp/hiraya-gitops-image-tag.diff
-              if python3 - <<'PY'
-          from pathlib import Path
-          import sys
-
-          allowed_prefixes = ('diff --git ', 'index ', '--- ', '+++ ', '@@', '\\ No newline at end of file')
-          for line in Path('/tmp/hiraya-gitops-image-tag.diff').read_text().splitlines():
-              if not line or line.startswith(allowed_prefixes):
-                  continue
-              if line[0] in '+-' and line[1:].lstrip().startswith('image: '):
-                  continue
-              print(f'Non-image GitOps diff line: {line}', file=sys.stderr)
-              sys.exit(1)
-          PY
-              then
-                bot_manifest_promotion_only=true
-              fi
-            fi
-          fi
-          echo "bot_manifest_promotion_only=${bot_manifest_promotion_only}" >> "$GITHUB_OUTPUT"
+          node .github/scripts/dist/classify-app-pr.mjs \
+            --base "$PR_BASE_SHA" \
+            --head "$PR_HEAD_SHA" \
+            --author "$PR_AUTHOR" \
+            --head-ref "$PR_HEAD_REF" \
+            --github-output "$GITHUB_OUTPUT" \
+            > /tmp/hiraya-app-pr-classification.json
 
           {
-            echo "### PR classification"
-            echo ""
-            echo "Bot manifest promotion only: ${bot_manifest_promotion_only}"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  changed-service-images:
-    name: changed-service-images
-    runs-on: ubuntu-latest
-    needs: classify-pr
-    if: ${{ needs.classify-pr.outputs.bot_manifest_promotion_only != 'true' }}
-    outputs:
-      matrix: ${{ steps.changed-services.outputs.matrix }}
-      has_changes: ${{ steps.changed-services.outputs.has_changes }}
-    steps:
-      - name: checkout-code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: collect-pr-changed-files
-        shell: bash
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          git diff --name-only "${PR_BASE_SHA}...${PR_HEAD_SHA}" > /tmp/hiraya-pr-changed-files.txt
-
-      - name: set-up-app-toolchain
-        uses: ./.github/actions/setup-app-toolchain
-
-      - name: install-app-workspace
-        shell: bash
-        working-directory: app/microservices
-        run: pnpm run app:install
-
-      - name: detect-changed-services
-        id: changed-services
-        shell: bash
-        working-directory: app/microservices
-        run: |
-          set -euo pipefail
-          pnpm run app:changed -- --files-from /tmp/hiraya-pr-changed-files.txt --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
-
-          {
-            echo "### Changed service image inputs"
-            echo ""
-            echo "Changed services detected from the service catalog:"
+            echo "### App PR plan"
             echo ""
             echo '```json'
-            cat /tmp/hiraya-app-service-matrix.json
+            cat /tmp/hiraya-app-pr-classification.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
   manifest-promotion-baseline:
     name: manifest-promotion-baseline
     runs-on: ubuntu-latest
-    needs: classify-pr
-    if: ${{ needs.classify-pr.outputs.bot_manifest_promotion_only == 'true' }}
+    needs: plan-app-pr
+    if: ${{ needs.plan-app-pr.outputs.run_manifest_baseline == 'true' }}
     steps:
       - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -136,8 +79,8 @@ jobs:
   run-app-baseline:
     name: run-app-baseline
     runs-on: ubuntu-latest
-    needs: classify-pr
-    if: ${{ needs.classify-pr.outputs.bot_manifest_promotion_only != 'true' }}
+    needs: plan-app-pr
+    if: ${{ needs.plan-app-pr.outputs.run_app_baseline == 'true' }}
     steps:
       - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -157,83 +100,14 @@ jobs:
         working-directory: app/microservices
         run: pnpm run app:baseline
 
-  app-baseline:
-    name: app-baseline
-    runs-on: ubuntu-latest
-    needs:
-      - classify-pr
-      - changed-service-images
-      - image-build-only
-      - manifest-promotion-baseline
-      - run-app-baseline
-    if: ${{ always() }}
-    steps:
-      - name: summarize-app-baseline-gate
-        shell: bash
-        env:
-          CLASSIFY_RESULT: ${{ needs.classify-pr.result }}
-          CHANGED_SERVICE_IMAGES_RESULT: ${{ needs.changed-service-images.result }}
-          IMAGE_BUILD_ONLY_RESULT: ${{ needs.image-build-only.result }}
-          MANIFEST_PROMOTION_BASELINE_RESULT: ${{ needs.manifest-promotion-baseline.result }}
-          RUN_APP_BASELINE_RESULT: ${{ needs.run-app-baseline.result }}
-          BOT_MANIFEST_PROMOTION_ONLY: ${{ needs.classify-pr.outputs.bot_manifest_promotion_only }}
-          HAS_CHANGED_SERVICE_IMAGES: ${{ needs.changed-service-images.outputs.has_changes }}
-          MATRIX: ${{ needs.changed-service-images.outputs.matrix }}
-        run: |
-          set -euo pipefail
-          {
-            echo "### storefront-app-baseline gate"
-            echo ""
-            echo "| Field | Value |"
-            echo "| --- | --- |"
-            echo "| Bot manifest promotion fast path | \`${BOT_MANIFEST_PROMOTION_ONLY:-false}\` |"
-            echo "| classify-pr | \`${CLASSIFY_RESULT}\` |"
-            echo "| changed-service-images | \`${CHANGED_SERVICE_IMAGES_RESULT}\` |"
-            echo "| image-build-only | \`${IMAGE_BUILD_ONLY_RESULT}\` |"
-            echo "| manifest-promotion-baseline | \`${MANIFEST_PROMOTION_BASELINE_RESULT}\` |"
-            echo "| run-app-baseline | \`${RUN_APP_BASELINE_RESULT}\` |"
-            echo ""
-            echo "Changed services detected from the service catalog:"
-            echo ""
-            echo '```json'
-            printf '%s\n' "${MATRIX:-not-run}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [[ "$CLASSIFY_RESULT" != "success" ]]; then
-            echo "PR classification did not succeed: ${CLASSIFY_RESULT}" >&2
-            exit 1
-          fi
-
-          if [[ "${BOT_MANIFEST_PROMOTION_ONLY:-false}" == "true" ]]; then
-            if [[ "$CHANGED_SERVICE_IMAGES_RESULT" != "skipped" || "$IMAGE_BUILD_ONLY_RESULT" != "skipped" || "$RUN_APP_BASELINE_RESULT" != "skipped" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "success" ]]; then
-              echo "Manifest promotion fast path expected manifest-promotion-baseline=success and normal app/image jobs=skipped." >&2
-              exit 1
-            fi
-          else
-            if [[ "$CHANGED_SERVICE_IMAGES_RESULT" != "success" || "$RUN_APP_BASELINE_RESULT" != "success" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "skipped" ]]; then
-              echo "Normal PR path expected changed-service-images=success, run-app-baseline=success, and manifest-promotion-baseline=skipped." >&2
-              exit 1
-            fi
-
-            expected_image_build_only_result="skipped"
-            if [[ "${HAS_CHANGED_SERVICE_IMAGES:-false}" == "true" ]]; then
-              expected_image_build_only_result="success"
-            fi
-            if [[ "$IMAGE_BUILD_ONLY_RESULT" != "$expected_image_build_only_result" ]]; then
-              echo "Normal PR path expected image-build-only=${expected_image_build_only_result}, got ${IMAGE_BUILD_ONLY_RESULT}." >&2
-              exit 1
-            fi
-          fi
-
   image-build-only:
     name: image-build-only-${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: changed-service-images
-    if: ${{ needs.changed-service-images.outputs.has_changes == 'true' }}
+    needs: plan-app-pr
+    if: ${{ needs.plan-app-pr.outputs.has_changed_service_images == 'true' }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.changed-service-images.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.plan-app-pr.outputs.matrix) }}
     steps:
       - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -268,3 +142,88 @@ jobs:
             echo "| Push | \`false\` |"
             echo "| AWS credentials | Not requested |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  app-baseline:
+    name: app-baseline
+    runs-on: ubuntu-latest
+    needs:
+      - plan-app-pr
+      - image-build-only
+      - manifest-promotion-baseline
+      - run-app-baseline
+    if: ${{ always() }}
+    steps:
+      - name: summarize-app-baseline-gate
+        shell: bash
+        env:
+          PLAN_RESULT: ${{ needs.plan-app-pr.result }}
+          IMAGE_BUILD_ONLY_RESULT: ${{ needs.image-build-only.result }}
+          MANIFEST_PROMOTION_BASELINE_RESULT: ${{ needs.manifest-promotion-baseline.result }}
+          RUN_APP_BASELINE_RESULT: ${{ needs.run-app-baseline.result }}
+          PR_KIND: ${{ needs.plan-app-pr.outputs.pr_kind }}
+          BOT_MANIFEST_PROMOTION_ONLY: ${{ needs.plan-app-pr.outputs.bot_manifest_promotion_only }}
+          MICROSERVICE_RELATED: ${{ needs.plan-app-pr.outputs.microservice_related }}
+          HAS_CHANGED_SERVICE_IMAGES: ${{ needs.plan-app-pr.outputs.has_changed_service_images }}
+          MATRIX: ${{ needs.plan-app-pr.outputs.matrix }}
+          PLAN_REASON: ${{ needs.plan-app-pr.outputs.reason }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### storefront-app-baseline gate"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| PR kind | \`${PR_KIND:-unknown}\` |"
+            echo "| Plan reason | ${PLAN_REASON:-not-available} |"
+            echo "| Bot manifest promotion fast path | \`${BOT_MANIFEST_PROMOTION_ONLY:-false}\` |"
+            echo "| Microservice related | \`${MICROSERVICE_RELATED:-false}\` |"
+            echo "| plan-app-pr | \`${PLAN_RESULT}\` |"
+            echo "| image-build-only | \`${IMAGE_BUILD_ONLY_RESULT}\` |"
+            echo "| manifest-promotion-baseline | \`${MANIFEST_PROMOTION_BASELINE_RESULT}\` |"
+            echo "| run-app-baseline | \`${RUN_APP_BASELINE_RESULT}\` |"
+            echo ""
+            echo "Changed services detected from the service catalog:"
+            echo ""
+            echo '```json'
+            printf '%s\n' "${MATRIX:-not-run}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$PLAN_RESULT" != "success" ]]; then
+            echo "PR planning did not succeed: ${PLAN_RESULT}" >&2
+            exit 1
+          fi
+
+          case "${PR_KIND:-unknown}" in
+            manifest_promotion_only)
+              if [[ "$IMAGE_BUILD_ONLY_RESULT" != "skipped" || "$RUN_APP_BASELINE_RESULT" != "skipped" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "success" ]]; then
+                echo "Manifest promotion fast path expected manifest-promotion-baseline=success and normal app/image jobs=skipped." >&2
+                exit 1
+              fi
+              ;;
+            non_app)
+              if [[ "$IMAGE_BUILD_ONLY_RESULT" != "skipped" || "$RUN_APP_BASELINE_RESULT" != "skipped" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "skipped" ]]; then
+                echo "Non-app PR path expected all app/image/manifest jobs to be skipped." >&2
+                exit 1
+              fi
+              ;;
+            microservice_related)
+              if [[ "$RUN_APP_BASELINE_RESULT" != "success" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "skipped" ]]; then
+                echo "Microservice PR path expected run-app-baseline=success and manifest-promotion-baseline=skipped." >&2
+                exit 1
+              fi
+
+              expected_image_build_only_result="skipped"
+              if [[ "${HAS_CHANGED_SERVICE_IMAGES:-false}" == "true" ]]; then
+                expected_image_build_only_result="success"
+              fi
+              if [[ "$IMAGE_BUILD_ONLY_RESULT" != "$expected_image_build_only_result" ]]; then
+                echo "Microservice PR path expected image-build-only=${expected_image_build_only_result}, got ${IMAGE_BUILD_ONLY_RESULT}." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "Unknown PR kind: ${PR_KIND:-unset}" >&2
+              exit 1
+              ;;
+          esac
