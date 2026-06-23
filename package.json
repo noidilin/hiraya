@@ -1,0 +1,49 @@
+{
+  "name": "hiraya",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "scripts:build": "tsc -p .github/scripts/tsconfig.json",
+    "scripts:test": "node --test .github/scripts/*.test.mjs",
+    "reports:permissions": "pnpm run scripts:build && node .github/scripts/dist/permission-controls.mjs --root .",
+    "reports:permissions:validate": "pnpm run scripts:build && node .github/scripts/dist/permission-controls.mjs --root . --validate-only",
+    "catalog:validate": "node .github/scripts/dist/validate-service-catalog.mjs .github/utils/services.json --root .",
+    "services:changed": "pnpm run scripts:build && node .github/scripts/dist/detect-changed-services.mjs --catalog .github/utils/services.json --root .",
+    "app:catalog": "pnpm run scripts:build && pnpm run catalog:validate && pnpm run scripts:test",
+    "app:static": "pnpm run storefront:static && pnpm run build:backend",
+    "app:gitops": "kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml && node .github/scripts/dist/assert-gitops-render.mjs --rendered /tmp/hiraya-gitops-rendered.yaml",
+    "app:smoke:public": "node .github/scripts/storefront-public-smoke.mjs",
+    "app:baseline": "pnpm list --recursive --depth -1 && pnpm run app:catalog && pnpm run app:test:backend-contract && pnpm run app:test:frontend && pnpm run services:changed -- --all && pnpm run app:gitops && pnpm run app:static",
+    "app:test:catalog": "pnpm run scripts:build && pnpm run scripts:test",
+    "app:test:contract": "pnpm --filter @hiraya/storefront-contracts test",
+    "app:test:backend-contract": "pnpm --filter @hiraya/storefront-contracts test:backend-contract",
+    "app:test:frontend": "pnpm --filter frontend test",
+    "app:test:browser": "playwright test --config app/microservices/playwright.config.mjs",
+    "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
+    "dev:frontend": "pnpm --filter frontend start",
+    "dev:backend": "pnpm --filter vintage-backend dev:services",
+    "test": "pnpm run test:frontend && pnpm run test:backend",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:backend": "pnpm --filter vintage-backend test",
+    "storefront:build": "pnpm --filter frontend build",
+    "storefront:typecheck": "pnpm --filter frontend typecheck",
+    "storefront:lint": "pnpm --filter frontend lint",
+    "storefront:static": "pnpm run storefront:build && pnpm run storefront:typecheck && pnpm run storefront:lint",
+    "build": "pnpm run build:frontend && pnpm run build:backend",
+    "build:frontend": "pnpm run storefront:build",
+    "build:backend": "pnpm --filter vintage-backend build",
+    "docker:build": "docker compose -f app/microservices/docker-compose.yml build",
+    "docker:up": "docker compose -f app/microservices/docker-compose.yml up -d",
+    "docker:down": "docker compose -f app/microservices/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@hiraya/storefront-contracts": "workspace:*",
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^24.13.2",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.9.3"
+  }
+}

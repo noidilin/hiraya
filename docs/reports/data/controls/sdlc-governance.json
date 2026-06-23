@@ -34,7 +34,7 @@
       ],
       "evidence": [
         {
-          "path": "docs/plan/infra-ci-workflow.md",
+          "path": "docs/plan/pnpm-monorepo-refactor.md",
           "summary": "Planning documents capture intended workflow behavior."
         },
         {

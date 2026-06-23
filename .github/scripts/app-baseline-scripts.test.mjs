@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const workspacePackagePath = path.join(repoRoot, 'app/microservices/package.json');
+const workspacePackagePath = path.join(repoRoot, 'package.json');
 const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/package.json');
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
@@ -30,15 +30,17 @@ async function readFrontendScripts() {
   return packageJson.scripts ?? {};
 }
 
-test('app workspace exposes the reusable baseline command surface', async () => {
+test('root workspace exposes the reusable baseline command surface', async () => {
   const scripts = await readWorkspaceScripts();
 
   for (const scriptName of [
-    'app:install',
-    'app:workspace',
     'scripts:build',
+    'scripts:test',
+    'reports:permissions',
+    'reports:permissions:validate',
+    'catalog:validate',
+    'services:changed',
     'app:catalog',
-    'app:changed',
     'app:static',
     'app:gitops',
     'app:smoke:public',
@@ -52,9 +54,20 @@ test('app workspace exposes the reusable baseline command surface', async () => 
     'app:test:backend-contract',
     'app:test:frontend',
     'app:test:browser',
+    'dev',
+    'test',
+    'build',
+    'docker:build',
+    'docker:up',
+    'docker:down',
   ]) {
     assert.equal(typeof scripts[scriptName], 'string', `${scriptName} should be documented as a package script`);
     assert.notEqual(scripts[scriptName].trim(), '', `${scriptName} should not be empty`);
+    assert.doesNotMatch(scripts[scriptName], /corepack pnpm@11\.8\.0/, `${scriptName} should use plain pnpm after setup`);
+  }
+
+  for (const obsoleteScriptName of ['app:install', 'app:workspace', 'install:all', 'check:workspace', 'test:catalog', 'catalog:changed', 'app:changed']) {
+    assert.equal(scripts[obsoleteScriptName], undefined, `${obsoleteScriptName} should not be preserved on the root command surface`);
   }
 });
 
@@ -103,7 +116,7 @@ test('implemented contract and browser baseline commands run shared validation',
   );
   assert.doesNotMatch(scripts['app:test:contract'], /not implemented|exit\(1\)|exit 1/i);
 
-  assert.match(scripts['app:test:browser'], /playwright test --config playwright\.config\.mjs/, 'app:test:browser should run the Storefront Playwright baseline');
+  assert.match(scripts['app:test:browser'], /playwright test --config app\/microservices\/playwright\.config\.mjs/, 'app:test:browser should run the Storefront Playwright baseline');
   assert.doesNotMatch(scripts['app:test:browser'], /not implemented|exit\(1\)|exit 1/i);
 });
 
