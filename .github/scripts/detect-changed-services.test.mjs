@@ -26,7 +26,10 @@ async function createCatalogFixture() {
         pathOwnership: [
           'app/microservices/frontend/**',
           'app/microservices/shared/**',
-          'app/microservices/package.json',
+          'package.json',
+          'pnpm-lock.yaml',
+          'pnpm-workspace.yaml',
+          '.dockerignore',
         ],
       }),
       service('auth', {
@@ -177,6 +180,15 @@ test('fans out root image build inputs, workflow, script, and catalog changes to
       changedFile,
     );
   }
+});
+
+test('does not fan out report-only governance script changes to service images', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+
+  assert.deepEqual(
+    serviceNames(detect(catalogPath, root, ['.github/scripts/src/permission-controls.mts'])),
+    [],
+  );
 });
 
 test('handles no-change and unknown paths with an empty matrix', async () => {

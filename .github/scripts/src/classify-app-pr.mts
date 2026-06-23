@@ -68,7 +68,7 @@ interface Classification {
 }
 
 const appBaselineGlobalImpactPatterns = [
-  '.github/actions/setup-app-toolchain/**',
+  '.github/actions/setup-node-pnpm/**',
   '.github/workflows/app-pr-baseline.yml',
   '.github/workflows/image-ci.yml',
   '.github/scripts/src/classify-app-pr.mts',
@@ -173,11 +173,6 @@ function gitOutput(root: string, args: string[]): string {
   return result.stdout;
 }
 
-function gitOutputOptional(root: string, args: string[]): string | undefined {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  return result.status === 0 ? result.stdout : undefined;
-}
-
 function changedFiles(options: CliOptions): string[] {
   return normalizeChangedFiles(
     gitOutput(options.root, ['diff', '--name-only', `${options.base}...${options.head}`]).split(/\r?\n/),
@@ -278,55 +273,6 @@ function appBaselineImpactPatterns(catalog: ServiceCatalog, options: CliOptions)
   ];
 }
 
-async function isIgnoredMicroservicePackageJsonChange(options: CliOptions): Promise<boolean> {
-  const baseContent = gitOutputOptional(options.root, ['show', `${options.base}:app/microservices/package.json`]);
-  const headContent = gitOutputOptional(options.root, ['show', `${options.head}:app/microservices/package.json`]);
-  if (baseContent === undefined || headContent === undefined) {
-    return false;
-  }
-
-  try {
-    return stableStringify(packageJsonWithoutIgnoredReportScripts(baseContent))
-      === stableStringify(packageJsonWithoutIgnoredReportScripts(headContent));
-  } catch {
-    return false;
-  }
-}
-
-function packageJsonWithoutIgnoredReportScripts(content: string): unknown {
-  const parsed = JSON.parse(content) as { scripts?: Record<string, string> };
-  if (parsed.scripts) {
-    delete parsed.scripts['reports:permissions'];
-    delete parsed.scripts['reports:permissions:validate'];
-  }
-  return parsed;
-}
-
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`;
-  }
-  if (value && typeof value === 'object') {
-    return `{${Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-      .join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
-async function effectiveChangedFiles(files: string[], options: CliOptions): Promise<string[]> {
-  if (!files.includes('app/microservices/package.json')) {
-    return files;
-  }
-
-  if (!await isIgnoredMicroservicePackageJsonChange(options)) {
-    return files;
-  }
-
-  return files.filter((file) => file !== 'app/microservices/package.json');
-}
-
 function isBotManifestPromotionOnly(files: string[], options: CliOptions): boolean {
   if (options.author !== 'app/hiraya-bot' || options.headRef !== 'ci/update-manifests-dev') {
     return false;
@@ -379,7 +325,7 @@ function selectChangedImageServices(files: string[], catalog: ServiceCatalog, op
 
 async function classify(options: CliOptions, catalog: ServiceCatalog): Promise<Classification> {
   const files = changedFiles(options);
-  const effectiveFiles = await effectiveChangedFiles(files, options);
+  const effectiveFiles = files;
   const botManifestPromotionOnly = isBotManifestPromotionOnly(files, options);
 
   if (botManifestPromotionOnly) {

@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 const appBaselineGlobalImpactPatterns = [
-    '.github/actions/setup-app-toolchain/**',
+    '.github/actions/setup-node-pnpm/**',
     '.github/workflows/app-pr-baseline.yml',
     '.github/workflows/image-ci.yml',
     '.github/scripts/src/classify-app-pr.mts',
@@ -109,10 +109,6 @@ function gitOutput(root, args) {
     }
     return result.stdout;
 }
-function gitOutputOptional(root, args) {
-    const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-    return result.status === 0 ? result.stdout : undefined;
-}
 function changedFiles(options) {
     return normalizeChangedFiles(gitOutput(options.root, ['diff', '--name-only', `${options.base}...${options.head}`]).split(/\r?\n/), options.root);
 }
@@ -198,49 +194,6 @@ function appBaselineImpactPatterns(catalog, options) {
         ]),
     ];
 }
-async function isIgnoredMicroservicePackageJsonChange(options) {
-    const baseContent = gitOutputOptional(options.root, ['show', `${options.base}:app/microservices/package.json`]);
-    const headContent = gitOutputOptional(options.root, ['show', `${options.head}:app/microservices/package.json`]);
-    if (baseContent === undefined || headContent === undefined) {
-        return false;
-    }
-    try {
-        return stableStringify(packageJsonWithoutIgnoredReportScripts(baseContent))
-            === stableStringify(packageJsonWithoutIgnoredReportScripts(headContent));
-    }
-    catch {
-        return false;
-    }
-}
-function packageJsonWithoutIgnoredReportScripts(content) {
-    const parsed = JSON.parse(content);
-    if (parsed.scripts) {
-        delete parsed.scripts['reports:permissions'];
-        delete parsed.scripts['reports:permissions:validate'];
-    }
-    return parsed;
-}
-function stableStringify(value) {
-    if (Array.isArray(value)) {
-        return `[${value.map(stableStringify).join(',')}]`;
-    }
-    if (value && typeof value === 'object') {
-        return `{${Object.entries(value)
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-            .join(',')}}`;
-    }
-    return JSON.stringify(value);
-}
-async function effectiveChangedFiles(files, options) {
-    if (!files.includes('app/microservices/package.json')) {
-        return files;
-    }
-    if (!await isIgnoredMicroservicePackageJsonChange(options)) {
-        return files;
-    }
-    return files.filter((file) => file !== 'app/microservices/package.json');
-}
 function isBotManifestPromotionOnly(files, options) {
     if (options.author !== 'app/hiraya-bot' || options.headRef !== 'ci/update-manifests-dev') {
         return false;
@@ -287,7 +240,7 @@ function selectChangedImageServices(files, catalog, options) {
 }
 async function classify(options, catalog) {
     const files = changedFiles(options);
-    const effectiveFiles = await effectiveChangedFiles(files, options);
+    const effectiveFiles = files;
     const botManifestPromotionOnly = isBotManifestPromotionOnly(files, options);
     if (botManifestPromotionOnly) {
         return {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -141,18 +141,14 @@ test('backend contract baseline command names and gates each active Storefront s
   assert.match(readme, /AWS credentials, PostgreSQL, Kubernetes, or real backend services/i);
 });
 
-test('legacy path-filter metadata is documented as transitional', async () => {
-  const [legacyFilters, appReadme] = await Promise.all([
-    readFile(legacyFiltersPath, 'utf8'),
-    readFile(appWorkspaceReadmePath, 'utf8'),
-  ]);
+test('legacy duplicated path-filter metadata is removed', async () => {
+  await assert.rejects(access(legacyFiltersPath), /ENOENT/);
 
-  assert.match(legacyFilters, /services\.json/i, 'legacy filters should point agents at the canonical service catalog');
-  assert.match(legacyFilters, /transitional|superseded/i, 'legacy filters should be marked transitional or superseded');
+  const appReadme = await readFile(appWorkspaceReadmePath, 'utf8');
   assert.match(appReadme, /service catalog/i, 'app README should document the service catalog transition');
   assert.match(appReadme, /changed-service detector/i, 'app README should name the verified detector path');
   assert.match(appReadme, /compiled runtime/i, 'app README should explain that TypeScript CI scripts run from compiled JavaScript');
-  assert.match(appReadme, /legacy path-filter/i, 'app README should tell agents how to handle the legacy filters');
+  assert.doesNotMatch(appReadme, /legacy path-filter/i, 'app README should not point agents at removed legacy filters');
 });
 
 
