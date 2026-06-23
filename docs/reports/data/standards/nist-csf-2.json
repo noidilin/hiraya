@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "1.0.0",
+  "standard": {
+    "id": "nist_csf_2",
+    "title": "NIST Cybersecurity Framework 2.0",
+    "version": "2.0",
+    "referenceUrl": "https://www.nist.gov/cyberframework"
+  },
+  "mappings": [
+    {
+      "standardControlId": "GV",
+      "standardControlTitle": "Govern cybersecurity risk and policy",
+      "standardControlFamily": "Govern",
+      "projectControlIds": [
+        "sdlc.requirements.risk-review",
+        "sdlc.review.infrastructure-policy",
+        "sec.audit.permission-deployment-records"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Risk context and review evidence exist in repo documents and workflows, but security reviewer approval and immutable audit retention are not yet codified.",
+      "gapSummary": "Add explicit security-review rules, policy-as-code, and evidence-retention boundaries.",
+      "sortKey": 10
+    },
+    {
+      "standardControlId": "ID",
+      "standardControlTitle": "Identify assets, dependencies, and risk context",
+      "standardControlFamily": "Identify",
+      "projectControlIds": [
+        "sdlc.requirements.intake",
+        "sdlc.requirements.risk-review",
+        "sec.audit.permission-deployment-records"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Issues, ADRs, runbooks, and generated reports provide a lightweight inventory of decisions and controls, but ownership and risk labels are not enforced through workflow policy.",
+      "gapSummary": "Make risk labels, owners, and control requirements explicit before implementation proceeds.",
+      "sortKey": 20
+    },
+    {
+      "standardControlId": "PR.AA",
+      "standardControlTitle": "Protect identities and access rights",
+      "standardControlFamily": "Protect",
+      "projectControlIds": [
+        "sec.github-oidc.no-long-lived-keys",
+        "sec.github-oidc.repo-trust",
+        "sec.identity-center.human-access",
+        "sec.eks.operator-access-entries"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Automation identities are federated and repository-scoped, while human AWS/EKS access governance remains incomplete.",
+      "gapSummary": "Codify Identity Center, operator RBAC, and periodic access review evidence.",
+      "sortKey": 30
+    },
+    {
+      "standardControlId": "PR.DS",
+      "standardControlTitle": "Protect data and secrets",
+      "standardControlFamily": "Protect",
+      "projectControlIds": [
+        "sec.secrets.storage-permissions",
+        "sec.secrets.rotation",
+        "sec.terraform.state-access"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "State read/write access is separated and generated admin values are sensitive outputs, but plaintext application secrets and absent rotation remain high-priority gaps.",
+      "gapSummary": "Use Secrets Manager/KMS-backed delivery, remove plaintext Git secrets, and automate rotation/revocation.",
+      "sortKey": 40
+    },
+    {
+      "standardControlId": "PR.PS",
+      "standardControlTitle": "Protect platforms, workloads, and supply chain",
+      "standardControlFamily": "Protect",
+      "projectControlIds": [
+        "sec.image.build-publish-trust",
+        "sec.image.vulnerability-scan",
+        "sec.gitops.application-resource-policy",
+        "sec.github.actions-pinning"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Image build trust, immutable tags, and pinned actions are implemented, but vulnerability and admission gates are not yet enforcing release policy.",
+      "gapSummary": "Fail or exception-gate high-risk CVEs and block privileged Kubernetes resources through policy.",
+      "sortKey": 50
+    },
+    {
+      "standardControlId": "DE",
+      "standardControlTitle": "Detect anomalous activity and control failures",
+      "standardControlFamily": "Detect",
+      "projectControlIds": [
+        "sec.irsa.fluent-bit",
+        "ops.monitoring.read-access",
+        "ops.incident.aiops-investigation"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Logs, metrics, dashboards, smoke checks, and AIOps queries support investigation, but closed-loop alerting and authorized remediation are incomplete.",
+      "gapSummary": "Add alert routing, incident-channel evidence, and remediation authorization records.",
+      "sortKey": 60
+    },
+    {
+      "standardControlId": "RS",
+      "standardControlTitle": "Respond to incidents with controlled actions",
+      "standardControlFamily": "Respond",
+      "projectControlIds": [
+        "ops.incident.aiops-investigation",
+        "sec.audit.permission-deployment-records",
+        "sec.github-oidc.apply-env-gate"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Runbooks, AIOps investigation, workflow logs, and environment-gated apply workflows support response, but response ownership and channels are not formalized.",
+      "gapSummary": "Define incident roles, escalation channel, remediation approval, and post-incident evidence capture.",
+      "sortKey": 70
+    },
+    {
+      "standardControlId": "RC",
+      "standardControlTitle": "Recover service delivery after changes or incidents",
+      "standardControlFamily": "Recover",
+      "projectControlIds": [
+        "sec.image.vulnerability-scan",
+        "sdlc.source.merge-gate",
+        "sec.github-oidc.apply-env-gate"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Rollback runbooks and deployment gates exist around image releases, but recovery objectives and post-incident validation are not codified as a formal workflow.",
+      "gapSummary": "Add recovery objectives, rollback validation steps, and evidence capture after restoration.",
+      "sortKey": 80
+    }
+  ]
+}

@@ -1,13 +1,15 @@
 # Reports
 
-Permission and SDLC/security report data is stored as canonical JSON controls, not hand-edited TSV spreadsheets.
+Permission, SDLC/security, and standards-alignment report data is stored as canonical JSON controls and mapping files, not hand-edited TSV spreadsheets.
 
 ## Source of truth
 
-- Schema: `docs/reports/schema/permission-controls.schema.json`
-- Data: `docs/reports/data/controls/*.json`
+- Permission controls schema: `docs/reports/schema/permission-controls.schema.json`
+- Permission controls data: `docs/reports/data/controls/*.json`
+- Standards alignment schema: `docs/reports/schema/standards-alignment.schema.json`
+- Standards alignment data: `docs/reports/data/standards/*.json`
 
-Each control can appear in multiple generated report views through `reportViews[]`.
+Each control can appear in multiple generated report views through `reportViews[]`. Standards mapping files reference these canonical controls through `projectControlIds[]`.
 
 ## Local commands
 
@@ -18,11 +20,18 @@ pnpm run reports:permissions:validate
 pnpm run reports:permissions
 ```
 
-Generated files are written to `docs/reports/build/` and are ignored by Git because CI uploads them as artifacts.
+Generated files are written to `docs/reports/build/` and are ignored by Git because CI uploads them as artifacts:
+
+- `permission-report.md`
+- `permission-analysis.json`
+- `standards-alignment.md`
+- `standards-alignment.json`
+
+The Standards Alignment Report is evidence-based and intentionally avoids formal compliance claims unless separate audit evidence exists.
 
 ## CI
 
-`permission-report-ci` validates the JSON controls and uploads Markdown + JSON report artifacts on main and on the weekly schedule.
+`permission-report-ci` validates the JSON controls plus standards mappings and uploads Markdown + JSON report artifacts on main and on the weekly schedule.
 
 `weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. Recompile it after edits:
 

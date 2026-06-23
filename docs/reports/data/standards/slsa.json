@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0.0",
+  "standard": {
+    "id": "slsa",
+    "title": "SLSA",
+    "version": "v1.1 high-level mapping",
+    "referenceUrl": "https://slsa.dev/"
+  },
+  "mappings": [
+    {
+      "standardControlId": "source.version-controlled",
+      "standardControlTitle": "Source is version controlled and reviewed",
+      "standardControlFamily": "Source requirements",
+      "projectControlIds": [
+        "sdlc.source.branch-protection",
+        "sdlc.review.code-review-gate",
+        "sdlc.source.merge-gate"
+      ],
+      "alignmentStatus": "aligned",
+      "notes": "Feature branches, pull requests, validation evidence, review gates, and main-branch merge gates support controlled source changes.",
+      "gapSummary": "Branch protection enforcement remains a GitHub setting rather than repository code, but the control evidence supports the intended source-review flow.",
+      "sortKey": 10
+    },
+    {
+      "standardControlId": "build.scripted-and-ephemeral",
+      "standardControlTitle": "Builds run from trusted automation with short-lived credentials",
+      "standardControlFamily": "Build requirements",
+      "projectControlIds": [
+        "sec.github-oidc.no-long-lived-keys",
+        "sec.image.build-publish-trust",
+        "sec.github-oidc.repo-trust"
+      ],
+      "alignmentStatus": "aligned",
+      "notes": "Image CI runs in GitHub Actions, assumes AWS roles with OIDC, and publishes immutable commit-SHA images to authorized ECR repositories.",
+      "gapSummary": "No explicit gap recorded for the current image build trust boundary.",
+      "sortKey": 20
+    },
+    {
+      "standardControlId": "build.provenance",
+      "standardControlTitle": "Provenance exists and can be verified",
+      "standardControlFamily": "Provenance requirements",
+      "projectControlIds": [
+        "sec.image.build-publish-trust",
+        "sec.github.manifest-update-token"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Images are tagged by commit SHA and GitOps manifests are updated from the build workflow, but no signed provenance or artifact attestation is produced yet.",
+      "gapSummary": "Generate and verify signed build provenance/attestations for published images.",
+      "sortKey": 30
+    },
+    {
+      "standardControlId": "dependencies.github-actions",
+      "standardControlTitle": "Build dependencies are pinned or controlled",
+      "standardControlFamily": "Dependency requirements",
+      "projectControlIds": [
+        "sec.github.actions-pinning",
+        "sdlc.ci.static-validation"
+      ],
+      "alignmentStatus": "aligned",
+      "notes": "Major third-party GitHub Actions are pinned to immutable revisions and static validation runs before mutable deployment workflows.",
+      "gapSummary": "No explicit gap recorded for pinned workflow actions.",
+      "sortKey": 40
+    },
+    {
+      "standardControlId": "common.isolated-secrets",
+      "standardControlTitle": "Build and release credentials are isolated",
+      "standardControlFamily": "Common requirements",
+      "projectControlIds": [
+        "sec.github-oidc.no-long-lived-keys",
+        "sec.github-oidc.apply-env-gate",
+        "sec.github.manifest-update-token"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "AWS credentials are short-lived and deploy/destroy workflows use an environment gate, but the manifest update job intentionally keeps a write token to push GitOps changes.",
+      "gapSummary": "Further isolate or broker manifest-update writes, or document compensating controls for the accepted token exposure.",
+      "sortKey": 50
+    },
+    {
+      "standardControlId": "verification.vulnerability-policy",
+      "standardControlTitle": "Release verification handles known vulnerabilities",
+      "standardControlFamily": "Verification requirements",
+      "projectControlIds": [
+        "sec.image.vulnerability-scan",
+        "sdlc.review.infrastructure-policy"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "ECR scan-on-push and Trivy HIGH/CRITICAL reports exist, but scans are advisory-only and exception approval is not enforced.",
+      "gapSummary": "Fail or require approved exceptions for high-risk findings before images become trusted deployment inputs.",
+      "sortKey": 60
+    }
+  ]
+}

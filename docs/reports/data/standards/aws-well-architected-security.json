@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1.0.0",
+  "standard": {
+    "id": "aws_well_architected_security_pillar",
+    "title": "AWS Well-Architected Security Pillar",
+    "version": "current",
+    "referenceUrl": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html"
+  },
+  "mappings": [
+    {
+      "standardControlId": "SEC01",
+      "standardControlTitle": "Operate security foundations",
+      "standardControlFamily": "Security foundations",
+      "projectControlIds": [
+        "sdlc.requirements.risk-review",
+        "sdlc.review.infrastructure-policy",
+        "sec.audit.permission-deployment-records"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "The repo records risk context through ADRs, runbooks, plans, and generated reports, but reviewer policy and immutable audit retention are not yet codified.",
+      "gapSummary": "Add policy-as-code reviewer gates and centralized immutable audit retention for security-relevant decisions.",
+      "sortKey": 10
+    },
+    {
+      "standardControlId": "SEC02",
+      "standardControlTitle": "Manage identities for people and machines",
+      "standardControlFamily": "Identity and access management",
+      "projectControlIds": [
+        "sec.github-oidc.no-long-lived-keys",
+        "sec.github-oidc.repo-trust",
+        "sec.identity-center.human-access",
+        "sec.eks.operator-access-entries"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "CI identities use GitHub OIDC and repository-scoped trust; human AWS and Kubernetes operator access are not yet fully codified.",
+      "gapSummary": "Define IAM Identity Center permission sets, EKS access entries, and Kubernetes RBAC for human operators.",
+      "sortKey": 20
+    },
+    {
+      "standardControlId": "SEC03",
+      "standardControlTitle": "Manage permissions with least privilege boundaries",
+      "standardControlFamily": "Permission management",
+      "projectControlIds": [
+        "sec.iam.permission-boundary",
+        "sec.irsa.external-dns",
+        "sec.irsa.aws-load-balancer-controller",
+        "sec.k8s.app-workload-isolation"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Permission boundaries and dedicated IRSA roles exist for automation and controllers, but some policies require wildcard AWS API scope and application service accounts need explicit token restrictions.",
+      "gapSummary": "Codify policy-as-code checks, complete workload service accounts, and tighten any remaining trust-policy conditions.",
+      "sortKey": 30
+    },
+    {
+      "standardControlId": "SEC04",
+      "standardControlTitle": "Detect and investigate security events",
+      "standardControlFamily": "Detection and investigation",
+      "projectControlIds": [
+        "sec.irsa.fluent-bit",
+        "ops.monitoring.read-access",
+        "sec.audit.permission-deployment-records",
+        "ops.incident.aiops-investigation"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "CloudWatch pod log delivery, monitoring dashboards, runbooks, and workflow logs provide evidence, but alert-to-incident routing and immutable audit retention remain incomplete.",
+      "gapSummary": "Add centralized audit retention, alert routing, and an authorized remediation workflow.",
+      "sortKey": 40
+    },
+    {
+      "standardControlId": "SEC05",
+      "standardControlTitle": "Protect networks and public endpoints",
+      "standardControlFamily": "Network protection",
+      "projectControlIds": [
+        "sec.eks.api-endpoint-access",
+        "sec.k8s.gateway-namespace-boundary",
+        "sec.admin-ui.operator-auth"
+      ],
+      "alignmentStatus": "accepted_risk",
+      "notes": "Namespace-scoped Gateway attachment is implemented, but the dev EKS public endpoint accepts broad access for hosted runners and admin surfaces still need SSO/source restrictions.",
+      "gapSummary": "Restrict EKS API access to private runners or narrow CIDRs and add SSO/IP controls to admin surfaces.",
+      "sortKey": 50
+    },
+    {
+      "standardControlId": "SEC06",
+      "standardControlTitle": "Protect compute and containers",
+      "standardControlFamily": "Compute protection",
+      "projectControlIds": [
+        "sec.image.build-publish-trust",
+        "sec.image.vulnerability-scan",
+        "sec.k8s.app-workload-isolation",
+        "sec.gitops.application-resource-policy"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Images are built from trusted main-branch content and published with immutable tags, while vulnerability scans are advisory-only and admission/RBAC policy is missing.",
+      "gapSummary": "Gate high-risk CVEs, add admission controls, and make workload token posture explicit.",
+      "sortKey": 60
+    },
+    {
+      "standardControlId": "SEC08",
+      "standardControlTitle": "Protect data and secrets at rest",
+      "standardControlFamily": "Data protection",
+      "projectControlIds": [
+        "sec.secrets.storage-permissions",
+        "sec.secrets.rotation",
+        "sec.terraform.state-access"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Terraform state access is split by role and generated admin passwords are sensitive outputs, but application secrets remain in Git and rotation is not codified.",
+      "gapSummary": "Move secrets to Secrets Manager/KMS-backed delivery, reduce state sensitivity, and codify rotation/revocation.",
+      "sortKey": 70
+    },
+    {
+      "standardControlId": "SEC10",
+      "standardControlTitle": "Prepare for incident response",
+      "standardControlFamily": "Incident response",
+      "projectControlIds": [
+        "ops.incident.aiops-investigation",
+        "sec.audit.permission-deployment-records",
+        "ops.monitoring.read-access"
+      ],
+      "alignmentStatus": "partially_aligned",
+      "notes": "Runbooks, logs, dashboards, and AIOps investigation support diagnosis, but there is no closed-loop alert-to-remediation process yet.",
+      "gapSummary": "Define incident channels, escalation ownership, and authorized remediation records.",
+      "sortKey": 80
+    }
+  ]
+}
