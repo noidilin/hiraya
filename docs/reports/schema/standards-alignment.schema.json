@@ -53,7 +53,22 @@
         "notes": { "type": "string", "minLength": 1 },
         "gapSummary": { "type": "string", "minLength": 1 },
         "sortKey": { "type": "integer", "minimum": 1 }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "alignmentStatus": { "const": "not_applicable" }
+            },
+            "required": ["alignmentStatus"]
+          },
+          "else": {
+            "properties": {
+              "projectControlIds": { "minItems": 1 }
+            }
+          }
+        }
+      ]
     },
     "alignmentStatus": {
       "type": "string",
