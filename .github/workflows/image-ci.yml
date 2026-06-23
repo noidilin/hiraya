@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - "app/microservices/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/image-ci.yml"
       - ".github/scripts/**"
       - ".github/utils/services.json"
@@ -37,45 +40,19 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: set-up-node-from-app-toolchain
+      - name: set-up-node-from-root-toolchain
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version-file: app/microservices/package.json
-
-      - name: activate-pinned-pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.8.0 --activate
-
-      - name: resolve-pnpm-store-path
-        id: pnpm-store
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: restore-pnpm-store-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('app/microservices/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: install-app-workspace
-        shell: bash
-        working-directory: app/microservices
-        run: pnpm run app:install
+          node-version-file: package.json
 
       - name: detect-changed-services
         id: service-matrix
         shell: bash
-        working-directory: app/microservices
         run: |
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            pnpm run app:changed -- --all --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
+            node .github/scripts/dist/detect-changed-services.mjs --catalog .github/utils/services.json --root . --all --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
           else
             before="${{ github.event.before }}"
             if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
@@ -83,7 +60,7 @@ jobs:
             else
               git diff --name-only "${before}...${{ github.sha }}" > /tmp/hiraya-main-changed-files.txt
             fi
-            pnpm run app:changed -- --files-from /tmp/hiraya-main-changed-files.txt --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
+            node .github/scripts/dist/detect-changed-services.mjs --catalog .github/utils/services.json --root . --files-from /tmp/hiraya-main-changed-files.txt --github-output "$GITHUB_OUTPUT" > /tmp/hiraya-app-service-matrix.json
           fi
 
           {
@@ -107,17 +84,8 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: set-up-node-from-app-toolchain
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version-file: app/microservices/package.json
-
-      - name: activate-pinned-pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.8.0 --activate
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: summarize-baseline-gate
         env:
@@ -140,22 +108,12 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: resolve-pnpm-store-path
-        id: pnpm-store
+      - name: install-root-workspace
         shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: restore-pnpm-store-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('app/microservices/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+        run: pnpm install --frozen-lockfile
 
       - name: run-app-baseline
         shell: bash
-        working-directory: app/microservices
         run: pnpm run app:baseline
 
   build-and-push:
