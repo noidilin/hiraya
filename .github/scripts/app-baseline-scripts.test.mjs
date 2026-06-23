@@ -12,7 +12,7 @@ const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md'
 const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/platform/enforce-app-baseline-required-check.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
-const setupAppToolchainActionPath = path.join(repoRoot, '.github/actions/setup-app-toolchain/action.yml');
+const setupNodePnpmActionPath = path.join(repoRoot, '.github/actions/setup-node-pnpm/action.yml');
 const imageCiWorkflowPath = path.join(repoRoot, '.github/workflows/image-ci.yml');
 const infraCiWorkflowPath = path.join(repoRoot, '.github/workflows/infra-ci.yml');
 const rollbackWorkflowPath = path.join(repoRoot, '.github/workflows/service-image-dev-rollback.yml');
@@ -162,7 +162,7 @@ test('app PR baseline workflow builds changed service images without AWS or regi
   assert.match(workflow, /plan-app-pr:[\s\S]*?node \.github\/scripts\/dist\/classify-app-pr\.mjs/, 'workflow should delegate PR classification and image planning to the checked-in script');
   assert.match(workflow, /matrix: \$\{\{ steps\.classify-app-pr\.outputs\.matrix \}\}/);
   assert.match(workflow, /has_changed_service_images: \$\{\{ steps\.classify-app-pr\.outputs\.has_changed_service_images \}\}/);
-  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-app-toolchain/);
+  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-node-pnpm/);
   assert.match(workflow, /image-build-only:/);
   assert.match(workflow, /app-baseline:[\s\S]*?needs:\n\s+- plan-app-pr\n\s+- image-build-only\n\s+- manifest-promotion-baseline\n\s+- run-app-baseline/, 'stable gate must wait for planned image builds');
   assert.match(workflow, /IMAGE_BUILD_ONLY_RESULT: \$\{\{ needs\.image-build-only\.result \}\}/, 'stable gate must inspect the image-build-only result');
@@ -196,9 +196,9 @@ test('GitOps render assertions cover Storefront deploy invariants', async () => 
 });
 
 test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
-  const [workflow, setupAppToolchainAction, scripts, readme] = await Promise.all([
+  const [workflow, setupNodePnpmAction, scripts, readme] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
-    readFile(setupAppToolchainActionPath, 'utf8'),
+    readFile(setupNodePnpmActionPath, 'utf8'),
     readWorkspaceScripts(),
     readFile(appWorkspaceReadmePath, 'utf8'),
   ]);
@@ -210,13 +210,15 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /permissions:\n  contents: read\n/);
   assert.doesNotMatch(workflow, /id-token:\s*write/);
   assert.doesNotMatch(workflow, /configure-aws-credentials|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|role-to-assume/);
-  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-app-toolchain/, 'workflow should share app toolchain setup through a local composite action');
-  assert.match(setupAppToolchainAction, /node-version-file: app\/microservices\/package\.json/);
-  assert.doesNotMatch(`${workflow}\n${setupAppToolchainAction}`, /cache: pnpm/, 'setup-node pnpm cache should not run before Corepack activation');
-  assert.match(setupAppToolchainAction, /corepack prepare pnpm@11\.8\.0 --activate/);
-  assert.match(setupAppToolchainAction, /pnpm store path --silent/, 'workflow should resolve the pnpm store after Corepack activation');
-  assert.match(setupAppToolchainAction, /actions\/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4/, 'workflow should cache the pnpm store with a pinned action');
-  assert.match(workflow, /pnpm run app:install/);
+  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-node-pnpm/, 'workflow should share root Node/pnpm setup through a local composite action');
+  assert.match(setupNodePnpmAction, /node-version-file: package\.json/);
+  assert.match(setupNodePnpmAction, /hashFiles\('pnpm-lock\.yaml'\)/, 'pnpm store cache should be keyed to the root lockfile');
+  assert.doesNotMatch(`${workflow}\n${setupNodePnpmAction}`, /cache: pnpm/, 'setup-node pnpm cache should not run before Corepack activation');
+  assert.match(setupNodePnpmAction, /corepack prepare pnpm@11\.8\.0 --activate/);
+  assert.match(setupNodePnpmAction, /pnpm store path --silent/, 'workflow should resolve the pnpm store after Corepack activation');
+  assert.match(setupNodePnpmAction, /actions\/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4/, 'workflow should cache the pnpm store with a pinned action');
+  assert.doesNotMatch(setupNodePnpmAction, /pnpm install/, 'setup action must not install dependencies');
+  assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /run-manifest-promotion-baseline[\s\S]*?kubectl kustomize gitops[\s\S]*?assert-gitops-render\.mjs/, 'bot manifest PRs should have a fast GitOps render baseline');
   assert.match(workflow, /classify-app-pr/, 'PR classification should live in a dedicated planning step');
@@ -258,15 +260,19 @@ test('required app baseline branch rule is documented with non-AWS evidence', as
 
 test('main image CI gates ECR pushes and manifest updates behind the app baseline', async () => {
   const workflow = await readFile(imageCiWorkflowPath, 'utf8');
+  const detectChangesJob = workflow.split('\n  app-baseline:')[0];
 
   assert.doesNotMatch(workflow, /-\s*["']?gitops\/\*\*["']?/, 'main image CI should not rerun from its generated GitOps manifest PR merges');
   assert.match(workflow, /\.github\/scripts\/\*\*/, 'main image CI should rerun when baseline helper scripts change');
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
-  assert.match(workflow, /pnpm run app:changed -- --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
-  assert.doesNotMatch(workflow, /cache: pnpm/, 'setup-node pnpm cache should not run before Corepack activation');
-  assert.match(workflow, /pnpm store path --silent/, 'main image CI should resolve the pnpm store after Corepack activation');
-  assert.match(workflow, /actions\/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4/, 'main image CI should cache the pnpm store with a pinned action');
+  assert.match(workflow, /package\.json/, 'main image CI should run when the root package changes');
+  assert.match(workflow, /pnpm-lock\.yaml/, 'main image CI should run when the root lockfile changes');
+  assert.match(workflow, /pnpm-workspace\.yaml/, 'main image CI should run when the root workspace changes');
+  assert.match(workflow, /node \.github\/scripts\/dist\/detect-changed-services\.mjs --catalog \.github\/utils\/services\.json --root \. --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
+  assert.match(detectChangesJob, /node-version-file: package\.json[\s\S]*?detect-changed-services/, 'changed-service planning should pin Node from the root toolchain without installing dependencies');
+  assert.doesNotMatch(detectChangesJob, /pnpm install/, 'changed-service planning should not install dependencies');
+  assert.match(workflow, /uses: \.\/\.github\/actions\/setup-node-pnpm/, 'baseline job should use the shared root Node/pnpm setup action');
   assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
   assert.match(workflow, /name: run-app-baseline-before-image-push/);
   assert.match(workflow, /pnpm run app:baseline/);

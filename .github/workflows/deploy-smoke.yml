@@ -23,19 +23,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: set-up-node-from-app-toolchain
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version-file: app/microservices/package.json
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
-      - name: activate-pinned-pnpm
+      - name: install-root-workspace
         shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.8.0 --activate
+        run: pnpm install --frozen-lockfile
 
       - name: run-public-storefront-deploy-smoke
         shell: bash
-        working-directory: app/microservices
         run: pnpm run app:smoke:public

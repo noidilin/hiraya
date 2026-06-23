@@ -32,6 +32,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: set-up-node-from-root-toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: package.json
+
       - name: classify-app-pr
         id: classify-app-pr
         shell: bash
@@ -69,6 +74,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: set-up-node-from-root-toolchain
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: package.json
+
       - name: run-manifest-promotion-baseline
         shell: bash
         run: |
@@ -87,17 +97,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: set-up-app-toolchain
-        uses: ./.github/actions/setup-app-toolchain
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
-      - name: install-app-workspace
+      - name: install-root-workspace
         shell: bash
-        working-directory: app/microservices
-        run: pnpm run app:install
+        run: pnpm install --frozen-lockfile
 
       - name: run-app-baseline
         shell: bash
-        working-directory: app/microservices
         run: pnpm run app:baseline
 
   image-build-only:
