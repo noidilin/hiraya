@@ -24,11 +24,11 @@ env:
 
 jobs:
   preflight:
-    name: Validate destroy request
+    name: validate-destroy-request
     runs-on: ubuntu-latest
 
     steps:
-      - name: Require main branch and typed confirmation
+      - name: require-main-branch-and-typed-confirmation
         env:
           CONFIRM_INPUT: ${{ inputs.confirm }}
           WORKFLOW_REF: ${{ github.ref }}
@@ -46,7 +46,7 @@ jobs:
           fi
 
   destroy:
-    name: Destroy disposable dev platform
+    name: destroy-disposable-dev-platform
     needs: preflight
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -56,33 +56,33 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout code
+      - name: checkout-code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
-      - name: Install toolchain
-        uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           install: true
           cache: true
 
-      - name: Configure AWS credentials with OIDC
+      - name: configure-aws-credentials-with-oidc
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
         with:
           role-to-assume: ${{ env.INFRA_APPLY_ROLE_ARN }}
           role-session-name: hiraya-infra-destroy-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Generate platform backend config
+      - name: generate-platform-backend-config
         shell: bash
         run: .github/scripts/write-platform-backend.sh
 
-      - name: Initialize platform Terraform
+      - name: initialize-platform-terraform
         shell: bash
         run: terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl -reconfigure -input=false
 
-      - name: Capture platform identifiers
+      - name: capture-platform-identifiers
         id: platform
         shell: bash
         run: |
@@ -103,7 +103,7 @@ jobs:
           capture_output vpc_id
           capture_output edge_load_balancer_name
 
-      - name: Delete Kubernetes EBS volumes before EKS teardown
+      - name: delete-kubernetes-ebs-volumes-before-eks-teardown
         env:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           CLUSTER_ADMIN_PRINCIPAL_ARN: ${{ env.INFRA_APPLY_ROLE_ARN }}
@@ -111,11 +111,11 @@ jobs:
         shell: bash
         run: .github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh
 
-      - name: Destroy disposable platform stack
+      - name: destroy-disposable-platform-stack
         shell: bash
         run: terraform -chdir=infra/envs/dev/platform destroy -input=false -auto-approve
 
-      - name: Verify platform removal and durable resources
+      - name: verify-platform-removal-and-durable-resources
         env:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           VPC_ID: ${{ steps.platform.outputs.vpc_id }}
