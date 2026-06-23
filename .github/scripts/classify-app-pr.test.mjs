@@ -26,7 +26,10 @@ async function createRepoFixture() {
         pathOwnership: [
           'app/microservices/frontend/**',
           'app/microservices/shared/**',
-          'app/microservices/package.json',
+          'package.json',
+          'pnpm-lock.yaml',
+          'pnpm-workspace.yaml',
+          '.dockerignore',
         ],
       }),
       service('auth', {
@@ -38,7 +41,10 @@ async function createRepoFixture() {
         pathOwnership: [
           'app/microservices/backend/services/auth/**',
           'app/microservices/backend/shared/**',
-          'app/microservices/package.json',
+          'package.json',
+          'pnpm-lock.yaml',
+          'pnpm-workspace.yaml',
+          '.dockerignore',
         ],
       }),
     ],
@@ -49,21 +55,15 @@ async function createRepoFixture() {
   await writeFile(path.join(root, 'app/microservices/frontend/src/App.tsx'), 'export default function App() { return null; }\n');
   await mkdir(path.join(root, 'app/microservices/backend/services/auth/src'), { recursive: true });
   await writeFile(path.join(root, 'app/microservices/backend/services/auth/src/index.ts'), 'export {};\n');
-  await mkdir(path.join(root, 'app/microservices'), { recursive: true });
-  await writeFile(path.join(root, 'app/microservices/package.json'), `${JSON.stringify({
-    name: 'fixture',
-    scripts: {
-      'reports:permissions': 'node old-report.mjs',
-      'reports:permissions:validate': 'node old-report.mjs --validate-only',
-      'app:baseline': 'node baseline.mjs',
-    },
-  }, null, 2)}\n`);
+  await writeFile(path.join(root, 'package.json'), `${JSON.stringify({ name: 'hiraya' }, null, 2)}\n`);
+  await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
+  await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - app/microservices/*\n');
   await mkdir(path.join(root, 'gitops/k8s/backend'), { recursive: true });
   await writeFile(path.join(root, 'gitops/k8s/backend/auth.yml'), 'image: old-auth\n');
   await mkdir(path.join(root, 'gitops/k8s/frontend'), { recursive: true });
   await writeFile(path.join(root, 'gitops/k8s/frontend/deployment.yml'), 'image: old-frontend\n');
-  await mkdir(path.join(root, '.github/actions/setup-app-toolchain'), { recursive: true });
-  await writeFile(path.join(root, '.github/actions/setup-app-toolchain/action.yml'), 'name: setup\n');
+  await mkdir(path.join(root, '.github/actions/setup-node-pnpm'), { recursive: true });
+  await writeFile(path.join(root, '.github/actions/setup-node-pnpm/action.yml'), 'name: setup\n');
   await mkdir(path.join(root, '.github/workflows'), { recursive: true });
   await writeFile(path.join(root, '.github/workflows/app-pr-baseline.yml'), 'name: app\n');
 
@@ -84,7 +84,7 @@ function service(name, overrides) {
     workspace: overrides.workspace,
     image: { repository: overrides.repository },
     build: {
-      context: 'app/microservices',
+      context: '.',
       dockerfile: overrides.dockerfile,
     },
     manifest: { path: overrides.manifest },
@@ -165,7 +165,7 @@ test('fans out catalog changes to every service image', async () => {
 
 test('keeps setup-action changes in the app baseline without forcing image builds', async () => {
   const fixture = await createRepoFixture();
-  await writeFile(path.join(fixture.root, '.github/actions/setup-app-toolchain/action.yml'), 'name: changed setup\n');
+  await writeFile(path.join(fixture.root, '.github/actions/setup-node-pnpm/action.yml'), 'name: changed setup\n');
   const head = await commitChange(fixture.root, 'setup action');
 
   const classification = classify({ ...fixture, head });
@@ -176,17 +176,12 @@ test('keeps setup-action changes in the app baseline without forcing image build
   assert.deepEqual(serviceNames(classification), []);
 });
 
-test('ignores app package permission-report script-only changes', async () => {
+test('keeps report-only governance changes out of service image fanout', async () => {
   const fixture = await createRepoFixture();
-  await writeFile(path.join(fixture.root, 'app/microservices/package.json'), `${JSON.stringify({
-    name: 'fixture',
-    scripts: {
-      'reports:permissions': 'node new-report.mjs',
-      'reports:permissions:validate': 'node new-report.mjs --validate-only',
-      'app:baseline': 'node baseline.mjs',
-    },
-  }, null, 2)}\n`);
-  const head = await commitChange(fixture.root, 'permission scripts');
+  const reportScriptPath = path.join(fixture.root, '.github/scripts/src/permission-controls.mts');
+  await mkdir(path.dirname(reportScriptPath), { recursive: true });
+  await writeFile(reportScriptPath, 'export const changed = true;\n');
+  const head = await commitChange(fixture.root, 'permission report');
 
   const classification = classify({ ...fixture, head });
 
@@ -194,16 +189,11 @@ test('ignores app package permission-report script-only changes', async () => {
   assert.equal(classification.has_changed_service_images, false);
 });
 
-test('treats other app package changes as all service image inputs', async () => {
+test('treats root package manager inputs as all service image inputs', async () => {
   const fixture = await createRepoFixture();
-  await writeFile(path.join(fixture.root, 'app/microservices/package.json'), `${JSON.stringify({
-    name: 'fixture',
+  await writeFile(path.join(fixture.root, 'package.json'), `${JSON.stringify({
+    name: 'hiraya',
     version: '2.0.0',
-    scripts: {
-      'reports:permissions': 'node old-report.mjs',
-      'reports:permissions:validate': 'node old-report.mjs --validate-only',
-      'app:baseline': 'node baseline.mjs',
-    },
   }, null, 2)}\n`);
   const head = await commitChange(fixture.root, 'package');
 

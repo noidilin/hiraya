@@ -41,11 +41,7 @@ The suite is intentionally isolated from deployed infrastructure with mocked dat
 
 The verified changed-service detector source is `.github/scripts/src/detect-changed-services.mts`. The PR baseline planner source is `.github/scripts/src/classify-app-pr.mts`; it reuses `services.json` path ownership to classify PRs, plan service image matrices, and skip heavy app jobs for non-app changes. Workflows and local commands execute the compiled runtime files in `.github/scripts/dist/`, so changed-service detection and PR classification stay runnable with plain Node after checkout.
 
-`.github/utils/file-filters.yml` is legacy path-filter metadata kept only as a transitional compatibility layer for the existing image workflow. During the transition:
-
-- Update `services.json` first for any service metadata or ownership change.
-- Update `file-filters.yml` too only when the current legacy image workflow must keep matching those paths before it is migrated to the catalog-driven detector.
-- Do not add new duplicated service metadata elsewhere.
+The old duplicated service filter metadata has been removed. Update `services.json` first for any service metadata or ownership change, and do not add new duplicated service metadata elsewhere.
 
 ## PR baseline workflow
 

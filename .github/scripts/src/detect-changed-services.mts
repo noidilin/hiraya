@@ -55,6 +55,18 @@ interface ServiceMatrix {
   include: MatrixEntry[];
 }
 
+
+const imageFanoutImpactPatterns = [
+  '.github/workflows/app-pr-baseline.yml',
+  '.github/workflows/image-ci.yml',
+  '.github/scripts/src/classify-app-pr.mts',
+  '.github/scripts/dist/classify-app-pr.mjs',
+  '.github/scripts/src/detect-changed-services.mts',
+  '.github/scripts/dist/detect-changed-services.mjs',
+  '.github/scripts/src/assert-gitops-render.mts',
+  '.github/scripts/dist/assert-gitops-render.mjs',
+];
+
 function usage(): string {
   return `Usage: detect-changed-services.mjs [options] [changed-file...]
 
@@ -202,8 +214,7 @@ function isGlobalChange(file: string, catalogPath: string, root: string): boolea
     || file === 'pnpm-lock.yaml'
     || file === 'pnpm-workspace.yaml'
     || file === '.dockerignore'
-    || file.startsWith('.github/scripts/')
-    || file.startsWith('.github/workflows/');
+    || imageFanoutImpactPatterns.some((pattern) => globMatches(pattern, file));
 }
 
 function serviceToMatrixEntry(service: Service): MatrixEntry {
