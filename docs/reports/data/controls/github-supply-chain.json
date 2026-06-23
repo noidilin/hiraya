@@ -4,7 +4,7 @@
     "id": "permission-controls.github-supply-chain",
     "title": "Permission controls: github supply chain",
     "version": "1.0.0",
-    "domain": "github_supply_chain",
+    "domains": ["github_supply_chain"],
     "updatedAt": "2026-06-22"
   },
   "controls": [

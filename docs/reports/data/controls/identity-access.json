@@ -4,7 +4,7 @@
     "id": "permission-controls.identity-access",
     "title": "Permission controls: identity access",
     "version": "1.0.0",
-    "domain": "identity_access",
+    "domains": ["identity_access"],
     "updatedAt": "2026-06-22"
   },
   "controls": [

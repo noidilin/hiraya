@@ -11,6 +11,10 @@ Permission, SDLC/security, and standards-alignment report data is stored as cano
 
 Each control can appear in multiple generated report views through `reportViews[]`. Standards mapping files reference these canonical controls through `projectControlIds[]`.
 
+Control data files are topical bundles, so `dataset.domains[]` declares every domain allowed in that file while each control keeps its specific `control.domain` classification. Runtime validation enforces that every `control.domain` is listed in the containing file's `dataset.domains[]`.
+
+The JSON schemas define the external data contract. The TypeScript report generator keeps zero-dependency runtime validators for schema-shaped checks plus repository-specific semantic checks such as evidence path existence, duplicate report sort keys, expected report row counts, and standards mappings to known controls.
+
 ## Local commands
 
 Run from `app/microservices/`:

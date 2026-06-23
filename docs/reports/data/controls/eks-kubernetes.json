@@ -4,7 +4,7 @@
     "id": "permission-controls.eks-kubernetes",
     "title": "Permission controls: eks kubernetes",
     "version": "1.0.0",
-    "domain": "eks_kubernetes",
+    "domains": ["eks_kubernetes", "network_ingress", "observability_incident"],
     "updatedAt": "2026-06-22"
   },
   "controls": [

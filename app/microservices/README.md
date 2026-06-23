@@ -39,7 +39,7 @@ The suite is intentionally isolated from deployed infrastructure with mocked dat
 
 `.github/utils/services.json` is the canonical service catalog for app service metadata: package names, image repositories, build contexts, manifest targets, path ownership, and Vintage Storefront baseline criticality. New app baseline work should update this catalog and verify changes through `pnpm run app:catalog` or `pnpm run app:changed -- <files...>`.
 
-The verified changed-service detector source is `.github/scripts/src/detect-changed-services.mts`. Workflows and local commands execute the compiled runtime file at `.github/scripts/dist/detect-changed-services.mjs`, so changed-service detection stays runnable with plain Node after checkout.
+The verified changed-service detector source is `.github/scripts/src/detect-changed-services.mts`. The PR baseline planner source is `.github/scripts/src/classify-app-pr.mts`; it reuses `services.json` path ownership to classify PRs, plan service image matrices, and skip heavy app jobs for non-app changes. Workflows and local commands execute the compiled runtime files in `.github/scripts/dist/`, so changed-service detection and PR classification stay runnable with plain Node after checkout.
 
 `.github/utils/file-filters.yml` is legacy path-filter metadata kept only as a transitional compatibility layer for the existing image workflow. During the transition:
 
@@ -51,11 +51,11 @@ The verified changed-service detector source is `.github/scripts/src/detect-chan
 
 The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `app-baseline`.
 
-The workflow runs for every pull request so the required status check is always reported and cannot remain pending because of GitHub Actions path filters. It grants only read-only repository contents permission, does not request OIDC or cloud secrets, activates the pinned Node/pnpm app toolchain, summarizes impacted services through the service catalog changed-service detector, and runs `pnpm run app:baseline` from this workspace.
+The workflow runs for every pull request so the required status check is always reported and cannot remain pending because of GitHub Actions path filters. It grants only read-only repository contents permission and does not request OIDC or cloud secrets. Its lightweight `plan-app-pr` job uses the compiled PR classifier and `services.json` to choose one of three paths: `non_app` skips heavy app jobs, `manifest_promotion_only` runs only the GitOps render fast path for trusted Hiraya bot image-tag PRs, and `microservice_related` activates the pinned Node/pnpm app toolchain before running `pnpm run app:baseline`.
 
 `app:baseline` includes the GitOps render assertions from `.github/scripts/src/assert-gitops-render.mts`. The assertion gate renders repository desired state only, then verifies the Vintage Storefront HTTPRoute hostname and frontend backend reference, the frontend ClusterIP Service and container target port, gateway environment URLs for active Storefront APIs, and every rendered Deployment/Service targetPort-to-containerPort pair, including legacy deployed services outside active behavior tests.
 
-The same changed-service detector also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the detector emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.
+The same catalog-driven plan also drives the PR build-only Docker image gate. For each changed service, the workflow uses the catalog `build.context` and `build.dockerfile` metadata with `docker/build-push-action` and `push: false`, so pull requests prove image buildability without logging in to AWS, pushing to ECR, or writing to any registry. If the plan emits an empty matrix, the image-build job is skipped cleanly while the app baseline still reports the PR check.
 
 The required check is enforced on the protected `main` branch through the GitHub repository ruleset documented in [`docs/runbooks/platform/enforce-app-baseline-required-check.md`](../../docs/runbooks/platform/enforce-app-baseline-required-check.md). The rule requires only `app-baseline`; AWS-backed image push, deploy, public smoke, Terraform, and infra checks are not required for ordinary app PRs.
 
