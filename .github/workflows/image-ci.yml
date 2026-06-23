@@ -118,16 +118,19 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs:
       - detect-changes
       - app-baseline
     if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
     permissions:
+      actions: read
       contents: read
       id-token: write
 
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
@@ -189,8 +192,9 @@ jobs:
           load: true
           tags: ${{ steps.ecr.outputs.repository_uri }}:${{ env.IMAGE_TAG }}
           platforms: linux/amd64
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          cache-from: type=gha,scope=${{ matrix.service }},timeout=2m
+          cache-to: type=gha,mode=min,scope=${{ matrix.service }},timeout=2m,ignore-error=true
+          github-token: ${{ github.token }}
 
       - name: scan-docker-image-with-trivy
         id: trivy-scan
