@@ -1,18 +1,13 @@
-# Vintage Storefront app workspace
+# Vintage Storefront
 
-This workspace owns the reusable app baseline command surface for local development and future GitHub Actions workflows. Commands are generic so they can survive the planned Storefront rewrite from CRA/MUI to another frontend stack.
-
-Run commands from `app/microservices` with the pinned package manager (`pnpm@11.8.0`). None of the baseline commands require AWS credentials. pnpm 11 supply-chain and build-script policy exceptions are documented in `pnpm-workspace.yaml`.
+The Vintage Storefront packages live under `app/microservices`, but the repository root is the only pnpm workspace. All commands run from the repository root with the pinned package manager (`pnpm@11.8.0`). None of the baseline commands require AWS credentials.
 
 ## Baseline commands
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm run app:install` | Install the workspace with the committed lockfile using `--frozen-lockfile`. |
-| `pnpm run app:workspace` | Verify deterministic install and list all workspace packages. |
-| `pnpm run scripts:build` | Compile TypeScript CI helper scripts to checked-in Node runtime files. |
 | `pnpm run app:catalog` | Compile scripts, validate `.github/utils/services.json`, and run catalog/detector self-tests. |
-| `pnpm run app:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
+| `pnpm run services:changed -- <files...>` | Emit the service matrix for changed files. Use `-- --all` to select every service. |
 | `pnpm run app:static` | Run Storefront build, typecheck, and lint checks, then the backend build. Lint errors block while warnings remain allowed initially. |
 | `pnpm run app:gitops` | Render GitOps desired state with `kubectl kustomize gitops` and run targeted GitOps render assertions without Kubernetes cluster credentials. |
 | `pnpm run app:smoke:public` | Run the read-only public deploy smoke against `STOREFRONT_PUBLIC_URL` (default `https://hiraya.noidilin.dev`) by checking `/` for the Storefront shell and `/api/products` for a successful product envelope. |
@@ -20,24 +15,22 @@ Run commands from `app/microservices` with the pinned package manager (`pnpm@11.
 | `pnpm run storefront:typecheck` | Run the Vintage Storefront TypeScript checker without emitting files. |
 | `pnpm run storefront:lint` | Run the Vintage Storefront ESLint check. Errors fail the command; warnings are permitted for now. |
 | `pnpm run storefront:static` | Run the reusable Storefront build, typecheck, and lint sequence for local and CI use. |
-| `pnpm run app:baseline` | Run workspace, catalog, backend contract, Storefront Vitest unit tests, changed-service, GitOps render assertions, and static checks in the same order CI should reuse. |
+| `pnpm run app:baseline` | Run workspace listing, catalog checks, backend contract tests, Storefront Vitest unit tests, changed-service detection, GitOps render assertions, and static checks in the same order CI reuses. |
 | `pnpm run app:test:catalog` | Run service catalog and changed-service detector tests. |
 | `pnpm run app:test:contract` | Run Vitest shared Storefront API contract schema, fixture, route-path, backend route, and consumer smoke tests. |
 | `pnpm run app:test:backend-contract` | Run the gateway, auth, product, and orders contract suites together as the reusable backend contract gate. |
 | `pnpm run app:test:frontend` | Run the Storefront Vitest unit tests in jsdom so broken adapter and behavior tests fail the app baseline. |
-| `pnpm run app:test:browser` | Fails clearly until the browser behavior baseline slice is implemented. |
-
-Legacy scripts such as `install:all`, `check:workspace`, and `test:catalog` delegate to this `app:*` surface for compatibility.
+| `pnpm run app:test:browser` | Run the Storefront Playwright browser behavior baseline. |
 
 ## Backend contract baseline
 
-`pnpm run app:test:backend-contract` is the backend API contract baseline for the active Vintage Storefront services. It runs the gateway, auth, product, and orders contract suites in one Vitest invocation with the verbose reporter, so a regression names the failing suite in the output and exits non-zero for local use or later PR-check workflow reuse.
+`pnpm run app:test:backend-contract` is the backend API contract baseline for the active Vintage Storefront services. It runs the gateway, auth, product, and orders contract suites in one Vitest invocation with the verbose reporter, so a regression names the failing suite in the output and exits non-zero for local use or PR-check workflow reuse.
 
 The suite is intentionally isolated from deployed infrastructure with mocked database and upstream boundaries: auth, product, and orders use mocked database boundaries, orders also uses a mocked upstream product lookup boundary, and gateway route tests use mocked proxy handlers. The command runs without AWS credentials, PostgreSQL, Kubernetes, or real backend services.
 
 ## Service metadata source of truth
 
-`.github/utils/services.json` is the canonical service catalog for app service metadata: package names, image repositories, build contexts, manifest targets, path ownership, and Vintage Storefront baseline criticality. New app baseline work should update this catalog and verify changes through `pnpm run app:catalog` or `pnpm run app:changed -- <files...>`.
+`.github/utils/services.json` is the canonical service catalog for app service metadata: package names, image repositories, build contexts, manifest targets, path ownership, and Vintage Storefront baseline criticality. New app baseline work should update this catalog and verify changes through `pnpm run app:catalog` or `pnpm run services:changed -- <files...>`.
 
 The verified changed-service detector source is `.github/scripts/src/detect-changed-services.mts`. The PR baseline planner source is `.github/scripts/src/classify-app-pr.mts`; it reuses `services.json` path ownership to classify PRs, plan service image matrices, and skip heavy app jobs for non-app changes. Workflows and local commands execute the compiled runtime files in `.github/scripts/dist/`, so changed-service detection and PR classification stay runnable with plain Node after checkout.
 
@@ -47,7 +40,7 @@ The old duplicated service filter metadata has been removed. Update `services.js
 
 The dedicated no-AWS PR gate is `.github/workflows/app-pr-baseline.yml`. Its stable required branch protection status is `app-baseline`.
 
-The workflow runs for every pull request so the required status check is always reported and cannot remain pending because of GitHub Actions path filters. It grants only read-only repository contents permission and does not request OIDC or cloud secrets. Its lightweight `plan-app-pr` job uses the compiled PR classifier and `services.json` to choose one of three paths: `non_app` skips heavy app jobs, `manifest_promotion_only` runs only the GitOps render fast path for trusted Hiraya bot image-tag PRs, and `microservice_related` activates the pinned Node/pnpm app toolchain before running `pnpm run app:baseline`.
+The workflow runs for every pull request so the required status check is always reported and cannot remain pending because of GitHub Actions path filters. It grants only read-only repository contents permission and does not request OIDC or cloud secrets. Its lightweight `plan-app-pr` job uses the compiled PR classifier and `services.json` to choose one of three paths: `non_app` skips heavy app jobs, `manifest_promotion_only` runs only the GitOps render fast path for trusted Hiraya bot image-tag PRs, and `microservice_related` activates the pinned root Node/pnpm toolchain before running `pnpm run app:baseline`.
 
 `app:baseline` includes the GitOps render assertions from `.github/scripts/src/assert-gitops-render.mts`. The assertion gate renders repository desired state only, then verifies the Vintage Storefront HTTPRoute hostname and frontend backend reference, the frontend ClusterIP Service and container target port, gateway environment URLs for active Storefront APIs, and every rendered Deployment/Service targetPort-to-containerPort pair, including legacy deployed services outside active behavior tests.
 
