@@ -41,6 +41,10 @@ resource "aws_eks_cluster" "eks" {
     public_access_cidrs     = var.endpoint_public_access_cidrs
   }
 
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
   depends_on = [
     aws_iam_role_policy_attachment.cluster_policy
   ]
@@ -54,6 +58,28 @@ resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
   url             = aws_eks_cluster.eks.identity[0].oidc[0].issuer
+}
+
+resource "aws_eks_access_entry" "cluster_admin" {
+  for_each = var.cluster_admin_principal_arns
+
+  cluster_name  = aws_eks_cluster.eks.name
+  principal_arn = each.value
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "cluster_admin" {
+  for_each = var.cluster_admin_principal_arns
+
+  cluster_name  = aws_eks_cluster.eks.name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = each.value
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.cluster_admin]
 }
 
 # Node Group Role 

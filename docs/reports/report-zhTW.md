@@ -65,7 +65,7 @@
 
 - **Image**：`postgres:15-alpine`
 - **副本數**：1
-- **StorageClass**：`gp2`
+- **StorageClass**：`hiraya-ebs-gp3`（AWS EBS CSI、`Delete` reclaim policy、`WaitForFirstConsumer`）
 - **PVC 容量**：10 GiB
 - **Service**：Headless Service `vintage-postgres`
 - **資料庫用途**：支援 `auth_db`、`products_db`、`orders_db`、`users_db` 等服務資料庫。

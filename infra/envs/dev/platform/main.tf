@@ -45,6 +45,7 @@ module "eks" {
   endpoint_private_access      = var.eks_endpoint_private_access
   endpoint_public_access       = var.eks_endpoint_public_access
   endpoint_public_access_cidrs = var.eks_endpoint_public_access_cidrs
+  cluster_admin_principal_arns = [data.terraform_remote_state.bootstrap.outputs.github_infra_apply_role_arn]
   depends_on                   = [module.vpc]
 }
 
@@ -75,6 +76,31 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.eks.token
   }
+}
+
+resource "kubernetes_storage_class_v1" "hiraya_ebs_gp3" {
+  provider = kubernetes.eks
+
+  metadata {
+    name = "hiraya-ebs-gp3"
+  }
+
+  storage_provisioner    = "ebs.csi.aws.com"
+  reclaim_policy         = "Delete"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  allow_volume_expansion = true
+
+  parameters = {
+    "type"                      = "gp3"
+    "encrypted"                 = "true"
+    "csi.storage.k8s.io/fstype" = "ext4"
+    "tagSpecification_1"        = "HirayaManagedBy=ebs-csi"
+    "tagSpecification_2"        = "HirayaCluster=${var.cluster_name}"
+    "tagSpecification_3"        = "HirayaEnvironment=dev"
+    "tagSpecification_4"        = "HirayaApp=vintage"
+  }
+
+  depends_on = [module.eks]
 }
 
 module "gateway_api_crds" {
@@ -207,7 +233,7 @@ module "argocd" {
   public_gateway_access_label_value = var.public_gateway_access_label_value
 
   # The GitOps app includes a ServiceMonitor, whose CRD is installed by kube-prometheus-stack.
-  # Wait for monitoring before creating the Argo CD Application object.
-  depends_on = [module.eks, module.monitoring, module.edge_gateway]
+  # Wait for monitoring and the EBS StorageClass before creating the Argo CD Application object.
+  depends_on = [module.eks, module.monitoring, module.edge_gateway, kubernetes_storage_class_v1.hiraya_ebs_gp3]
 }
 

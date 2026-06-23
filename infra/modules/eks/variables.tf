@@ -61,3 +61,9 @@ variable "disk_size" {
   type        = number
   default     = 20
 }
+
+variable "cluster_admin_principal_arns" {
+  description = "IAM principal ARNs granted cluster-scoped EKS admin access through access entries."
+  type        = set(string)
+  default     = []
+}
