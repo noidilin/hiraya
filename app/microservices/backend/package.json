@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "Backend microservices for vintage application",
   "scripts": {
-    "dev:services": "concurrently \"corepack pnpm@11.8.0 run dev:gateway\" \"corepack pnpm@11.8.0 run dev:auth\" \"corepack pnpm@11.8.0 run dev:products\" \"corepack pnpm@11.8.0 run dev:orders\" \"corepack pnpm@11.8.0 run dev:users\"",
-    "dev:gateway": "corepack pnpm@11.8.0 --filter gateway-service dev",
-    "dev:auth": "corepack pnpm@11.8.0 --filter auth-service dev",
-    "dev:products": "corepack pnpm@11.8.0 --filter product-service dev",
-    "dev:orders": "corepack pnpm@11.8.0 --filter orders-service dev",
-    "dev:users": "corepack pnpm@11.8.0 --filter user-service dev",
-    "build": "corepack pnpm@11.8.0 --filter gateway-service build && corepack pnpm@11.8.0 --filter auth-service build && corepack pnpm@11.8.0 --filter product-service build && corepack pnpm@11.8.0 --filter orders-service build && corepack pnpm@11.8.0 --filter user-service build",
-    "test": "corepack pnpm@11.8.0 --filter gateway-service test && corepack pnpm@11.8.0 --filter auth-service test && corepack pnpm@11.8.0 --filter product-service test && corepack pnpm@11.8.0 --filter orders-service test && corepack pnpm@11.8.0 --filter user-service test"
+    "dev:services": "concurrently \"pnpm run dev:gateway\" \"pnpm run dev:auth\" \"pnpm run dev:products\" \"pnpm run dev:orders\" \"pnpm run dev:users\"",
+    "dev:gateway": "pnpm --filter gateway-service dev",
+    "dev:auth": "pnpm --filter auth-service dev",
+    "dev:products": "pnpm --filter product-service dev",
+    "dev:orders": "pnpm --filter orders-service dev",
+    "dev:users": "pnpm --filter user-service dev",
+    "build": "pnpm --filter gateway-service build && pnpm --filter auth-service build && pnpm --filter product-service build && pnpm --filter orders-service build && pnpm --filter user-service build",
+    "test": "pnpm --filter gateway-service test && pnpm --filter auth-service test && pnpm --filter product-service test && pnpm --filter orders-service test && pnpm --filter user-service test"
   },
   "dependencies": {
     "express": "^4.18.2",
