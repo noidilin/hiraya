@@ -10,7 +10,7 @@
     "dev:orders": "pnpm --filter orders-service dev",
     "dev:users": "pnpm --filter user-service dev",
     "build": "pnpm --filter gateway-service build && pnpm --filter auth-service build && pnpm --filter product-service build && pnpm --filter orders-service build && pnpm --filter user-service build",
-    "test": "pnpm --filter gateway-service test && pnpm --filter auth-service test && pnpm --filter product-service test && pnpm --filter orders-service test && pnpm --filter user-service test"
+    "test": "pnpm --dir ../../.. run app:test:backend-contract"
   },
   "dependencies": {
     "express": "^4.18.2",

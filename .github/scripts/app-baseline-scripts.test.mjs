@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workspacePackagePath = path.join(repoRoot, 'package.json');
 const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/package.json');
+const backendPackagePath = path.join(repoRoot, 'app/microservices/backend/package.json');
 const legacyAppPackagePath = path.join(repoRoot, 'app/microservices/package.json');
 const legacyAppLockfilePath = path.join(repoRoot, 'app/microservices/pnpm-lock.yaml');
 const legacyAppWorkspacePath = path.join(repoRoot, 'app/microservices/pnpm-workspace.yaml');
@@ -30,6 +31,11 @@ async function readWorkspaceScripts() {
 
 async function readFrontendScripts() {
   const packageJson = JSON.parse(await readFile(frontendPackagePath, 'utf8'));
+  return packageJson.scripts ?? {};
+}
+
+async function readBackendScripts() {
+  const packageJson = JSON.parse(await readFile(backendPackagePath, 'utf8'));
   return packageJson.scripts ?? {};
 }
 
@@ -124,8 +130,9 @@ test('implemented contract and browser baseline commands run shared validation',
 });
 
 test('backend contract baseline command names and gates each active Storefront suite', async () => {
-  const [scripts, readme] = await Promise.all([
+  const [scripts, backendScripts, readme] = await Promise.all([
     readWorkspaceScripts(),
+    readBackendScripts(),
     readFile(appWorkspaceReadmePath, 'utf8'),
   ]);
 
@@ -138,6 +145,11 @@ test('backend contract baseline command names and gates each active Storefront s
     scripts['app:baseline'],
     /app:test:backend-contract/,
     'app:baseline should reuse the backend contract gate for later PR checks',
+  );
+  assert.match(
+    backendScripts.test,
+    /pnpm --dir \.\.\/\.\.\/\.\. run app:test:backend-contract/,
+    'backend aggregate test should reuse the implemented contract gate instead of placeholder service tests',
   );
   assert.match(readme, /gateway, auth, product, and orders contract suites/i);
   assert.match(readme, /mocked database and upstream boundaries/i);
