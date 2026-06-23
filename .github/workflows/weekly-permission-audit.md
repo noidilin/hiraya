@@ -29,7 +29,7 @@ safe-outputs:
   update-issue:
     target: "*"
     body:
-    required-title-prefix: "[permission-audit] "
+    title-prefix: "[permission-audit] "
     max: 1
 max-ai-credits: 500
 ---

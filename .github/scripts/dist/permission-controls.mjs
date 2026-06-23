@@ -447,9 +447,10 @@ async function loadControls(options) {
         errors.push(...shape.errors);
         if (!shape.file)
             continue;
-        shape.file.controls.forEach((control, index) => {
-            errors.push(...validateControl(control, `${sourceFile}.controls[${index}]`));
-        });
+        const fileControlErrors = shape.file.controls.flatMap((control, index) => validateControl(control, `${sourceFile}.controls[${index}]`));
+        errors.push(...fileControlErrors);
+        if (fileControlErrors.length > 0)
+            continue;
         for (const control of shape.file.controls) {
             const riskScore = control.risk.impact * control.risk.likelihood * control.risk.exposure;
             const priorityScore = riskScore - control.risk.effort - control.risk.deploymentRisk;
@@ -470,7 +471,7 @@ async function loadControls(options) {
         }
         for (const view of control.reportViews) {
             reportCounts[view.report] += 1;
-            const key = `${view.report}:${view.sortKey ?? 'none'}:${view.rowTitle}`;
+            const key = `${view.report}:${view.sortKey ?? 'none'}`;
             if (reportKeys.has(key))
                 errors.push(`Duplicate report view: ${key}`);
             reportKeys.add(key);
@@ -522,9 +523,10 @@ async function loadStandardMappings(options, controls) {
         if (seenStandards.has(shape.file.standard.id))
             errors.push(`Duplicate standards file for ${shape.file.standard.id}`);
         seenStandards.add(shape.file.standard.id);
-        shape.file.mappings.forEach((mapping, index) => {
-            errors.push(...validateStandardMapping(mapping, `${sourceFile}.mappings[${index}]`));
-        });
+        const fileMappingErrors = shape.file.mappings.flatMap((mapping, index) => validateStandardMapping(mapping, `${sourceFile}.mappings[${index}]`));
+        errors.push(...fileMappingErrors);
+        if (fileMappingErrors.length > 0)
+            continue;
         for (const mapping of shape.file.mappings) {
             const key = `${shape.file.standard.id}:${mapping.standardControlId}`;
             if (seenMappings.has(key))
@@ -748,7 +750,7 @@ function renderStandardsAlignmentReport(mappings, analysis) {
         lines.push('| Standard control/family | Project control(s) | Alignment status | Evidence | Gap | Risk priority |');
         lines.push('| --- | --- | --- | --- | --- | ---: |');
         for (const mapping of standardMappings) {
-            const standardCell = `\`${mapping.standardControlId}\` ${mapping.standardControlTitle}<br>${mapping.standardControlFamily}`;
+            const standardCell = `\`${mapping.standardControlId}\` ${markdownTableEscape(mapping.standardControlTitle)}<br>${markdownTableEscape(mapping.standardControlFamily)}`;
             const projectCell = mapping.projectControls.map((control) => `\`${control.id}\` ${markdownTableEscape(control.title)} (${statusLabel(control.status)})`).join('<br>') || 'None';
             const evidenceCell = mapping.evidence.map((item) => `\`${item.path}\``).join('<br>') || 'None';
             lines.push(`| ${standardCell} | ${projectCell} | ${alignmentStatusLabel(mapping.alignmentStatus)} | ${evidenceCell} | ${markdownTableEscape(mapping.gapSummary)} | ${mapping.priorityScore} |`);

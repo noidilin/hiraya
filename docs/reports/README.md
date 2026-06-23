@@ -33,7 +33,7 @@ The Standards Alignment Report is evidence-based and intentionally avoids formal
 
 `permission-report-ci` validates the JSON controls plus standards mappings and uploads Markdown + JSON report artifacts on main and on the weekly schedule.
 
-`weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. Recompile it after edits:
+`weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. From the repository root, recompile it after edits:
 
 ```sh
 gh aw compile .github/workflows/weekly-permission-audit.md
