@@ -10,8 +10,7 @@ minimumReleaseAgeExclude:
   - nanoid@3.3.14
 
 # pnpm 11 requires explicit lifecycle-script decisions.
-# core-js postinstall scripts are informational; sharp needs its native install step.
+# core-js postinstall scripts are informational and disabled.
 allowBuilds:
   core-js: false
   core-js-pure: false
-  sharp: true
