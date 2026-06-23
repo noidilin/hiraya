@@ -300,6 +300,12 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /name: run-app-baseline-before-image-push/);
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /build-and-push:[\s\S]*?needs:\n\s+- detect-changes\n\s+- app-baseline/, 'image push job must need the baseline job');
+  assert.match(workflow, /build-and-push:[\s\S]*?timeout-minutes: 25/, 'image push jobs must fail closed instead of hanging indefinitely');
+  assert.match(workflow, /build-and-push:[\s\S]*?permissions:\n\s+actions: read\n\s+contents: read\n\s+id-token: write/, 'image push jobs need actions:read for BuildKit GHA cache key checks and OIDC for ECR');
+  assert.match(workflow, /max-parallel: 4/, 'image push matrix should limit parallel BuildKit cache pressure');
+  assert.match(workflow, /cache-from: type=gha,scope=\$\{\{ matrix\.service \}\},timeout=2m/, 'image push cache imports should have a bounded timeout');
+  assert.match(workflow, /cache-to: type=gha,mode=min,scope=\$\{\{ matrix\.service \}\},timeout=2m,ignore-error=true/, 'image push cache exports should be best-effort and bounded');
+  assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/, 'BuildKit should receive the GitHub token for cache API mitigation');
   assert.match(workflow, /update-manifests:[\s\S]*?needs:[\s\S]*?- app-baseline/, 'manifest update job must also be gated by the baseline job');
   assert.match(workflow, /actions\/create-github-app-token@/, 'manifest promotion should use a GitHub App token so PR checks trigger');
   assert.match(workflow, /PROMOTION_BRANCH: ci\/update-manifests-dev/, 'manifest promotion should use a rolling dev branch');
