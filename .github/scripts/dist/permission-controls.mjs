@@ -211,6 +211,9 @@ function validateStringArray(value, allowed, pathName, errors) {
         seen.add(item);
     }
 }
+// Keep these lightweight runtime validators alongside the JSON schemas: they
+// enforce the schema-shaped contract before typed processing and then the loader
+// adds repository-specific semantic checks that JSON Schema cannot cover alone.
 function validateControlFileShape(file, sourceFile) {
     const errors = [];
     if (!isRecord(file))
@@ -225,14 +228,7 @@ function validateControlFileShape(file, sourceFile) {
             if (!isString(file.dataset[field]))
                 errors.push(`${sourceFile}: dataset.${field} is required`);
         }
-        if (!isString(file.dataset.domain)) {
-            errors.push(`${sourceFile}: dataset.domain is required`);
-        }
-        else {
-            const invalid = enumError(file.dataset.domain, DOMAIN_VALUES, `${sourceFile}: dataset.domain`);
-            if (invalid)
-                errors.push(invalid);
-        }
+        validateStringArray(file.dataset.domains, DOMAIN_VALUES, `${sourceFile}: dataset.domains`, errors);
     }
     if (!Array.isArray(file.controls) || file.controls.length === 0) {
         errors.push(`${sourceFile}: controls must be a non-empty array`);
@@ -450,6 +446,11 @@ async function loadControls(options) {
         const fileControlErrors = shape.file.controls.flatMap((control, index) => validateControl(control, `${sourceFile}.controls[${index}]`));
         errors.push(...fileControlErrors);
         if (fileControlErrors.length > 0)
+            continue;
+        const datasetDomains = new Set(shape.file.dataset.domains);
+        const datasetDomainErrors = shape.file.controls.flatMap((control, index) => datasetDomains.has(control.domain) ? [] : [`${sourceFile}.controls[${index}].domain '${control.domain}' must be listed in dataset.domains`]);
+        errors.push(...datasetDomainErrors);
+        if (datasetDomainErrors.length > 0)
             continue;
         for (const control of shape.file.controls) {
             const riskScore = control.risk.impact * control.risk.likelihood * control.risk.exposure;
