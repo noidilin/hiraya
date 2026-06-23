@@ -43,14 +43,14 @@ jobs:
           from pathlib import Path
           import sys
 
-          allowed_prefixes = ('diff --git ', 'index ', '--- ', '+++ ', '@@')
+          allowed_prefixes = ('diff --git ', 'index ', '--- ', '+++ ', '@@', '\\ No newline at end of file')
           for line in Path('/tmp/hiraya-gitops-image-tag.diff').read_text().splitlines():
               if not line or line.startswith(allowed_prefixes):
                   continue
-              if line[0] in '+-':
-                  if not line[1:].lstrip().startswith('image: '):
-                      print(f'Non-image GitOps diff line: {line}', file=sys.stderr)
-                      sys.exit(1)
+              if line[0] in '+-' and line[1:].lstrip().startswith('image: '):
+                  continue
+              print(f'Non-image GitOps diff line: {line}', file=sys.stderr)
+              sys.exit(1)
           PY
               then
                 bot_manifest_promotion_only=true
@@ -147,6 +147,11 @@ jobs:
       - name: set-up-app-toolchain
         uses: ./.github/actions/setup-app-toolchain
 
+      - name: install-app-workspace
+        shell: bash
+        working-directory: app/microservices
+        run: pnpm run app:install
+
       - name: run-app-baseline
         shell: bash
         working-directory: app/microservices
@@ -158,6 +163,7 @@ jobs:
     needs:
       - classify-pr
       - changed-service-images
+      - image-build-only
       - manifest-promotion-baseline
       - run-app-baseline
     if: ${{ always() }}
@@ -167,9 +173,11 @@ jobs:
         env:
           CLASSIFY_RESULT: ${{ needs.classify-pr.result }}
           CHANGED_SERVICE_IMAGES_RESULT: ${{ needs.changed-service-images.result }}
+          IMAGE_BUILD_ONLY_RESULT: ${{ needs.image-build-only.result }}
           MANIFEST_PROMOTION_BASELINE_RESULT: ${{ needs.manifest-promotion-baseline.result }}
           RUN_APP_BASELINE_RESULT: ${{ needs.run-app-baseline.result }}
           BOT_MANIFEST_PROMOTION_ONLY: ${{ needs.classify-pr.outputs.bot_manifest_promotion_only }}
+          HAS_CHANGED_SERVICE_IMAGES: ${{ needs.changed-service-images.outputs.has_changes }}
           MATRIX: ${{ needs.changed-service-images.outputs.matrix }}
         run: |
           set -euo pipefail
@@ -181,6 +189,7 @@ jobs:
             echo "| Bot manifest promotion fast path | \`${BOT_MANIFEST_PROMOTION_ONLY:-false}\` |"
             echo "| classify-pr | \`${CLASSIFY_RESULT}\` |"
             echo "| changed-service-images | \`${CHANGED_SERVICE_IMAGES_RESULT}\` |"
+            echo "| image-build-only | \`${IMAGE_BUILD_ONLY_RESULT}\` |"
             echo "| manifest-promotion-baseline | \`${MANIFEST_PROMOTION_BASELINE_RESULT}\` |"
             echo "| run-app-baseline | \`${RUN_APP_BASELINE_RESULT}\` |"
             echo ""
@@ -197,13 +206,22 @@ jobs:
           fi
 
           if [[ "${BOT_MANIFEST_PROMOTION_ONLY:-false}" == "true" ]]; then
-            if [[ "$CHANGED_SERVICE_IMAGES_RESULT" != "skipped" || "$RUN_APP_BASELINE_RESULT" != "skipped" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "success" ]]; then
-              echo "Manifest promotion fast path expected manifest-promotion-baseline=success and normal app jobs=skipped." >&2
+            if [[ "$CHANGED_SERVICE_IMAGES_RESULT" != "skipped" || "$IMAGE_BUILD_ONLY_RESULT" != "skipped" || "$RUN_APP_BASELINE_RESULT" != "skipped" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "success" ]]; then
+              echo "Manifest promotion fast path expected manifest-promotion-baseline=success and normal app/image jobs=skipped." >&2
               exit 1
             fi
           else
             if [[ "$CHANGED_SERVICE_IMAGES_RESULT" != "success" || "$RUN_APP_BASELINE_RESULT" != "success" || "$MANIFEST_PROMOTION_BASELINE_RESULT" != "skipped" ]]; then
               echo "Normal PR path expected changed-service-images=success, run-app-baseline=success, and manifest-promotion-baseline=skipped." >&2
+              exit 1
+            fi
+
+            expected_image_build_only_result="skipped"
+            if [[ "${HAS_CHANGED_SERVICE_IMAGES:-false}" == "true" ]]; then
+              expected_image_build_only_result="success"
+            fi
+            if [[ "$IMAGE_BUILD_ONLY_RESULT" != "$expected_image_build_only_result" ]]; then
+              echo "Normal PR path expected image-build-only=${expected_image_build_only_result}, got ${IMAGE_BUILD_ONLY_RESULT}." >&2
               exit 1
             fi
           fi
