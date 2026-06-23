@@ -42,18 +42,6 @@ variable "github_repository" {
   default     = "noidilin/hiraya"
 }
 
-variable "platform_cluster_name" {
-  description = "Disposable dev EKS cluster that the GitHub infra apply role administers for Terraform Kubernetes and Helm operations."
-  type        = string
-  default     = "devops-hiraya-dev-eks"
-}
-
-variable "manage_platform_cluster_access" {
-  description = "Whether bootstrap should register the GitHub infra apply role as a cluster admin on an already-existing disposable dev EKS cluster. Enable only while that cluster exists."
-  type        = bool
-  default     = false
-}
-
 variable "tags" {
   description = "Additional tags for bootstrap resources."
   type        = map(string)

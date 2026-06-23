@@ -2,10 +2,9 @@ run "creates_scoped_infra_oidc_roles" {
   command = plan
 
   variables {
-    github_repository              = "example/hiraya"
-    state_bucket_name              = "hiraya-tf-state"
-    repositories                   = ["hiraya-frontend"]
-    manage_platform_cluster_access = true
+    github_repository = "example/hiraya"
+    state_bucket_name = "hiraya-tf-state"
+    repositories      = ["hiraya-frontend"]
 
     skip_aws_credentials_validation = true
   }
@@ -101,15 +100,5 @@ run "creates_scoped_infra_oidc_roles" {
       "devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
     )
     error_message = "The apply policy must allow listing Terraform S3 native lock-file keys."
-  }
-
-  assert {
-    condition     = aws_eks_access_entry.github_infra_apply_cluster_admin[0].cluster_name == "devops-hiraya-dev-eks" && aws_eks_access_entry.github_infra_apply_cluster_admin[0].type == "STANDARD"
-    error_message = "The apply role must be registered as a standard EKS access entry for the disposable dev cluster."
-  }
-
-  assert {
-    condition     = aws_eks_access_policy_association.github_infra_apply_cluster_admin[0].policy_arn == "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy" && aws_eks_access_policy_association.github_infra_apply_cluster_admin[0].access_scope[0].type == "cluster"
-    error_message = "The apply role must have cluster-scoped EKS cluster-admin access for Terraform Kubernetes and Helm resources."
   }
 }

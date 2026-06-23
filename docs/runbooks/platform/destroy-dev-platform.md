@@ -54,7 +54,7 @@ destroy dev platform
    - Captures `cluster_name`, `vpc_id`, and `edge_load_balancer_name` from Terraform outputs before destroy.
    - Runs `.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh` to delete the Argo CD app, delete the application namespace, and wait for captured Kubernetes EBS volumes to disappear while the EBS CSI controller is still running.
    - Runs `terraform -chdir=infra/envs/dev/platform destroy -input=false -auto-approve`.
-   - Runs `.github/scripts/platform-destroy-verify.sh`, including checks for captured EBS volume IDs and Hiraya-tagged EBS volumes.
+   - Runs `.github/scripts/platform-destroy-verify.sh`, including checks for captured EBS volume IDs, Hiraya-tagged EBS volumes, and legacy `kubernetes.io/cluster/<cluster>=owned` EBS volumes.
 
 ## Validation
 
@@ -66,7 +66,7 @@ aws ec2 describe-vpcs --region ap-northeast-1 --vpc-ids <captured-vpc-id> || tru
 aws elbv2 describe-load-balancers --region ap-northeast-1 --names hiraya-dev-public || true
 ```
 
-Expected: EKS cluster is gone or not `ACTIVE`; captured Kubernetes EBS volume IDs are deleted; Hiraya-tagged Kubernetes EBS volumes for the cluster are deleted; captured VPC is deleted; shared public ALB is deleted.
+Expected: EKS cluster is gone or not `ACTIVE`; captured Kubernetes EBS volume IDs are deleted; Hiraya-tagged Kubernetes EBS volumes for the cluster are deleted; legacy `kubernetes.io/cluster/<cluster>=owned` EBS volumes are deleted; captured VPC is deleted; shared public ALB is deleted.
 
 ### Durable bootstrap preservation
 
@@ -90,7 +90,7 @@ Expected: remote-state bucket remains accessible and durable ECR repositories st
 - Environment approval record.
 - Terraform destroy completion.
 - Verification that EKS/VPC/ALB are absent or inactive.
-- Verification that captured Kubernetes EBS volume IDs and Hiraya-tagged Kubernetes EBS volumes are deleted.
+- Verification that captured Kubernetes EBS volume IDs, Hiraya-tagged Kubernetes EBS volumes, and legacy `kubernetes.io/cluster/<cluster>=owned` EBS volumes are deleted.
 - Verification that the state bucket and ECR repositories remain accessible.
 
 ## Recovery
