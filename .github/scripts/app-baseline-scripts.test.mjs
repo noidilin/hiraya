@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workspacePackagePath = path.join(repoRoot, 'package.json');
 const frontendPackagePath = path.join(repoRoot, 'app/microservices/frontend/package.json');
+const legacyAppPackagePath = path.join(repoRoot, 'app/microservices/package.json');
+const legacyAppLockfilePath = path.join(repoRoot, 'app/microservices/pnpm-lock.yaml');
+const legacyAppWorkspacePath = path.join(repoRoot, 'app/microservices/pnpm-workspace.yaml');
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
 const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/platform/enforce-app-baseline-required-check.md');
@@ -151,6 +154,18 @@ test('legacy duplicated path-filter metadata is removed', async () => {
   assert.doesNotMatch(appReadme, /legacy path-filter/i, 'app README should not point agents at removed legacy filters');
 });
 
+test('legacy nested app pnpm workspace boundary is removed', async () => {
+  await Promise.all([
+    assert.rejects(access(legacyAppPackagePath), /ENOENT/),
+    assert.rejects(access(legacyAppLockfilePath), /ENOENT/),
+    assert.rejects(access(legacyAppWorkspacePath), /ENOENT/),
+  ]);
+
+  const appReadme = await readFile(appWorkspaceReadmePath, 'utf8');
+  assert.match(appReadme, /commands run from the repository root/i);
+  assert.doesNotMatch(appReadme, /Run commands from `app\/microservices`/);
+  assert.doesNotMatch(appReadme, /pnpm run app:install|pnpm run app:workspace|pnpm run app:changed/);
+});
 
 test('app PR baseline workflow builds changed service images without AWS or registry push', async () => {
   const workflow = await readFile(appPrBaselineWorkflowPath, 'utf8');
