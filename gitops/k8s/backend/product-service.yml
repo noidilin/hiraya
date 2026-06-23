@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-product-service:f357b9913476d9efac4587aca10c6218875830e8
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-product-service:9cca7384296fe05867ac6052205cada51d27b024
           ports:
             - containerPort: 3003
           env:
