@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-frontend:9a76984dda1fab62a8efd0d6b6cba311864eaf7a
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-frontend:c28b3caae6ca4629f7ed1b2cc66f0661da2a93df
           ports:
             - containerPort: 80
 ---
