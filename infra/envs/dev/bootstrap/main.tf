@@ -367,27 +367,3 @@ resource "aws_iam_role_policy_attachment" "github_infra_apply" {
   policy_arn = aws_iam_policy.github_infra_apply.arn
 }
 
-resource "aws_eks_access_entry" "github_infra_apply_cluster_admin" {
-  count = var.manage_platform_cluster_access ? 1 : 0
-
-  cluster_name  = var.platform_cluster_name
-  principal_arn = aws_iam_role.github_infra_apply.arn
-  type          = "STANDARD"
-
-  tags = local.common_tags
-}
-
-resource "aws_eks_access_policy_association" "github_infra_apply_cluster_admin" {
-  count = var.manage_platform_cluster_access ? 1 : 0
-
-  cluster_name  = var.platform_cluster_name
-  policy_arn    = local.eks_cluster_admin_policy_arn
-  principal_arn = aws_iam_role.github_infra_apply.arn
-
-  access_scope {
-    type = "cluster"
-  }
-
-  depends_on = [aws_eks_access_entry.github_infra_apply_cluster_admin]
-}
-

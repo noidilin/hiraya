@@ -1,11 +1,11 @@
-# Enforce the Vintage Storefront app baseline required check
+# Enforce the storefront-app-baseline required check
 
-This runbook records the branch rule that must be in place before the Vintage Storefront rewrite proceeds.
+This runbook records the branch rule that must be in place before the Storefront rewrite proceeds.
 
 ## Required check
 
 - Protected branch: `main`
-- GitHub repository ruleset: `require-vintage-storefront-app-baseline`
+- GitHub repository ruleset: `require-storefront-app-baseline`
 - Required status check: `app-baseline`
 - Workflow source: `.github/workflows/app-pr-baseline.yml`
 - Configuration surface: GitHub repository **Settings → Rules → Rulesets**
@@ -23,7 +23,7 @@ gh api repos/noidilin/hiraya/rulesets \
   --method POST \
   --input - <<'JSON'
 {
-  "name": "require-vintage-storefront-app-baseline",
+  "name": "require-storefront-app-baseline",
   "target": "branch",
   "enforcement": "active",
   "conditions": {
