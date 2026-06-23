@@ -4,6 +4,13 @@
 .github
 .ralph
 
+# Repository areas that are not Docker image inputs
+docs
+infra
+terraform
+tutor
+tests
+
 # Host dependency directories
 node_modules
 **/node_modules

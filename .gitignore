@@ -35,6 +35,8 @@ backend.hcl
 
 # project
 aiops/
+node_modules/
+.pnpm-store/
 docs/reports/build/
 
 # AI
