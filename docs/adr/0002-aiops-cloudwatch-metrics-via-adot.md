@@ -1,6 +1,6 @@
 # AIOps metrics through CloudWatch via ADOT
 
-Status: accepted
+Status: accepted; in-cluster ADOT ownership refined by ADR-0007
 
 Kira will use CloudWatch Logs and CloudWatch Metrics as its operational query surface instead of querying Prometheus directly. EKS and application metrics needed for AIOps diagnosis will be exported from inside the cluster by ADOT to the `Hiraya/AIOps` CloudWatch namespace with a deliberately small, low-cardinality metric set; Prometheus remains private for Grafana dashboards and port-forwarded operator access only.
 
