@@ -1,0 +1,10 @@
+apiVersion: gateway.k8s.aws/v1beta1
+kind: LoadBalancerConfiguration
+metadata:
+  name: public-alb
+  namespace: edge
+spec:
+  loadBalancerName: hiraya-dev-public
+  scheme: internet-facing
+  defaultTargetGroupConfiguration:
+    name: public-target-group
