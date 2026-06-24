@@ -18,8 +18,9 @@ concurrency:
 env:
   AWS_REGION: ap-northeast-1
   TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-  TF_PLATFORM_STATE_KEY: devops-hiraya-dev/dev/platform/terraform.tfstate
+  TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
   INFRA_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-apply
+  TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
   DESTROY_CONFIRMATION: destroy dev platform
 
 jobs:
@@ -46,7 +47,7 @@ jobs:
           fi
 
   destroy:
-    name: destroy-disposable-dev-platform
+    name: destroy-platform-core
     needs: preflight
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -76,11 +77,11 @@ jobs:
 
       - name: generate-platform-backend-config
         shell: bash
-        run: .github/scripts/write-platform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh
 
       - name: initialize-platform-terraform
         shell: bash
-        run: terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl -reconfigure -input=false
+        run: terraform -chdir=infra/envs/dev/platform-core init -backend-config=backend.hcl -reconfigure -input=false
 
       - name: capture-platform-identifiers
         id: platform
@@ -91,7 +92,7 @@ jobs:
           capture_output() {
             local name="$1"
             local value
-            value=$(terraform -chdir=infra/envs/dev/platform output -raw "$name" 2>/dev/null || true)
+            value=$(terraform -chdir=infra/envs/dev/platform-core output -raw "$name" 2>/dev/null || true)
             if [[ -z "$value" ]]; then
               echo "Terraform output ${name} is empty; destroy verification would be unsafe." >&2
               exit 1
@@ -103,23 +104,14 @@ jobs:
           capture_output vpc_id
           capture_output edge_load_balancer_name
 
-      - name: delete-kubernetes-ebs-volumes-before-eks-teardown
-        env:
-          CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
-          CLUSTER_ADMIN_PRINCIPAL_ARN: ${{ env.INFRA_APPLY_ROLE_ARN }}
-          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
-        shell: bash
-        run: .github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh
-
       - name: destroy-disposable-platform-stack
         shell: bash
-        run: terraform -chdir=infra/envs/dev/platform destroy -input=false -auto-approve
+        run: terraform -chdir=infra/envs/dev/platform-core destroy -input=false -auto-approve
 
       - name: verify-platform-removal-and-durable-resources
         env:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           VPC_ID: ${{ steps.platform.outputs.vpc_id }}
           EDGE_LOAD_BALANCER_NAME: ${{ steps.platform.outputs.edge_load_balancer_name }}
-          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
         shell: bash
         run: .github/scripts/platform-destroy-verify.sh

@@ -156,7 +156,11 @@ resource "aws_iam_policy" "github_infra_plan" {
           "logs:List*",
           "route53:Get*",
           "route53:List*",
-          "s3:GetBucketLocation"
+          "s3:GetBucketLocation",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:ListSecretVersionIds",
+          "secretsmanager:ListSecrets"
         ]
         Resource = "*"
       }
@@ -329,7 +333,11 @@ resource "aws_iam_policy" "github_infra_apply" {
           "logs:List*",
           "route53:Get*",
           "route53:List*",
-          "s3:GetBucketLocation"
+          "s3:GetBucketLocation",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:ListSecretVersionIds",
+          "secretsmanager:ListSecrets"
         ]
         Resource = "*"
       },
@@ -418,7 +426,16 @@ resource "aws_iam_policy" "github_infra_apply" {
           "logs:PutRetentionPolicy",
           "logs:TagResource",
           "logs:UntagResource",
-          "route53:ChangeResourceRecordSets"
+          "route53:ChangeResourceRecordSets",
+          "secretsmanager:CreateSecret",
+          "secretsmanager:DeleteSecret",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:ListSecretVersionIds",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:TagResource",
+          "secretsmanager:UntagResource",
+          "secretsmanager:UpdateSecret"
         ]
         Resource = "*"
       },

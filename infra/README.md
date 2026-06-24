@@ -4,14 +4,14 @@ Layout:
 
 ```text
 infra/
-  envs/dev/bootstrap/   # durable/shared resources: ECR + GitHub image-push IAM
-  envs/dev/platform/    # disposable EKS platform: VPC, EKS, ArgoCD, monitoring, Fluent Bit
-  modules/              # reusable modules: vpc, eks, argocd, monitoring, fluent-bit
+  envs/dev/bootstrap/       # Project Bootstrap: durable ECR, GitHub OIDC roles, state access, workload secrets
+  envs/dev/platform-core/   # Platform Core: AWS/EKS foundation only; no Kubernetes or Helm providers
+  modules/                  # reusable AWS-only and legacy modules
 ```
 
 The remote state S3 bucket is externally managed. Terraform uses it through each stack's `backend.hcl`, but no stack creates or destroys the bucket.
 
-## Bootstrap stack
+## Project Bootstrap
 
 ```bash
 cd infra/envs/dev/bootstrap
@@ -20,121 +20,33 @@ terraform init -backend-config=backend.hcl
 terraform plan
 ```
 
-If migrating an existing bootstrap state that still tracks the state bucket, remove only those bucket addresses from state before applying this refactor:
+Project Bootstrap is the durable dev foundation. It owns ECR repositories, GitHub OIDC roles, Terraform state permissions, and durable Vintage Storefront runtime secrets.
+
+## Platform Core
 
 ```bash
-terraform state rm aws_s3_bucket.terraform_state
-terraform state rm aws_s3_bucket_versioning.terraform_state
-terraform state rm aws_s3_bucket_server_side_encryption_configuration.terraform_state
-terraform state rm aws_s3_bucket_public_access_block.terraform_state
-```
-
-`terraform state rm` only stops Terraform managing those resources; it does not delete the real S3 bucket.
-
-## Platform stack
-
-```bash
-cd infra/envs/dev/platform
+cd infra/envs/dev/platform-core
 cp backend.hcl.example backend.hcl
 terraform init -backend-config=backend.hcl
 terraform plan
 ```
 
-The platform stack creates a disposable dev EKS network foundation with:
+Platform Core creates the disposable AWS/EKS foundation with:
 
-- three public edge subnets tagged for external load balancers
-- three private workload subnets tagged for internal load balancers
-- one NAT Gateway in a public subnet for private subnet outbound internet egress
-- an S3 Gateway VPC endpoint associated with private route tables
-- EKS cluster networking and managed node groups attached to private subnet IDs only
-- EKS private endpoint access enabled
-- explicit public EKS API CIDRs in `terraform.tfvars`
-- VPC Flow Logs support available through `enable_vpc_flow_logs`, disabled by default to avoid dev logging cost
+- VPC, public edge subnets, private workload subnets, NAT Gateway, and S3 Gateway endpoint.
+- EKS cluster, managed node group, OIDC provider, and EKS managed add-ons such as EBS CSI.
+- ACM certificate and Route 53 DNS validation primitives for `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`.
+- AWS-only IRSA roles for AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, and Fluent Bit.
+- CloudWatch pod log group `/eks/hiraya/dev/pods`.
+- disposable Argo CD and Grafana admin secrets in AWS Secrets Manager.
+- non-secret outputs consumed by later Cluster Bootstrap and GitOps phases.
 
-The broad `0.0.0.0/0` public EKS API CIDR in dev is temporary workstation access, not a secure default. Replace it with workstation `/32` CIDRs when the IP is stable. Because subnet topology and node placement are disruptive, recreate the disposable platform stack for this redesign instead of attempting an in-place migration.
+Platform Core intentionally contains no Kubernetes or Helm providers/resources. In-cluster add-ons, Argo CD handoff, Gateway resources, public routes, and workload manifests are no longer part of this Terraform stack; they move to the ADR-0007 Cluster Bootstrap and GitOps-owned Cluster Platform model.
 
-The platform stack also installs cluster add-ons as separate modules:
+EKS admin access entries are limited to configured Dev SSO principals plus the GitHub Cluster Bootstrap role from Project Bootstrap. GitHub plan and Platform Core apply roles do not receive Kubernetes API access.
 
-- vendored upstream Gateway API core CRDs from `infra/modules/gateway-api-crds`, with optional Gateway API validation resources; use `docs/runbooks/platform/gateway-api-crd-cutover.md` for the live dev cutover checklist
-- AWS Load Balancer Controller for the shared public edge, with AWS-specific CRDs installed by its Helm chart
-- ExternalDNS in `external-dns`, using IRSA, Route 53 permissions scoped to `noidilin.dev`, `gateway-httproute` sources, `sync` policy, and TXT registry ownership
-- `kube-prometheus-stack` in `monitoring`
-- `hiraya-ebs-gp3` StorageClass, using the AWS EBS CSI driver with `Delete` reclaim policy, `WaitForFirstConsumer`, and Hiraya-specific EBS tags for destroy verification
-- Argo CD in `argocd`, plus a separate Helm release that bootstraps the `vintage` Application from `infra/modules/argocd/application.yml` to sync `gitops/`
-- `aws-for-fluent-bit` in `amazon-cloudwatch`, using IRSA to write pod logs to `/eks/vintage/pods`
+The broad `0.0.0.0/0` public EKS API CIDR in dev is a temporary explicit workstation/GitHub-hosted runner toggle. Replace it with `/32` CIDRs or private runner access when practical.
 
-Gateway API CRD ownership is intentionally split:
+## Legacy platform stack retired
 
-- Terraform owns upstream Gateway API core CRDs through the vendored `infra/modules/gateway-api-crds` module. Those CRDs are pinned under `infra/modules/gateway-api-crds/chart/crds/`, split one CRD per file for reviewable diffs.
-- Terraform also owns the optional upstream Gateway API validation resources rendered from that module's chart templates; disable them with `enable_validation_resources` only when isolating EKS/Gateway API compatibility issues.
-- The AWS Load Balancer Controller Helm chart owns AWS-specific Gateway CRDs such as `LoadBalancerConfiguration`, `TargetGroupConfiguration`, and `ListenerRuleConfiguration` with `skip_crds = false`.
-- Terraform owns platform controllers, the shared `edge/public` Gateway, `GatewayClass`, AWS Gateway policy resources, and admin HTTPRoutes. GitOps owns application manifests and the `vintage/frontend` app HTTPRoute.
-
-This ownership split must not change the accepted public ingress path: public app, Argo CD, and Grafana traffic still flows through Route 53/ExternalDNS to the shared public ALB created from Gateway API resources, while backend Services remain private `ClusterIP` Services. Do not reintroduce a runtime `kubectl` Job or GitHub manifest download for Gateway API prerequisites.
-
-Helm does not automatically upgrade or delete CRDs from chart `crds/` directories. This applies to the vendored Gateway API CRD chart and to AWS Load Balancer Controller chart CRDs. Treat every CRD version bump as a deliberate reviewed platform change rather than an incidental Helm chart upgrade.
-
-To upgrade Gateway API core CRDs:
-
-1. Download the target release `standard-install.yaml`.
-2. Split CRDs into `infra/modules/gateway-api-crds/chart/crds/` and keep non-CRD validation resources in `chart/templates/`.
-3. Review YAML diffs carefully, especially schema changes, conversion settings, stored versions, and validation policy changes.
-4. Run `helm lint infra/modules/gateway-api-crds/chart`.
-5. Render with CRDs included: `helm template gateway-api-crds infra/modules/gateway-api-crds/chart --namespace kube-system --include-crds > /tmp/gateway-api-crds.yaml`.
-6. Validate the rendered manifests before touching the cluster: `kubectl apply --dry-run=client -f /tmp/gateway-api-crds.yaml`.
-7. Run Terraform formatting, module tests, `terraform validate`, and a platform `terraform plan`.
-8. For dev-only breaking CRD schema changes, prefer recreating the disposable platform over complex CRD migration.
-
-For existing dev state that previously tracked `module.aws_load_balancer_controller.helm_release.gateway_api_crds`, the platform stack includes a Terraform `moved` block to transfer ownership to `module.gateway_api_crds.helm_release.this`. If local state is disposable or the Helm release conflicts during manual recovery, prefer a clean dev reset or uninstall only the old `gateway-api-crds` release before re-applying the platform stack.
-
-Argo CD is installed after the monitoring module so the `ServiceMonitor` CRD from `kube-prometheus-stack` exists before the bootstrap Application syncs `gitops/`. The bootstrap Application is intentionally installed as a second Helm release after the main Argo CD chart, because the `Application` CRD must exist before Helm can render and apply an `Application` resource.
-
-If an older dev cluster already has a manually created `Application/vintage`, delete it before the Terraform upgrade and let Terraform recreate it through the `argocd-gitops-application` Helm release. New platform provisioning does not need this handoff.
-
-The platform stack reads bootstrap outputs from:
-
-```text
-devops-hiraya-dev/dev/bootstrap/terraform.tfstate
-```
-
-After apply, validate app DNS automation and frontend routing with:
-
-```bash
-kubectl get httproute -n vintage frontend -o yaml
-kubectl logs -n external-dns deploy/external-dns
-curl -I https://hiraya.noidilin.dev
-curl -I https://hiraya.noidilin.dev/api
-```
-
-The `frontend` and `gateway` Kubernetes Services should remain `ClusterIP`; public app access should flow through the shared Gateway/ALB to the frontend service, and frontend `/api` requests should continue to use the existing nginx proxy to the in-cluster gateway service.
-
-Validate public Argo CD routing after apply with:
-
-```bash
-kubectl get namespace argocd --show-labels
-kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
-kubectl get httproute -n argocd argocd -o yaml
-kubectl describe httproute -n argocd argocd
-kubectl logs -n external-dns deploy/external-dns
-terraform output -raw argocd_admin_hostname
-terraform output -raw argocd_admin_password
-curl -I https://argocd.hiraya.noidilin.dev
-```
-
-The Argo CD login page should be reachable over HTTPS at `argocd.hiraya.noidilin.dev`, while `argocd-server` remains a `ClusterIP` Service behind the shared Gateway/ALB. The generated admin password is stored only in Terraform state and exposed as a sensitive Terraform output for operator retrieval.
-
-Validate public Grafana routing after apply with:
-
-```bash
-kubectl get namespace monitoring --show-labels
-kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.spec.type}{"\n"}'
-kubectl get httproute -n monitoring grafana -o yaml
-kubectl describe httproute -n monitoring grafana
-kubectl logs -n external-dns deploy/external-dns
-terraform output -raw grafana_admin_password
-curl -I https://grafana.hiraya.noidilin.dev
-```
-
-Grafana's admin username is `admin`. The generated admin password is stored in Terraform state, exposed as a sensitive Terraform output for operator retrieval, and also materialized by the Helm chart into the `monitoring/kube-prometheus-stack-grafana` Kubernetes Secret.
-
-Future improvement: move both Argo CD and Grafana generated credentials into AWS Secrets Manager with a dedicated KMS key, least-privilege read access for operators, and rotation/lifecycle guidance. Terraform outputs should then expose only secret ARNs/names, not plaintext passwords.
+The former `infra/envs/dev/platform` monolithic stack was removed from active workflows. Do not recreate it unless ADR-0007 is superseded by a new architectural decision. New deploy/destroy automation targets `infra/envs/dev/platform-core` and the new `dev/platform-core` Terraform state key.

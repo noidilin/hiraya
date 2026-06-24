@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for stack in infra/envs/dev/bootstrap infra/envs/dev/platform; do
+          for stack in infra/envs/dev/bootstrap infra/envs/dev/platform-core; do
             terraform -chdir="$stack" init -backend=false -input=false
             terraform -chdir="$stack" validate -no-color
           done
@@ -101,10 +101,11 @@ jobs:
     env:
       AWS_REGION: ap-northeast-1
       TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-      TF_PLATFORM_STATE_KEY: devops-hiraya-dev/dev/platform/terraform.tfstate
+      TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
       INFRA_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-plan
-      PLATFORM_DIR: infra/envs/dev/platform
-      PLAN_ARTIFACT_NAME: terraform-pr-plan-dev-platform-${{ github.event.pull_request.number }}-${{ github.sha }}
+      PLATFORM_DIR: infra/envs/dev/platform-core
+      TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
+      PLAN_ARTIFACT_NAME: terraform-pr-plan-dev-platform-core-${{ github.event.pull_request.number }}-${{ github.sha }}
 
     steps:
       - name: checkout-code
@@ -127,7 +128,7 @@ jobs:
 
       - name: generate-platform-backend-config
         shell: bash
-        run: .github/scripts/write-platform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh
 
       - name: initialize-platform-terraform
         shell: bash

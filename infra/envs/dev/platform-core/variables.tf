@@ -63,7 +63,7 @@ variable "node_group_name" {
 }
 
 variable "cluster_admin_principal_arns" {
-  description = "Additional IAM principal ARNs granted cluster-scoped EKS admin access for dev platform applies. The GitHub infra apply role is always included."
+  description = "Additional Dev SSO IAM principal ARNs granted cluster-scoped EKS admin access. The Cluster Bootstrap role is always included."
   type        = list(string)
   default     = []
 }
@@ -118,19 +118,13 @@ variable "bootstrap_state_region" {
 variable "pod_log_group_name" {
   description = "CloudWatch Logs log group for Kubernetes pod logs."
   type        = string
-  default     = "/eks/vintage/pods"
+  default     = "/eks/hiraya/dev/pods"
 }
 
 variable "pod_log_retention_days" {
   description = "Retention period in days for Kubernetes pod logs in CloudWatch Logs."
   type        = number
   default     = 14
-}
-
-variable "gitops_application_enabled" {
-  description = "Whether Terraform should bootstrap the root Argo CD Application during platform provisioning."
-  type        = bool
-  default     = true
 }
 
 variable "public_zone_name" {
@@ -179,4 +173,28 @@ variable "skip_aws_credentials_validation" {
   description = "Skip AWS provider credential validation for static CI checks that must not request AWS credentials."
   type        = bool
   default     = false
+}
+
+variable "argocd_admin_secret_name" {
+  description = "Stable Secrets Manager name for the Argo CD admin JSON secret."
+  type        = string
+  default     = "/hiraya/dev/platform/argocd-admin"
+}
+
+variable "grafana_admin_secret_name" {
+  description = "Stable Secrets Manager name for the Grafana admin JSON secret."
+  type        = string
+  default     = "/hiraya/dev/platform/grafana-admin"
+}
+
+variable "argocd_admin_rotation_epoch" {
+  description = "Manual rotation keeper for Argo CD admin credentials."
+  type        = string
+  default     = "1"
+}
+
+variable "grafana_admin_rotation_epoch" {
+  description = "Manual rotation keeper for Grafana admin credentials."
+  type        = string
+  default     = "1"
 }
