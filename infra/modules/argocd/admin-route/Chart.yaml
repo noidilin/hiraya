@@ -1,6 +1,6 @@
 apiVersion: v2
 name: argocd-admin-route
-description: Public HTTPRoute for the Terraform-owned Argo CD admin UI.
+description: Legacy public HTTPRoute for the Argo CD admin UI.
 type: application
 version: 0.1.0
 appVersion: 0.1.0

@@ -4,7 +4,7 @@ Status: planned
 Related ADRs: [`docs/adr/0002-aiops-cloudwatch-metrics-via-adot.md`](../adr/0002-aiops-cloudwatch-metrics-via-adot.md), [`docs/adr/0007-gitops-owned-cluster-platform.md`](../adr/0007-gitops-owned-cluster-platform.md)
 
 Ownership note: ADR-0007 supersedes the Terraform-owned in-cluster ADOT module described in this plan. Terraform should own ADOT IAM/CloudWatch-side resources and outputs; Argo CD Cluster Platform should own the in-cluster ADOT collector manifests when ADOT is implemented.
-Depends on: GitHub issue #1 / [`docs/plan/network-improvement.md`](./network-improvement.md)
+Depends on: GitHub issue #1 / [ADR-0001 EKS network redesign](../adr/0001-eks-network-redesign.md)
 
 ## Goal
 
@@ -50,7 +50,7 @@ Existing logs path remains:
 ```text
 EKS pod logs
   -> aws-for-fluent-bit
-  -> CloudWatch Logs /eks/vintage/pods
+  -> CloudWatch Logs /eks/hiraya/dev/pods
   -> fetch_logs Lambda
 ```
 
@@ -212,10 +212,10 @@ Restrict `fetch_logs` to approved log groups.
 Initial deployed allowlist:
 
 ```text
-/eks/vintage/pods
+/eks/hiraya/dev/pods
 ```
 
-The EKS control-plane log group `/aws/eks/devops-hiraya-dev-eks/cluster` should be added only if the platform stack explicitly enables EKS control-plane logging and exports the log group name. Synthetic `/app/production` can remain local/demo-only, but should not be included in deployed Terraform by default.
+The EKS control-plane log group `/aws/eks/devops-hiraya-dev-eks/cluster` should be added only if Platform Core explicitly enables EKS control-plane logging and exports the log group name. Synthetic `/app/production` can remain local/demo-only, but should not be included in deployed Terraform by default.
 
 ### Metrics scope
 
@@ -240,30 +240,9 @@ Do not call the Kubernetes API directly from Lambda in the first slice.
 
 ### ADOT and metric export
 
-ADOT belongs to the platform stack, not the AIOps stack. The ADOT Collector should use a Prometheus receiver to scrape selected in-cluster `/metrics` endpoints directly; it should not query the Prometheus server.
+ADR-0007 refines this plan: ADOT is deferred from the GitOps refactor and belongs to the Cluster Platform when implemented, not to the AIOps stack. Platform Core should own AWS/IAM/CloudWatch-side resources and outputs; Argo CD-owned Cluster Platform manifests should own the in-cluster ADOT Collector, namespace, service account, and chart/Kustomize configuration. The ADOT Collector should use a Prometheus receiver to scrape selected in-cluster `/metrics` endpoints directly; it should not query the Prometheus server.
 
-Add a focused Terraform module:
-
-```text
-infra/modules/adot/
-```
-
-The platform stack wires it after EKS and monitoring exist:
-
-```hcl
-module "adot" {
-  source = "../../../modules/adot"
-
-  cluster_name      = var.cluster_name
-  region            = var.region
-  oidc_provider_arn = module.eks.oidc_provider_arn
-  oidc_issuer_url   = module.eks.oidc_issuer_url
-
-  depends_on = [module.eks, module.monitoring]
-}
-```
-
-ADOT runs in a dedicated Terraform-owned namespace:
+ADOT should run in a dedicated Cluster Platform namespace:
 
 ```text
 adot
@@ -326,16 +305,20 @@ ports:
 
 Update the existing Prometheus `ServiceMonitor` to scrape all backend services too, so Prometheus/Grafana and ADOT/CloudWatch have consistent service coverage.
 
-### Terraform ownership
+### Ownership
 
-Platform stack owns telemetry production/export:
+Telemetry production/export follows the ADR-0007 split:
 
 ```text
-infra/envs/dev/platform/
+infra/envs/dev/platform-core/
   - EKS
+  - CloudWatch log group /eks/hiraya/dev/pods
+  - Fluent Bit and future ADOT IAM/IRSA and CloudWatch-side resources
+
+gitops/platform/
   - kube-prometheus-stack
-  - Fluent Bit -> CloudWatch Logs
-  - ADOT -> CloudWatch Metrics
+  - Fluent Bit in-cluster manifests -> CloudWatch Logs
+  - future ADOT in-cluster manifests -> CloudWatch Metrics
 ```
 
 AIOps stack owns telemetry consumption and user-facing AIOps resources:
@@ -437,15 +420,16 @@ terraform fmt -recursive
 kubectl kustomize gitops
 ```
 
-From platform stack:
+From Platform Core:
 
 ```bash
+cd infra/envs/dev/platform-core
 terraform init -backend-config=backend.hcl
 terraform validate
 terraform plan
 ```
 
-After platform apply:
+After Platform Core, Cluster Bootstrap, and GitOps convergence:
 
 ```bash
 kubectl get pods -n adot
@@ -466,7 +450,7 @@ Verify logs path:
 ```bash
 aws logs describe-log-groups \
   --region ap-northeast-1 \
-  --log-group-name-prefix /eks/vintage/pods
+  --log-group-name-prefix /eks/hiraya/dev/pods
 ```
 
 AIOps stack validation:

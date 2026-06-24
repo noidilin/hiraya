@@ -29,14 +29,12 @@ Use this page to choose a runbook by scenario or action. These runbooks target t
 ## Safety boundaries
 
 - Durable bootstrap resources are preserved during normal platform deploy/destroy operations.
-- Disposable platform resources under `infra/envs/dev/platform` may be recreated in dev.
-- Generated Argo CD and Grafana credentials are secrets. Do not print them into workflow logs, issue comments, screenshots, or documentation.
+- Disposable platform resources live in `infra/envs/dev/platform-core` and `infra/envs/dev/cluster-bootstrap`; the legacy `infra/envs/dev/platform` stack is retired.
+- Project Bootstrap is durable and owns state access, GitHub OIDC roles, ECR repositories, and durable Vintage Storefront secrets.
+- Argo CD owns Cluster Platform and GitOps Apps desired state from `gitops/platform/**` and `gitops/apps/**` after Cluster Bootstrap installs the root app.
+- Generated Argo CD and Grafana credentials are secrets in AWS Secrets Manager. Do not print them into workflow logs, issue comments, screenshots, or documentation.
 - Prometheus remains private. Do not add emergency public routes for debugging.
 
 ## Archived compatibility links
 
-Older links still exist as redirect stubs:
-
-- [dev-platform-cutover.md](dev-platform-cutover.md)
-- [dev-service-rollback.md](dev-service-rollback.md)
-- [gateway-api-crd-cutover.md](gateway-api-crd-cutover.md)
+Older root-level redirect stubs were retired. Use the current runbooks above, including the archived historical [Gateway API CRD cutover](platform/gateway-api-crd-cutover.md) only for pre-ADR-0007 context.
