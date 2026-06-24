@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - crds/backendtlspolicies.gateway.networking.k8s.io.yaml
+  - crds/gatewayclasses.gateway.networking.k8s.io.yaml
+  - crds/gateways.gateway.networking.k8s.io.yaml
+  - crds/grpcroutes.gateway.networking.k8s.io.yaml
+  - crds/httproutes.gateway.networking.k8s.io.yaml
+  - crds/listenersets.gateway.networking.k8s.io.yaml
+  - crds/referencegrants.gateway.networking.k8s.io.yaml
+  - crds/tlsroutes.gateway.networking.k8s.io.yaml
+  - crds/aws-lbc-albtargetcontrolconfigs.elbv2.k8s.aws.yaml
+  - crds/aws-lbc-globalaccelerators.aga.k8s.aws.yaml
+  - crds/aws-lbc-ingressclassparams.elbv2.k8s.aws.yaml
+  - crds/aws-lbc-targetgroupbindings.elbv2.k8s.aws.yaml
+  - crds/aws-lbc-listenerruleconfigurations.gateway.k8s.aws.yaml
+  - crds/aws-lbc-loadbalancerconfigurations.gateway.k8s.aws.yaml
+  - crds/aws-lbc-targetgroupconfigurations.gateway.k8s.aws.yaml
