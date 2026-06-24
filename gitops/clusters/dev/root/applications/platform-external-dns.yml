@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-external-dns
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-16"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hiraya-platform
+  sources:
+    - repoURL: https://kubernetes-sigs.github.io/external-dns/
+      chart: external-dns
+      targetRevision: 1.20.0
+      helm:
+        releaseName: external-dns
+        valueFiles:
+          - $values/gitops/platform/external-dns/values-dev.yaml
+    - repoURL: https://github.com/noidilin/hiraya.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-aws-load-balancer-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-18"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hiraya-platform
+  sources:
+    - repoURL: https://aws.github.io/eks-charts
+      chart: aws-load-balancer-controller
+      targetRevision: 3.4.0
+      helm:
+        releaseName: aws-load-balancer-controller
+        valueFiles:
+          - $values/gitops/platform/aws-load-balancer-controller/values-dev.yaml
+    - repoURL: https://github.com/noidilin/hiraya.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -3,5 +3,7 @@ kind: Kustomization
 
 resources:
   - edge.yml
+  - external-dns.yml
+  - external-secrets.yml
   - monitoring.yml
   - vintage.yml

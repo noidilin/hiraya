@@ -70,6 +70,17 @@ variable "platform_project_name" {
   default     = "hiraya-platform"
 }
 
+variable "platform_project_source_repos" {
+  description = "Git and Helm repositories that Cluster Platform Applications may source from."
+  type        = list(string)
+  default = [
+    "https://github.com/noidilin/hiraya.git",
+    "https://aws.github.io/eks-charts",
+    "https://kubernetes-sigs.github.io/external-dns/",
+    "https://charts.external-secrets.io",
+  ]
+}
+
 variable "workloads_project_name" {
   description = "Argo CD AppProject used by Hiraya workload applications."
   type        = string
