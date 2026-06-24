@@ -63,10 +63,29 @@ test('deploy workflow applies Platform Core before Cluster Bootstrap and then sm
 
   assert.match(workflow, /apply-platform-core/, 'deploy should apply Platform Core first');
   assert.match(workflow, /apply-cluster-bootstrap[\s\S]*needs: apply/, 'Cluster Bootstrap deploy should depend on Platform Core apply');
+  assert.match(workflow, /smoke-dev-platform[\s\S]*needs: apply-cluster-bootstrap/, 'smoke checks should run only after Cluster Bootstrap apply');
   assert.match(workflow, /CLUSTER_BOOTSTRAP_ROLE_ARN/, 'Cluster Bootstrap should use its dedicated GitHub role');
   assert.match(workflow, /write-terraform-backend\.sh cluster-bootstrap/, 'Cluster Bootstrap should use the generic backend writer');
   assert.match(workflow, /terraform -chdir="\$\{CLUSTER_BOOTSTRAP_DIR\}" apply/, 'deploy should apply the Cluster Bootstrap state');
-  assert.match(workflow, /kubectl get applications\.argoproj\.io -n argocd/, 'deploy should verify Argo CD Applications through Kubernetes, not the Argo CD API');
-  assert.match(workflow, /platform-route-smoke\.sh/, 'deploy should run public route smoke checks after GitOps convergence');
+  assert.match(workflow, /platform-route-smoke\.sh/, 'deploy should run Kubernetes and public route smoke checks after GitOps convergence');
   assert.doesNotMatch(workflow, /argocd login|argocd app sync|ARGOCD_AUTH_TOKEN/, 'deploy validation must not call the Argo CD API');
+});
+
+test('platform smoke script validates GitOps health and layered public surface', async () => {
+  const script = await readFile('.github/scripts/platform-route-smoke.sh', 'utf8');
+
+  assert.match(script, /wait_for_argocd_application/, 'smoke should wait for Argo Applications through Kubernetes');
+  assert.match(script, /status\.sync\.status/, 'smoke should require Argo sync status');
+  assert.match(script, /status\.health\.status/, 'smoke should require Argo health status');
+
+  for (const namespace of ['argocd', 'edge', 'monitoring', 'vintage', 'external-dns', 'external-secrets', 'amazon-cloudwatch']) {
+    assert.match(script, new RegExp(`\\b${namespace}\\b`), `${namespace} namespace should be covered by smoke checks`);
+  }
+
+  assert.match(script, /condition=Programmed/, 'smoke should wait for the shared Gateway to become programmed');
+  assert.match(script, /Accepted/, 'smoke should wait for HTTPRoutes to be accepted');
+  assert.match(script, /Vintage Storefront[\s\S]*"200 204 301 302"/, 'Vintage route should allow the expected status codes');
+  assert.match(script, /Argo CD[\s\S]*"200 301 302 401 403"/, 'Argo CD route should allow the expected status codes');
+  assert.match(script, /Grafana[\s\S]*"200 301 302 401 403"/, 'Grafana route should allow the expected status codes');
+  assert.doesNotMatch(script, /argocd login|argocd app sync|ARGOCD_AUTH_TOKEN/, 'smoke validation must not call the Argo CD API');
 });
