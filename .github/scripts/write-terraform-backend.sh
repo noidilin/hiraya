@@ -1,10 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Usage:
+#   write-terraform-backend.sh [platform-core|cluster-bootstrap]
+#
+# Backward-compatible env mode is still supported by setting TF_STATE_KEY and
+# TF_BACKEND_PATH directly. Stack mode derives the layered dev state key and
+# backend file path from a shared prefix so workflows can use one backend writer
+# for Platform Core and Cluster Bootstrap.
+
+stack="${1:-${TF_STACK:-}}"
+
+if [[ -n "$stack" ]]; then
+  case "$stack" in
+    platform-core|cluster-bootstrap) ;;
+    *)
+      echo "Unsupported Terraform stack '${stack}'. Expected platform-core or cluster-bootstrap." >&2
+      exit 2
+      ;;
+  esac
+
+  : "${TF_STATE_PREFIX:=devops-hiraya-dev/dev}"
+  : "${TF_STATE_KEY:=${TF_STATE_PREFIX}/${stack}/terraform.tfstate}"
+  : "${TF_BACKEND_PATH:=infra/envs/dev/${stack}/backend.hcl}"
+fi
+
 : "${TF_STATE_BUCKET:?TF_STATE_BUCKET is required}"
-: "${TF_STATE_KEY:?TF_STATE_KEY is required}"
+: "${TF_STATE_KEY:?TF_STATE_KEY is required or pass a stack name}"
 : "${AWS_REGION:?AWS_REGION is required}"
-: "${TF_BACKEND_PATH:?TF_BACKEND_PATH is required}"
+: "${TF_BACKEND_PATH:?TF_BACKEND_PATH is required or pass a stack name}"
 
 mkdir -p "$(dirname "$TF_BACKEND_PATH")"
 cat > "$TF_BACKEND_PATH" <<EOF_BACKEND
