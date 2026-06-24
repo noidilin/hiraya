@@ -38,11 +38,11 @@ cluster_admin_principal_arns = [
   "arn:aws:iam::549475122024:role/aws-reserved/sso.amazonaws.com/ap-northeast-1/AWSReservedSSO_Dev_c315945bb49b88d5",
 ]
 
-instance_types = ["t3.medium"]
+instance_types = ["t3.large"]
 capacity_type  = "SPOT"
 
-# Three t3.medium nodes are required after platform add-ons move behind the
-# shared Gateway; two nodes hit the ENI pod-density limit before all app pods fit.
+# Three t3.large nodes provide enough pod density for platform add-ons plus
+# vintage microservices, including AZ-bound StatefulSet volumes.
 desired_size = 3
 min_size     = 2
 max_size     = 3
