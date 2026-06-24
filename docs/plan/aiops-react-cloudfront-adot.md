@@ -26,12 +26,12 @@ Prometheus remains private for Grafana dashboards and port-forwarded operator ac
 Operator browser
   -> https://aiops.hiraya.noidilin.dev
   -> CloudFront
-  -> S3 React static UI
+  -> private S3 React static UI origin through CloudFront OAC
   -> Cognito Hosted UI login
   -> API Gateway HTTP API POST /chat
   -> chat_proxy Lambda
   -> Bedrock Agent Runtime
-  -> Kira Bedrock Agent
+  -> Kira Bedrock Agent alias
        |-> fetch_logs Lambda -> CloudWatch Logs
        |-> fetch_metrics Lambda -> CloudWatch Metrics namespace Hiraya/AIOps
        `-> fetch_health Lambda -> EKS APIs + CloudWatch Metrics namespace Hiraya/AIOps
@@ -40,7 +40,7 @@ Operator browser
 Inside EKS:
 
 ```text
-Backend services /metrics, kube-state-metrics, cAdvisor
+Backend services /metrics, kube-state-metrics, cAdvisor/kubelet
   -> ADOT Collector in dedicated adot namespace
   -> CloudWatch Metrics / EMF namespace Hiraya/AIOps
 ```
@@ -70,6 +70,15 @@ Prometheus/Grafana
 
 This AIOps UI/API work is a separate slice after the EKS network redesign in issue #1. CloudFront remains out of scope for issue #1 and belongs to this later AIOps slice.
 
+### Existing prototype migration
+
+The existing `app/aiops/` tree is a deprecated/manual prototype used as migration input, not the desired target architecture.
+
+- `app/aiops/frontend/` is currently empty and becomes the React implementation location.
+- `app/aiops/app.py` Streamlit UI remains only until the React/CloudFront UI is validated.
+- `app/aiops/setup-iam.sh` and `app/aiops/deploy.sh` are deprecated for deployed resources once the Terraform stack exists.
+- Existing Lambda handlers and OpenAPI schemas may be reused, but they must be hardened and moved into the planned layout before deployment.
+
 ### Public hostname and DNS ownership
 
 The canonical AIOps UI hostname is:
@@ -84,10 +93,13 @@ The AIOps Terraform stack owns the Route 53 alias record for this hostname becau
 
 - The AIOps UI is public on the internet but usable only by authenticated Operators.
 - Use a dedicated Cognito User Pool for AIOps Operators.
+- Use Cognito Hosted UI with Authorization Code + PKCE for the SPA.
+- Do not configure a client secret for the SPA app client.
 - Do not reuse the vintage shop auth service.
 - Disable public self-signup.
 - Operator accounts are admin-created.
 - API Gateway validates Cognito JWTs.
+- API Gateway JWT authorizer audience must be the Cognito app client ID.
 - CORS allows only `https://aiops.hiraya.noidilin.dev`.
 
 ### API model
@@ -139,6 +151,7 @@ Validation:
 - Support multi-turn Diagnosis Sessions with browser-generated session IDs.
 - Use synchronous `POST /chat` for the first slice.
 - Do not implement token streaming yet.
+- `chat_proxy` may consume the Bedrock Agent Runtime response stream internally, but must return the synchronous JSON response above.
 - Store visible chat history only in browser state/localStorage.
 - Do not persist server-side transcripts.
 - The chat proxy Lambda logs metadata only: request ID, user subject or hash, session ID hash, message length, agent/alias IDs, latency, status, and error code.
@@ -149,8 +162,14 @@ Validation:
 - Build a focused chat UI, not a dashboard.
 - Create the React app under `app/aiops/frontend`.
 - Keep the existing Streamlit app only as a deprecated prototype until the React UI is validated; remove it afterwards.
+- Host static assets from a private S3 bucket with Block Public Access enabled.
+- Use CloudFront Origin Access Control, not public S3 website hosting.
+- Use SPA fallback to `index.html` for client-side routes.
 - React loads runtime config from `/config.json` in the S3/CloudFront distribution.
+- `/config.json` uses no-cache or a very short TTL.
 - Terraform or a deployment step writes deployment-specific config values such as API base URL, region, Cognito user pool ID, Cognito client ID, and Cognito domain.
+- Configure HTTPS redirect and security headers where practical.
+- Create a CloudFront invalidation after local/manual frontend deployment.
 - First slice uses manual/Terraform-local frontend deployment. Add GitHub Actions static frontend deployment later.
 
 ### Regions
@@ -171,6 +190,7 @@ Use `us-east-1` only for the ACM certificate required by CloudFront viewer TLS.
 
 - Terraform owns the Bedrock Agent, action groups, aliases, IAM roles, and Lambda permissions.
 - The foundation model is configurable through Terraform.
+- Validate model availability and access in `ap-northeast-1` before apply/demo.
 - Default demo model:
 
 ```hcl
@@ -178,6 +198,10 @@ bedrock_agent_model_id = "qwen.qwen3-32b-v1:0"
 ```
 
 - Run `prepare-agent` after configuration changes in the Terraform/module implementation path.
+- Create and track a real deployed alias for the chat proxy; do not use `TSTALIASID` for the deployed UI.
+- Bedrock Agent role must include the needed model invoke permissions, including streaming invoke if the runtime path requires it.
+- Lambda resource-based permissions for Bedrock must include confused-deputy protections scoped by `aws:SourceAccount` and `aws:SourceArn` for the agent.
+- Python Lambdas may need bundled recent `boto3`/`botocore` if the managed runtime SDK lags Bedrock Agent Runtime/API features.
 - Defer Bedrock Guardrails for the first slice.
 
 ### Lambda implementation
@@ -206,6 +230,14 @@ Use separate least-privilege IAM roles or policies per Lambda type:
 - `fetch_metrics`: read only the approved AIOps metric namespace/query surface.
 - `fetch_health`: read the target EKS cluster/node groups and approved AIOps metrics.
 
+Update the deployed OpenAPI schemas with the hardened tool surface:
+
+- Remove synthetic/demo defaults such as `/app/production`, `us-east-1`, `eu-north-1`, and `eks-cluster`.
+- Remove arbitrary CloudWatch namespace/dimension controls from `fetch_metrics`.
+- Describe only approved metric names and approved namespace/service filters.
+- Keep operation descriptions clear so the Bedrock Agent can select tools correctly.
+- Ensure schemas describe CloudWatch-backed ADOT metrics, not direct Prometheus access.
+
 ### Logs scope
 
 Restrict `fetch_logs` to approved log groups.
@@ -221,19 +253,25 @@ Restrict `fetch_metrics` to:
 - CloudWatch namespace `Hiraya/AIOps`
 - predefined metric names only
 - approved Kubernetes namespaces, initially `vintage`
+- known service/deployment names only
 
-Do not allow raw PromQL, raw Metrics Insights, or arbitrary CloudWatch query input from the agent.
+Do not allow raw PromQL, raw Metrics Insights, arbitrary metric namespace, arbitrary dimensions, or user-selected region from the agent.
+
+The current prototype directly queries Prometheus and allows raw PromQL fallback. The deployed implementation must replace that path with CloudWatch Metrics reads only.
 
 ### Health scope
 
 Restrict `fetch_health` to:
 
 - cluster `devops-hiraya-dev-eks`
+- region `ap-northeast-1`
 - approved namespaces, initially `vintage`
 - EKS `DescribeCluster`, `ListNodegroups`, and `DescribeNodegroup`
 - CloudWatch metrics in `Hiraya/AIOps`
 
 Do not call the Kubernetes API directly from Lambda in the first slice.
+
+The current prototype uses stale defaults and Prometheus-backed deployment/restart checks. The deployed implementation must use the approved cluster/region and CloudWatch-backed ADOT metrics instead.
 
 ### ADOT and metric export
 
@@ -258,8 +296,8 @@ DeploymentDesiredReplicas
 DeploymentAvailableReplicas
 DeploymentUnavailableReplicas
 PodRestartCount
-PodCpuUtilization
-PodMemoryUtilization
+PodCpuUtilization or PodCpuCores
+PodMemoryUtilization or PodMemoryWorkingSetBytes
 HttpRequestCount
 Http5xxCount
 HttpLatencyMs
@@ -274,7 +312,30 @@ Service or Deployment
 Environment
 ```
 
-Use `PodName` / `ContainerName` only where needed for restart/crash diagnosis. Avoid high-cardinality dimensions such as request IDs, user IDs, session IDs, or raw pod UID values.
+Use `PodName` / `ContainerName` only where needed for restart/crash diagnosis. Avoid high-cardinality dimensions such as request IDs, user IDs, session IDs, raw pod UID values, and raw HTTP paths.
+
+The current backend metrics include labels that can become high-cardinality, especially `route` when middleware falls back to `req.path`. ADOT config must drop, aggregate, or normalize `route` before CloudWatch export.
+
+Recommended source-to-target mapping:
+
+| Target CloudWatch metric | Source metric | Notes |
+| --- | --- | --- |
+| `HttpRequestCount` | `http_requests_total` | Count by service/status class, not raw path. |
+| `Http5xxCount` | `http_requests_total` filtered to 5xx status | Use status class grouping. |
+| `HttpLatencyMs` | `http_request_duration_seconds` | Define percentile/statistic and convert seconds to ms. |
+| `DeploymentDesiredReplicas` | kube-state-metrics desired replicas | Dimension by deployment. |
+| `DeploymentAvailableReplicas` | kube-state-metrics available replicas | Dimension by deployment. |
+| `DeploymentUnavailableReplicas` | kube-state-metrics unavailable replicas | Dimension by deployment. |
+| `PodRestartCount` | kube-state-metrics container restart counter | Define cumulative versus delta semantics. |
+| `PodCpuUtilization` / `PodCpuCores` | cAdvisor/kubelet CPU usage | Use utilization only after defining requests/limits. |
+| `PodMemoryUtilization` / `PodMemoryWorkingSetBytes` | cAdvisor/kubelet memory usage | Use utilization only after defining requests/limits. |
+
+CPU/memory utilization percentages are ambiguous until Kubernetes requests/limits are defined. Before implementing those metric names, choose one path:
+
+1. Add resource requests/limits in GitOps and define utilization relative to request/limit.
+2. Keep first-slice raw usage metrics named `PodCpuCores` and `PodMemoryWorkingSetBytes`.
+
+Discuss the requests/limits option before changing manifests because it can affect scheduling and runtime behavior.
 
 ### Backend service metrics alignment
 
@@ -291,16 +352,18 @@ user-service
 
 Standardize all backend Kubernetes Services to expose their HTTP port as `name: http`.
 
-Fix the observed `order-service` service mismatch:
+The previous `order-service` service port/targetPort mismatch is already corrected to `3004`; keep it correct and only add missing metrics-compatible names/labels as needed.
+
+Add scrape-selection labels to all backend Services. Recommended pattern:
 
 ```yaml
-ports:
-  - name: http
-    port: 3004
-    targetPort: 3004
+metadata:
+  labels:
+    app: <service-name>
+    hiraya.noidilin.dev/metrics: "true"
 ```
 
-Update the existing Prometheus `ServiceMonitor` to scrape all backend services too, so Prometheus/Grafana and ADOT/CloudWatch have consistent service coverage.
+Update the existing Prometheus `ServiceMonitor` selector from gateway-only to the shared metrics label, so Prometheus/Grafana and ADOT/CloudWatch have consistent service coverage.
 
 ### Ownership
 
@@ -346,40 +409,64 @@ aiops_allowed_namespaces = ["vintage"]
 
 Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC subnet outputs for Lambda networking. Do not consume the optional control-plane log group unless the platform output exists.
 
+### AIOps Terraform deployment model
+
+AIOps infrastructure is local-only for the first slice. Do not add `infra/envs/dev/aiops` to GitHub infra plan/apply workflows.
+
+Deploy from a local Terraform command:
+
+```bash
+cd infra/envs/dev/aiops
+terraform init -backend-config=backend.hcl
+terraform validate
+terraform plan
+terraform apply
+```
+
+The AIOps stack may still use the shared S3 backend pattern, but backend config should be generated or documented for local use. CI roles do not need to be expanded for AIOps while this stack stays local-only.
+
+If strict “out of CI” behavior is required, adjust infra workflow path filters so AIOps-only changes do not trigger static infra CI. The current broad `infra/**` trigger would otherwise run CI on AIOps changes even if apply remains local.
+
 ## Implementation phases
 
 ### Phase 1: Observability alignment in GitOps
 
-- Standardize backend Service ports with `name: http`.
-- Fix `order-service` Service port/targetPort to `3004`.
-- Update `ServiceMonitor` to scrape all backend services.
+- Add `ports[].name: http` to all backend Services that do not already have it.
+- Preserve `order-service` as `port: 3004` and `targetPort: 3004`.
+- Add the shared metrics label to all backend Services.
+- Update `ServiceMonitor` to select the shared metrics label and scrape all backend services.
 - Validate with `kubectl kustomize gitops`.
+- Also run `pnpm run app:gitops` if the custom render assertions are in scope for the change.
 
 ### Phase 2: Platform ADOT module
 
 - Add `infra/modules/adot`.
 - Create `adot` namespace.
-- Create ADOT IRSA role with CloudWatch metric/log publishing permissions scoped as tightly as practical.
+- Create ADOT IRSA role with CloudWatch metric publishing permissions scoped as tightly as practical.
 - Install ADOT Collector with Helm.
 - Configure the ADOT Collector Prometheus receiver to scrape selected in-cluster `/metrics` endpoints from backend services and Kubernetes health sources directly.
+- Drop/aggregate high-cardinality labels before export.
 - Export only the selected AIOps metric set to `Hiraya/AIOps`.
+- Choose raw CPU/memory usage metrics or add resource requests/limits before using utilization metrics.
 - Validate that private-node ADOT pods can reach required AWS APIs through the accepted dev egress path: private subnets -> single NAT Gateway -> CloudWatch/STS endpoints.
 - Add platform outputs consumed by the AIOps stack.
 
 ### Phase 3: Refactor AIOps tool Lambdas
 
-- `fetch_logs`: enforce log group allowlist and region/cluster defaults.
-- `fetch_metrics`: replace Prometheus HTTP calls with CloudWatch metric reads for predefined metric names.
+- `fetch_logs`: enforce log group allowlist, Terraform-configured region, bounded templates, max lookback, and max results.
+- `fetch_metrics`: replace Prometheus HTTP calls and raw PromQL fallback with CloudWatch metric reads for predefined metric names.
 - `fetch_health`: keep EKS describe calls and replace Prometheus reads with `Hiraya/AIOps` CloudWatch metrics.
 - Update schemas to describe CloudWatch-backed tools accurately.
+- Remove stale/demo deployed defaults.
 - Remove raw query behavior.
 
 ### Phase 4: Terraform-managed Bedrock Agent
 
 - Package action Lambda code.
 - Create least-privilege Lambda execution roles.
-- Create Bedrock Agent role with invoke permissions for action Lambdas and configured model.
-- Create Bedrock Agent/action groups from OpenAPI schemas.
+- Create Bedrock Agent role with action Lambda invoke permissions and configured model invoke permissions.
+- Create Bedrock Agent/action groups from hardened OpenAPI schemas.
+- Add Lambda permissions for Bedrock with source account and source ARN constraints.
 - Prepare the agent and create/track the alias used by the chat proxy.
 
 ### Phase 5: API and auth
@@ -393,16 +480,19 @@ Because AIOps Lambdas are outside the VPC, the AIOps stack should not need VPC s
 ### Phase 6: React frontend and CloudFront
 
 - Create `app/aiops/frontend` focused chat UI.
-- Add Cognito login flow.
-- Load `/config.json` at runtime.
-- Create S3 bucket, CloudFront distribution, CloudFront ACM cert in `us-east-1`, and Terraform-owned Route 53 alias.
+- Add Cognito Hosted UI Authorization Code + PKCE login flow.
+- Load `/config.json` at runtime with no-cache/short-TTL behavior.
+- Create private S3 bucket, CloudFront distribution with OAC, CloudFront ACM cert in `us-east-1`, and Terraform-owned Route 53 alias.
+- Configure SPA fallback, HTTPS redirect, and security headers where practical.
 - Deploy built static assets manually/Terraform-local for first slice.
+- Invalidate CloudFront after deployment.
 
 ### Phase 7: Documentation cleanup
 
-- Update `app/aiops/README.md` to remove Prometheus LoadBalancer instructions and mark Streamlit as deprecated prototype.
-- Update `docs/onboard.md` AIOps diagrams to show React/CloudFront/API Gateway and ADOT/CloudWatch metrics.
-- Update `docs/report-zhTW.md` if maintaining the project report.
+- Update the AIOps README to remove Prometheus LoadBalancer instructions.
+- Mark Streamlit and manual scripts as deprecated prototype paths.
+- Describe the CloudWatch/ADOT metric path and local Terraform AIOps deployment flow.
+- Update onboarding/report diagrams or prose if they still show the legacy Streamlit/Prometheus-direct path.
 - Document validation commands and demo prompts.
 
 ## Validation plan
@@ -412,6 +502,7 @@ Static/local validation:
 ```bash
 terraform fmt -recursive
 kubectl kustomize gitops
+pnpm run app:gitops
 ```
 
 From Platform Core:
@@ -447,26 +538,30 @@ aws logs describe-log-groups \
   --log-group-name-prefix /aws/eks/devops-hiraya-dev-eks/cluster
 ```
 
-AIOps stack validation:
+AIOps stack validation and local deploy:
 
 ```bash
 cd infra/envs/dev/aiops
 terraform init -backend-config=backend.hcl
 terraform validate
 terraform plan
+terraform apply
 ```
 
 Functional checks:
 
 - Cognito self-signup is disabled.
+- API Gateway JWT authorizer audience is the Cognito app client ID.
 - Unauthenticated `POST /chat` is rejected.
 - Authenticated `POST /chat` returns a Kira response.
 - Browser can load `https://aiops.hiraya.noidilin.dev/config.json`.
 - CloudFront serves React UI with valid TLS.
+- CloudFront uses a private S3 origin through OAC, not public S3 website hosting.
+- SPA fallback returns `index.html` for client-side routes.
 - `aiops.hiraya.noidilin.dev` is a Terraform-owned CloudFront alias, not an ExternalDNS-owned ALB record.
 - Lambda logs contain metadata only, not full prompts/responses.
-- `fetch_logs` rejects unapproved log groups.
-- `fetch_metrics` rejects unknown metric names or unapproved namespaces.
+- `fetch_logs` rejects unapproved log groups, regions, and unbounded queries.
+- `fetch_metrics` rejects unknown metric names, arbitrary namespaces, arbitrary dimensions, and raw queries.
 - `fetch_health` rejects unapproved cluster/namespace values.
 - Kira can answer demo prompts:
   - Why are we seeing 503 errors?
@@ -483,6 +578,7 @@ Functional checks:
 - Token streaming, SSE, or WebSockets.
 - Server-side chat transcript persistence.
 - AIOps frontend GitHub Actions deployment.
+- CI-managed AIOps Terraform plan/apply.
 - Direct Prometheus queries from Lambda.
 - Public or internal Prometheus load balancers for AIOps.
 - Lambda VPC networking for AIOps tools.

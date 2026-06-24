@@ -8,6 +8,10 @@ This context defines the project-specific language used to describe the portfoli
 The public demo commerce experience in Hiraya where visitors browse vintage products and place orders.
 _Avoid_: frontend, current frontend, vintage frontend
 
+**Hiraya Furugi**:
+The customer-facing brand presented inside the Vintage Storefront.
+_Avoid_: new frontend, FE rewrite, store frontend
+
 **Kira**:
 The AI-assisted SRE persona that helps diagnose incidents by explaining likely root causes, supporting evidence, immediate fixes, and prevention steps.
 _Avoid_: chatbot, bot, generic assistant
