@@ -213,31 +213,6 @@ jobs:
         shell: bash
         run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" apply -input=false -auto-approve tfplan.binary
 
-      - name: wait-for-gitops-applications-through-kubernetes
-        shell: bash
-        run: |
-          set -euo pipefail
-          .github/scripts/write-terraform-backend.sh platform-core
-          terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
-          cluster_name=$(terraform -chdir="${PLATFORM_DIR}" output -raw cluster_name)
-          aws eks update-kubeconfig --region "${AWS_REGION}" --name "$cluster_name" >/dev/null
-
-          for attempt in {1..60}; do
-            kubectl get applications.argoproj.io -n argocd hiraya-root platform-namespaces platform-gateway-api-crds platform-aws-load-balancer-controller platform-external-dns platform-external-secrets platform-edge platform-logging platform-monitoring platform-argocd-access vintage >/tmp/hiraya-argocd-apps.txt 2>&1 && break
-            if [[ "$attempt" == "60" ]]; then
-              cat /tmp/hiraya-argocd-apps.txt >&2
-              exit 1
-            fi
-            sleep 10
-          done
-
-          cat /tmp/hiraya-argocd-apps.txt
-          kubectl get applications.argoproj.io -n argocd
-
-      - name: run-platform-route-smoke-checks
-        shell: bash
-        run: .github/scripts/platform-route-smoke.sh
-
       - name: summarize-cluster-bootstrap
         if: always()
         shell: bash
@@ -251,5 +226,59 @@ jobs:
             echo "| Commit | \`${GITHUB_SHA}\` |"
             echo "| Result | \`${{ job.status }}\` |"
             echo
-            echo "Cluster Bootstrap installed Argo CD/root GitOps and validated convergence via Kubernetes plus public route smoke checks. No Argo CD API credentials are used."
+            echo "Cluster Bootstrap installed Argo CD/root GitOps. The dedicated smoke job validates GitOps convergence through Kubernetes plus public route checks without Argo CD API credentials."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  smoke-dev-platform:
+    name: smoke-dev-platform
+    needs: apply-cluster-bootstrap
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: configure-aws-credentials-with-cluster-bootstrap-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.CLUSTER_BOOTSTRAP_ROLE_ARN }}
+          role-session-name: hiraya-platform-smoke-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: initialize-platform-core-state-for-smoke-outputs
+        shell: bash
+        run: |
+          .github/scripts/write-terraform-backend.sh platform-core
+          terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: run-platform-route-smoke-checks
+        shell: bash
+        run: .github/scripts/platform-route-smoke.sh
+
+      - name: summarize-platform-smoke
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Dev Platform smoke"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack outputs | \`${PLATFORM_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Result | \`${{ job.status }}\` |"
+            echo
+            echo "Validated Argo Application sync/health, required namespaces, Gateway/HTTPRoute readiness, and public routes using the Cluster Bootstrap role. No Argo CD API credentials are used."
           } >> "$GITHUB_STEP_SUMMARY"

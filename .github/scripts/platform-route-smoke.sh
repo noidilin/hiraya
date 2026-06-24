@@ -4,6 +4,30 @@ set -euo pipefail
 AWS_REGION="${AWS_REGION:-ap-northeast-1}"
 PLATFORM_DIR="${PLATFORM_DIR:-infra/envs/dev/platform-core}"
 
+ARGO_APPLICATIONS=(
+  hiraya-root
+  platform-namespaces
+  platform-gateway-api-crds
+  platform-aws-load-balancer-controller
+  platform-external-dns
+  platform-external-secrets
+  platform-edge
+  platform-logging
+  platform-monitoring
+  platform-argocd-access
+  vintage
+)
+
+REQUIRED_NAMESPACES=(
+  argocd
+  edge
+  monitoring
+  vintage
+  external-dns
+  external-secrets
+  amazon-cloudwatch
+)
+
 require_output() {
   local name="$1"
   local value
@@ -13,6 +37,60 @@ require_output() {
     exit 1
   fi
   printf '%s' "$value"
+}
+
+wait_for_argocd_application() {
+  local app_name="$1"
+  local attempts="${2:-60}"
+  local delay_seconds="${3:-10}"
+
+  echo "Waiting for Argo Application ${app_name} to be Synced and Healthy."
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    local sync_status health_status
+    sync_status=$(kubectl get applications.argoproj.io -n argocd "$app_name" -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
+    health_status=$(kubectl get applications.argoproj.io -n argocd "$app_name" -o jsonpath='{.status.health.status}' 2>/dev/null || true)
+
+    if [[ "$sync_status" == "Synced" && "$health_status" == "Healthy" ]]; then
+      echo "Argo Application ${app_name} is Synced and Healthy."
+      return 0
+    fi
+
+    if (( attempt == attempts )); then
+      echo "Argo Application ${app_name} did not converge. sync=${sync_status:-missing} health=${health_status:-missing}" >&2
+      kubectl get applications.argoproj.io -n argocd "$app_name" -o yaml >&2 || true
+      return 1
+    fi
+
+    echo "Waiting for ${app_name} (${attempt}/${attempts}); sync=${sync_status:-missing} health=${health_status:-missing}."
+    sleep "$delay_seconds"
+  done
+}
+
+wait_for_http_routes_accepted() {
+  local attempts="${1:-30}"
+  local delay_seconds="${2:-20}"
+
+  echo "Waiting for all HTTPRoutes to report Accepted=True."
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    local routes_json route_count accepted_count
+    routes_json=$(kubectl get httproute -A -o json 2>/dev/null || true)
+    route_count=$(jq '.items | length' <<<"${routes_json:-{\"items\":[]}}")
+    accepted_count=$(jq '[.items[] | select(any(.status.parents[]?.conditions[]?; .type == "Accepted" and .status == "True"))] | length' <<<"${routes_json:-{\"items\":[]}}")
+
+    if (( route_count > 0 && accepted_count == route_count )); then
+      echo "All ${route_count} HTTPRoutes are Accepted."
+      return 0
+    fi
+
+    if (( attempt == attempts )); then
+      echo "HTTPRoutes did not all become Accepted. accepted=${accepted_count} total=${route_count}" >&2
+      kubectl get httproute -A -o yaml >&2 || true
+      return 1
+    fi
+
+    echo "Waiting for HTTPRoutes (${attempt}/${attempts}); accepted=${accepted_count} total=${route_count}."
+    sleep "$delay_seconds"
+  done
 }
 
 wait_for_http_route() {
@@ -56,19 +134,30 @@ GRAFANA_URL="https://${GRAFANA_HOSTNAME}"
 echo "Updating kubeconfig for EKS cluster ${CLUSTER_NAME} in ${AWS_REGION}."
 aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME" >/dev/null
 
-echo "Verifying EKS API and node reachability."
+echo "Verifying EKS API and node readiness."
 kubectl get nodes -o wide
+kubectl wait node --all --for=condition=Ready --timeout=10m
+
+echo "Verifying Argo CD Applications through Kubernetes."
+for app_name in "${ARGO_APPLICATIONS[@]}"; do
+  wait_for_argocd_application "$app_name"
+done
+kubectl get applications.argoproj.io -n argocd
+
+echo "Verifying expected namespaces are visible."
+for namespace in "${REQUIRED_NAMESPACES[@]}"; do
+  kubectl get namespace "$namespace" --show-labels
+done
 
 echo "Verifying core Kubernetes workload visibility."
 kubectl get pods -A
 
-echo "Verifying shared Gateway visibility."
+echo "Verifying shared Gateway readiness."
 kubectl get gateway -A
 kubectl get httproute -A
+kubectl wait gateway -n "$EDGE_GATEWAY_NAMESPACE" "$EDGE_GATEWAY_NAME" --for=condition=Programmed --timeout=10m
 kubectl get gateway -n "$EDGE_GATEWAY_NAMESPACE" "$EDGE_GATEWAY_NAME" -o wide
-
-echo "Verifying expected namespaces are visible."
-kubectl get namespace vintage argocd monitoring --show-labels
+wait_for_http_routes_accepted
 
 # Do not read or print sensitive Terraform outputs such as Argo CD or Grafana admin passwords.
 wait_for_http_route "Vintage Storefront" "$APP_URL" "200 204 301 302"
