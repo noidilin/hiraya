@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-rendered.yaml
           node .github/scripts/dist/assert-gitops-render.mjs --rendered /tmp/hiraya-gitops-rendered.yaml
 
   run-app-baseline:

@@ -77,11 +77,10 @@ const appBaselineGlobalImpactPatterns = [
   '.github/scripts/dist/detect-changed-services.mjs',
   '.github/scripts/src/assert-gitops-render.mts',
   '.github/scripts/dist/assert-gitops-render.mjs',
-  'gitops/k8s/backend/**',
-  'gitops/k8s/frontend/**',
-  'gitops/kustomization.yml',
-  'gitops/namespace.yml',
-  'gitops/secrets.yml',
+  'gitops/apps/vintage/k8s/backend/**',
+  'gitops/apps/vintage/k8s/frontend/**',
+  'gitops/apps/vintage/kustomization.yml',
+  'gitops/apps/vintage/external-secret.yml',
 ];
 
 const imageFanoutImpactPatterns = [

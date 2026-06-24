@@ -323,7 +323,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-rendered.yaml
 
       - name: commit-manifest-updates
         id: commit-manifests

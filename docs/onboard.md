@@ -77,7 +77,7 @@ build-and-push (7 parallel jobs)
      │
      ▼
 update-manifests
-  └── Updates image tags in gitops/k8s/
+  └── Updates image tags in gitops/apps/vintage/k8s/
   └── Commits back to main
 ```
 
@@ -86,7 +86,7 @@ update-manifests
 Each backend service exposes a `/metrics` endpoint (Node.js `prom-client`). A `ServiceMonitor` resource tells Prometheus where to scrape:
 
 ```yaml
-# gitops/k8s/backend/service-monitor.yml
+# gitops/apps/vintage/k8s/backend/service-monitor.yml
 spec:
   namespaceSelector:
     matchNames:
@@ -104,7 +104,7 @@ The `ServiceMonitor` has the label `release: kube-prometheus-stack` which is how
 
 ## How the dashboard is pre-loaded in Grafana
 
-The dashboard lives in `gitops/k8s/grafana-dashboard.yml` as a `ConfigMap`. It has the label:
+The dashboard lives in `gitops/apps/vintage/k8s/grafana-dashboard.yml` as a `ConfigMap`. It has the label:
 
 ```yaml
 labels:
@@ -231,7 +231,7 @@ flowchart TD
 
     B1 & B2 & B3 & B4 & B5 & B6 & B7 --> Push2[Push all images to ECR]
     Push2 --> UM[update-manifests job]
-    UM --> |Updates image tags in gitops/k8s/| Commit[Commits back to main]
+    UM --> |Updates image tags in gitops/apps/vintage/k8s/| Commit[Commits back to main]
 ```
 
 **Key concepts:**
@@ -308,8 +308,9 @@ sequenceDiagram
 **Key files:**
 
 - `infra/modules/argocd/application.yml` — ArgoCD Application spec installed by the `argocd-gitops-application` Helm release during platform provisioning
-- `gitops/kustomization.yml` — lists all Kubernetes resources to apply, including the dev database restore Job
-- `gitops/k8s/` — all service deployments, services, database, secrets
+- `gitops/apps/vintage/kustomization.yml` — lists all Kubernetes resources to apply, including the dev database restore Job
+- `gitops/apps/vintage/k8s/` — Vintage service deployments, services, and reset-on-rebuild database resources
+- `gitops/apps/vintage/external-secret.yml` — maps the durable AWS Secrets Manager Vintage secret into the runtime Kubernetes Secret through ESO
 
 ---
 

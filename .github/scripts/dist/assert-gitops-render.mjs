@@ -128,7 +128,7 @@ async function loadRendered(options) {
     if (options.renderedPath) {
         return readFile(options.renderedPath, 'utf8');
     }
-    const result = spawnSync('kubectl', ['kustomize', 'gitops'], {
+    const result = spawnSync('kubectl', ['kustomize', 'gitops/apps/vintage'], {
         cwd: options.root,
         encoding: 'utf8',
     });
@@ -136,7 +136,7 @@ async function loadRendered(options) {
         throw new Error(`Failed to run kubectl kustomize gitops: ${result.error.message}`);
     }
     if (result.status !== 0) {
-        throw new Error(`kubectl kustomize gitops failed:\n${result.stderr}`);
+        throw new Error(`kubectl kustomize gitops/apps/vintage failed:\n${result.stderr}`);
     }
     return result.stdout;
 }

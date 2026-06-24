@@ -12,7 +12,7 @@
         "dockerfile": "app/microservices/backend/services/auth/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/auth.yml"
+        "path": "gitops/apps/vintage/k8s/backend/auth.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/auth/**",
@@ -41,7 +41,7 @@
         "dockerfile": "app/microservices/backend/services/gateway/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/gateway.yml"
+        "path": "gitops/apps/vintage/k8s/backend/gateway.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/gateway/**",
@@ -70,7 +70,7 @@
         "dockerfile": "app/microservices/backend/services/orders/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/orders.yml"
+        "path": "gitops/apps/vintage/k8s/backend/orders.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/orders/**",
@@ -99,7 +99,7 @@
         "dockerfile": "app/microservices/backend/services/order-service/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/order-service.yml"
+        "path": "gitops/apps/vintage/k8s/backend/order-service.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/order-service/**",
@@ -127,7 +127,7 @@
         "dockerfile": "app/microservices/backend/services/product-service/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/product-service.yml"
+        "path": "gitops/apps/vintage/k8s/backend/product-service.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/product-service/**",
@@ -156,7 +156,7 @@
         "dockerfile": "app/microservices/backend/services/user-service/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/backend/user-service.yml"
+        "path": "gitops/apps/vintage/k8s/backend/user-service.yml"
       },
       "pathOwnership": [
         "app/microservices/backend/services/user-service/**",
@@ -184,7 +184,7 @@
         "dockerfile": "app/microservices/frontend/Dockerfile"
       },
       "manifest": {
-        "path": "gitops/k8s/frontend/deployment.yml"
+        "path": "gitops/apps/vintage/k8s/frontend/deployment.yml"
       },
       "pathOwnership": [
         "app/microservices/frontend/**",

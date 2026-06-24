@@ -22,7 +22,7 @@ async function createCatalogFixture() {
         workspace: 'app/microservices/frontend',
         repository: 'hiraya-frontend',
         dockerfile: 'app/microservices/frontend/Dockerfile',
-        manifest: 'gitops/k8s/frontend/deployment.yml',
+        manifest: 'gitops/apps/vintage/k8s/frontend/deployment.yml',
         pathOwnership: [
           'app/microservices/frontend/**',
           'app/microservices/shared/**',
@@ -37,7 +37,7 @@ async function createCatalogFixture() {
         workspace: 'app/microservices/backend/services/auth',
         repository: 'hiraya-auth',
         dockerfile: 'app/microservices/backend/services/auth/Dockerfile',
-        manifest: 'gitops/k8s/backend/auth.yml',
+        manifest: 'gitops/apps/vintage/k8s/backend/auth.yml',
         pathOwnership: [
           'app/microservices/backend/services/auth/**',
           'app/microservices/backend/shared/**',
@@ -50,7 +50,7 @@ async function createCatalogFixture() {
         workspace: 'app/microservices/backend/services/orders',
         repository: 'hiraya-orders',
         dockerfile: 'app/microservices/backend/services/orders/Dockerfile',
-        manifest: 'gitops/k8s/backend/orders.yml',
+        manifest: 'gitops/apps/vintage/k8s/backend/orders.yml',
         pathOwnership: [
           'app/microservices/backend/services/orders/**',
           'app/microservices/backend/shared/**',
@@ -110,7 +110,7 @@ test('emits a GitHub Actions matrix for a changed frontend file', async () => {
     repository: 'hiraya-frontend',
     build_context: '.',
     dockerfile: 'app/microservices/frontend/Dockerfile',
-    manifest: 'gitops/k8s/frontend/deployment.yml',
+    manifest: 'gitops/apps/vintage/k8s/frontend/deployment.yml',
     critical: true,
   });
 });

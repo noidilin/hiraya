@@ -176,7 +176,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-rendered.yaml
 
       - name: publish-rollback-summary
         env:
@@ -293,7 +293,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl kustomize gitops >/tmp/hiraya-gitops-rendered.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-rendered.yaml
 
       - name: commit-rollback
         id: commit-rollback

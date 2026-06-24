@@ -126,6 +126,31 @@ test('Logging and monitoring platform apps use Terraform-owned secrets and log g
   assert.match(grafanaRoute, /name:\s*kube-prometheus-stack-grafana/, 'Grafana route should target the chart Grafana Service');
 });
 
+test('Vintage workload is a GitOps app backed by ESO secrets', () => {
+  const root = render('gitops/clusters/dev/root');
+  const app = byKindName(root, 'Application', 'vintage');
+
+  assert.match(app, /argocd\.argoproj\.io\/sync-wave:\s*['"]?0['"]?/, 'Vintage should sync after platform prerequisites');
+  assert.match(app, /project:\s*hiraya-workloads/, 'Vintage should use the workload AppProject');
+  assert.match(app, /path:\s*gitops\/apps\/vintage/, 'Vintage should target the workload GitOps app tree');
+  assert.match(app, /namespace:\s*vintage/, 'Vintage should deploy to the platform-granted vintage namespace');
+  assert.match(app, /prune:\s*true/, 'Vintage should enable automated prune');
+  assert.match(app, /selfHeal:\s*true/, 'Vintage should enable automated self-heal');
+
+  const rendered = render('gitops/apps/vintage');
+  assert.equal(docs(rendered).some((doc) => kind(doc) === 'Namespace' && metadataName(doc) === 'vintage'), false, 'Vintage app must not own its public namespace');
+  assert.equal(docs(rendered).some((doc) => kind(doc) === 'Secret' && metadataName(doc) === 'vintage-secrets'), false, 'Vintage app must not commit a plaintext Kubernetes Secret');
+
+  const externalSecret = byKindName(rendered, 'ExternalSecret', 'vintage-secrets');
+  assert.match(externalSecret, /hiraya-dev-secrets-manager/, 'Vintage runtime secrets should come from the shared ESO ClusterSecretStore');
+  assert.match(externalSecret, /\/hiraya\/dev\/apps\/vintage/, 'Vintage runtime secrets should reference the durable Secrets Manager secret name');
+
+  byKindName(rendered, 'HTTPRoute', 'frontend');
+  byKindName(rendered, 'ServiceMonitor', 'vintage-services');
+  byKindName(rendered, 'ConfigMap', 'grafana-dashboards');
+  byKindName(rendered, 'StatefulSet', 'vintage-postgres');
+});
+
 test('Gateway API and AWS Load Balancer Controller CRDs are vendored and no-prune protected', () => {
   const rendered = render('gitops/platform/gateway-api-crds');
   const crdNames = [
