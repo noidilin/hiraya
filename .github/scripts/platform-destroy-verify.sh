@@ -8,6 +8,7 @@ VPC_ID="${VPC_ID:-}"
 EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
 K8S_EBS_CLEANUP_VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
 HIRAYA_EBS_CLUSTER_TAG_KEY="${HIRAYA_EBS_CLUSTER_TAG_KEY:-HirayaCluster}"
+DURABLE_VINTAGE_SECRET_ID="${DURABLE_VINTAGE_SECRET_ID:-/hiraya/dev/apps/vintage}"
 
 ECR_REPOSITORIES=(
   hiraya-frontend
@@ -167,5 +168,10 @@ echo "Verifying durable ECR repositories remain accessible"
 aws ecr describe-repositories \
   --region "$AWS_REGION" \
   --repository-names "${ECR_REPOSITORIES[@]}" >/dev/null
+
+echo "Verifying durable Vintage Storefront secret remains accessible: ${DURABLE_VINTAGE_SECRET_ID}"
+aws secretsmanager describe-secret \
+  --region "$AWS_REGION" \
+  --secret-id "$DURABLE_VINTAGE_SECRET_ID" >/dev/null
 
 echo "Dev platform destroy verification passed. Disposable platform is gone and durable bootstrap resources remain."

@@ -5,15 +5,16 @@ AWS_REGION="${AWS_REGION:-ap-northeast-1}"
 CLUSTER_NAME="${CLUSTER_NAME:-}"
 APP_NAMESPACE="${K8S_APP_NAMESPACE:-vintage}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
-ARGOCD_APPLICATION="${ARGOCD_APPLICATION:-vintage}"
-CLUSTER_ADMIN_PRINCIPAL_ARN="${CLUSTER_ADMIN_PRINCIPAL_ARN:-}"
-EKS_CLUSTER_ADMIN_POLICY_ARN="arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+ROOT_ARGOCD_APPLICATION="${ROOT_ARGOCD_APPLICATION:-hiraya-root}"
+EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
+EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
+EXTERNAL_DNS_HOSTNAMES="${EXTERNAL_DNS_HOSTNAMES:-hiraya.noidilin.dev argocd.hiraya.noidilin.dev grafana.hiraya.noidilin.dev}"
 WAIT_ATTEMPTS="${K8S_EBS_CLEANUP_WAIT_ATTEMPTS:-60}"
 WAIT_DELAY_SECONDS="${K8S_EBS_CLEANUP_WAIT_DELAY_SECONDS:-10}"
 VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
 
 if [[ -z "$CLUSTER_NAME" ]]; then
-  echo "CLUSTER_NAME is required for Kubernetes EBS cleanup." >&2
+  echo "CLUSTER_NAME is required for ordered GitOps cleanup." >&2
   exit 1
 fi
 
@@ -39,9 +40,7 @@ wait_until() {
 }
 
 cluster_is_active() {
-  local output
-  local status
-  local exit_code
+  local output status exit_code
 
   set +e
   output=$(aws eks describe-cluster \
@@ -57,22 +56,36 @@ cluster_is_active() {
       return 1
     fi
 
-    echo "Failed to describe EKS cluster ${CLUSTER_NAME}; refusing to skip Kubernetes EBS cleanup on an ambiguous AWS API error:" >&2
+    echo "Failed to describe EKS cluster ${CLUSTER_NAME}; refusing to skip GitOps cleanup on an ambiguous AWS API error:" >&2
     echo "$output" >&2
     exit "$exit_code"
   fi
 
   status=$(awk 'NF { print $1; exit }' <<<"$output")
   if [[ -z "$status" || "$status" == "None" ]]; then
-    echo "EKS describe-cluster returned an empty status for ${CLUSTER_NAME}; refusing to skip Kubernetes EBS cleanup." >&2
+    echo "EKS describe-cluster returned an empty status for ${CLUSTER_NAME}; refusing to skip GitOps cleanup." >&2
     exit 1
   fi
 
   [[ "$status" == "ACTIVE" ]]
 }
 
+kubernetes_api_accessible() {
+  kubectl get namespace default >/dev/null 2>&1
+}
+
+argocd_app_crd_available() {
+  kubectl get crd applications.argoproj.io >/dev/null 2>&1 && kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1
+}
+
+application_gone() {
+  local app_name="$1"
+  ! kubectl get application.argoproj.io "$app_name" --namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1
+}
+
 namespace_gone() {
-  ! kubectl get namespace "$APP_NAMESPACE" >/dev/null 2>&1
+  local namespace="$1"
+  ! kubectl get namespace "$namespace" >/dev/null 2>&1
 }
 
 app_namespace_pvs_gone() {
@@ -83,55 +96,9 @@ app_namespace_pvs_gone() {
   [[ "$remaining" == "0" ]]
 }
 
-ensure_cluster_admin_access() {
-  local output
-  local exit_code
-
-  if [[ -z "$CLUSTER_ADMIN_PRINCIPAL_ARN" ]]; then
-    echo "CLUSTER_ADMIN_PRINCIPAL_ARN is not set; assuming the current principal already has Kubernetes admin access."
-    return 0
-  fi
-
-  echo "Ensuring ${CLUSTER_ADMIN_PRINCIPAL_ARN} has cluster-scoped EKS admin access for cleanup."
-
-  set +e
-  output=$(aws eks create-access-entry \
-    --region "$AWS_REGION" \
-    --cluster-name "$CLUSTER_NAME" \
-    --principal-arn "$CLUSTER_ADMIN_PRINCIPAL_ARN" \
-    --type STANDARD 2>&1)
-  exit_code=$?
-  set -e
-
-  if [[ "$exit_code" -ne 0 && ! "$output" =~ ResourceInUseException ]]; then
-    echo "$output" >&2
-    return "$exit_code"
-  fi
-
-  set +e
-  output=$(aws eks associate-access-policy \
-    --region "$AWS_REGION" \
-    --cluster-name "$CLUSTER_NAME" \
-    --principal-arn "$CLUSTER_ADMIN_PRINCIPAL_ARN" \
-    --policy-arn "$EKS_CLUSTER_ADMIN_POLICY_ARN" \
-    --access-scope type=cluster 2>&1)
-  exit_code=$?
-  set -e
-
-  if [[ "$exit_code" -ne 0 && ! "$output" =~ ResourceInUseException ]]; then
-    echo "$output" >&2
-    return "$exit_code"
-  fi
-}
-
-kubernetes_api_accessible() {
-  kubectl get namespace default >/dev/null 2>&1
-}
-
 volume_deleted() {
   local volume_id="$1"
-  local output
-  local exit_code
+  local output exit_code
 
   set +e
   output=$(aws ec2 describe-volumes \
@@ -180,19 +147,118 @@ capture_app_namespace_ebs_volume_ids() {
     | sort -u
 }
 
+load_balancer_gone() {
+  ! aws elbv2 describe-load-balancers \
+    --region "$AWS_REGION" \
+    --names "$EDGE_LOAD_BALANCER_NAME" \
+    --query 'LoadBalancers[0].State.Code' \
+    --output text >/dev/null 2>&1
+}
+
+external_dns_records_gone() {
+  if [[ -z "$EXTERNAL_DNS_HOSTED_ZONE_ID" ]]; then
+    echo "EXTERNAL_DNS_HOSTED_ZONE_ID is empty; cannot verify Route 53 cleanup." >&2
+    return 1
+  fi
+
+  local hostname record_count
+  for hostname in $EXTERNAL_DNS_HOSTNAMES; do
+    [[ -n "$hostname" ]] || continue
+    record_count=$(aws route53 list-resource-record-sets \
+      --hosted-zone-id "$EXTERNAL_DNS_HOSTED_ZONE_ID" \
+      --query "length(ResourceRecordSets[?Name == '${hostname}.'])" \
+      --output text)
+    if [[ "$record_count" != "0" ]]; then
+      echo "ExternalDNS record for ${hostname} still exists in hosted zone ${EXTERNAL_DNS_HOSTED_ZONE_ID}."
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+suspend_root_application() {
+  if ! argocd_app_crd_available; then
+    echo "Argo CD Application CRD or namespace is absent; skipping root Application suspension."
+    return 0
+  fi
+
+  if ! kubectl get application.argoproj.io "$ROOT_ARGOCD_APPLICATION" --namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; then
+    echo "Root Argo CD Application ${ARGOCD_NAMESPACE}/${ROOT_ARGOCD_APPLICATION} is already absent."
+    return 0
+  fi
+
+  echo "Suspending root Argo CD Application ${ARGOCD_NAMESPACE}/${ROOT_ARGOCD_APPLICATION} and deleting it without cascading child resources."
+  kubectl patch application.argoproj.io "$ROOT_ARGOCD_APPLICATION" \
+    --namespace "$ARGOCD_NAMESPACE" \
+    --type merge \
+    --patch '{"spec":{"syncPolicy":null},"metadata":{"finalizers":null}}' >/dev/null
+  kubectl delete application.argoproj.io "$ROOT_ARGOCD_APPLICATION" \
+    --namespace "$ARGOCD_NAMESPACE" \
+    --ignore-not-found=true \
+    --wait=false
+  wait_until "root Argo CD Application ${ROOT_ARGOCD_APPLICATION} to be deleted without cascading children" application_gone "$ROOT_ARGOCD_APPLICATION"
+}
+
+delete_child_application() {
+  local app_name="$1"
+
+  if ! argocd_app_crd_available; then
+    echo "Argo CD Application CRD or namespace is absent; skipping child Application ${app_name}."
+    return 0
+  fi
+
+  if ! kubectl get application.argoproj.io "$app_name" --namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; then
+    echo "Child Argo CD Application ${ARGOCD_NAMESPACE}/${app_name} is already absent."
+    return 0
+  fi
+
+  echo "Deleting child Argo CD Application ${ARGOCD_NAMESPACE}/${app_name}."
+  kubectl delete application.argoproj.io "$app_name" \
+    --namespace "$ARGOCD_NAMESPACE" \
+    --ignore-not-found=true \
+    --wait=false
+  wait_until "child Argo CD Application ${app_name} to prune and disappear" application_gone "$app_name"
+}
+
+wait_for_vintage_storage_cleanup() {
+  if kubectl get namespace "$APP_NAMESPACE" >/dev/null 2>&1; then
+    echo "Deleting Vintage namespace ${APP_NAMESPACE} after workload Application prune to release PVCs."
+    kubectl delete namespace "$APP_NAMESPACE" --ignore-not-found=true --wait=false
+    wait_until "namespace ${APP_NAMESPACE} to be deleted" namespace_gone "$APP_NAMESPACE"
+  else
+    echo "Vintage namespace ${APP_NAMESPACE} is already absent."
+  fi
+
+  wait_until "PVs claimed by namespace ${APP_NAMESPACE} to be deleted" app_namespace_pvs_gone
+
+  if [[ -s "$volume_ids_file" ]]; then
+    while IFS= read -r volume_id; do
+      [[ -n "$volume_id" ]] || continue
+      wait_until "EBS volume ${volume_id} to be deleted by the Kubernetes reclaim policy" volume_deleted "$volume_id"
+    done <"$volume_ids_file"
+  fi
+}
+
+wait_for_alb_cleanup() {
+  wait_until "shared public ALB ${EDGE_LOAD_BALANCER_NAME} to be deleted by AWS Load Balancer Controller" load_balancer_gone
+}
+
+wait_for_external_dns_cleanup() {
+  wait_until "ExternalDNS-managed public Route 53 records to be deleted" external_dns_records_gone
+}
+
 if ! cluster_is_active; then
-  echo "EKS cluster ${CLUSTER_NAME} is not ACTIVE or is already gone; skipping Kubernetes EBS cleanup."
+  echo "EKS cluster ${CLUSTER_NAME} is not ACTIVE or is already gone; skipping ordered GitOps cleanup."
   exit 0
 fi
-
-ensure_cluster_admin_access
 
 aws eks update-kubeconfig \
   --region "$AWS_REGION" \
   --name "$CLUSTER_NAME" \
   --alias "$CLUSTER_NAME" >/dev/null
 
-wait_until "Kubernetes API access for cleanup" kubernetes_api_accessible
+wait_until "Kubernetes API access for ordered GitOps cleanup" kubernetes_api_accessible
 
 cleanup_volume_ids_file=false
 if [[ -n "$VOLUME_IDS_FILE" ]]; then
@@ -216,31 +282,24 @@ else
   echo "No existing EBS-backed PVs found for namespace ${APP_NAMESPACE}."
 fi
 
-if kubectl get crd applications.argoproj.io >/dev/null 2>&1 && kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; then
-  echo "Deleting Argo CD Application ${ARGOCD_NAMESPACE}/${ARGOCD_APPLICATION} to stop GitOps reconciliation before namespace cleanup."
-  kubectl delete application.argoproj.io "$ARGOCD_APPLICATION" \
-    --namespace "$ARGOCD_NAMESPACE" \
-    --ignore-not-found=true \
-    --wait=false
-else
-  echo "Argo CD Application CRD or namespace is absent; skipping Application deletion."
-fi
+suspend_root_application
 
-if kubectl get namespace "$APP_NAMESPACE" >/dev/null 2>&1; then
-  echo "Deleting application namespace ${APP_NAMESPACE}; this deletes its PVCs before Terraform removes EKS."
-  kubectl delete namespace "$APP_NAMESPACE" --ignore-not-found=true --wait=false
-  wait_until "namespace ${APP_NAMESPACE} to be deleted" namespace_gone
-else
-  echo "Application namespace ${APP_NAMESPACE} is already absent."
-fi
+# Workloads and routes first, while controllers are still reconciling cleanup.
+delete_child_application vintage
+wait_for_vintage_storage_cleanup
 
-wait_until "PVs claimed by namespace ${APP_NAMESPACE} to be deleted" app_namespace_pvs_gone
+delete_child_application platform-argocd-access
+delete_child_application platform-monitoring
+delete_child_application platform-edge
+wait_for_alb_cleanup
+wait_for_external_dns_cleanup
 
-if [[ -s "$volume_ids_file" ]]; then
-  while IFS= read -r volume_id; do
-    [[ -n "$volume_id" ]] || continue
-    wait_until "EBS volume ${volume_id} to be deleted by the Kubernetes reclaim policy" volume_deleted "$volume_id"
-  done <"$volume_ids_file"
-fi
+# Non-edge platform add-ons after controller-managed cloud resources are gone.
+delete_child_application platform-logging
+delete_child_application platform-external-secrets
+delete_child_application platform-external-dns
+delete_child_application platform-aws-load-balancer-controller
+delete_child_application platform-namespaces
+delete_child_application platform-gateway-api-crds
 
-echo "Kubernetes EBS pre-destroy cleanup completed."
+echo "Ordered GitOps pre-destroy cleanup completed."
