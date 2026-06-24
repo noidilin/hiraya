@@ -1,0 +1,7 @@
+serviceAccount:
+  create: true
+  name: external-secrets
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::549475122024:role/devops-hiraya-dev-eks-external-secrets
+
+installCRDs: true

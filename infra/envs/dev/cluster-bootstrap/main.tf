@@ -78,7 +78,7 @@ resource "kubernetes_manifest" "platform_project" {
     }
     spec = {
       description = "Cluster Platform and root app-of-apps resources for Hiraya dev."
-      sourceRepos = [var.root_application_repo_url]
+      sourceRepos = var.platform_project_source_repos
       destinations = [
         {
           namespace = "*"

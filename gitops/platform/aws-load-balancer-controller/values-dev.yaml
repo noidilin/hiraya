@@ -1,0 +1,11 @@
+clusterName: devops-hiraya-dev-eks
+region: ap-northeast-1
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::549475122024:role/devops-hiraya-dev-eks-aws-lbc
+
+extraArgs:
+  feature-gates: NLBGatewayAPI=false,ALBGatewayAPI=true
