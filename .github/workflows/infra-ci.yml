@@ -48,7 +48,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for stack in infra/envs/dev/bootstrap infra/envs/dev/platform-core; do
+          for stack in \
+            infra/envs/dev/bootstrap \
+            infra/envs/dev/platform-core \
+            infra/envs/dev/cluster-bootstrap; do
             terraform -chdir="$stack" init -backend=false -input=false
             terraform -chdir="$stack" validate -no-color
           done
@@ -57,20 +60,52 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for module in \
-            infra/modules/vpc \
-            infra/modules/edge-gateway \
-            infra/modules/gateway-api-crds \
-            infra/modules/monitoring; do
+          while IFS= read -r -d '' test_file; do
+            module=$(dirname "$(dirname "$test_file")")
+            echo "Testing ${module}"
             terraform -chdir="$module" init -backend=false -input=false
             terraform -chdir="$module" test -no-color
-          done
+          done < <(find infra/modules -path '*/tests/*.tftest.hcl' -print0 | sort -z)
 
-      - name: render-gitops-manifests
+      - name: render-gitops-manifests-and-helm-values
         shell: bash
         run: |
-          kubectl kustomize gitops/clusters/dev/root >/tmp/hiraya-gitops-root.yaml
-          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-vintage.yaml
+          set -euo pipefail
+          mkdir -p /tmp/hiraya-gitops-rendered
+
+          kubectl kustomize gitops/clusters/dev/root >/tmp/hiraya-gitops-rendered/root.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-rendered/vintage.yaml
+          kubectl kustomize gitops/platform/namespaces >/tmp/hiraya-gitops-rendered/platform-namespaces.yaml
+          kubectl kustomize gitops/platform/gateway-api-crds >/tmp/hiraya-gitops-rendered/platform-gateway-api-crds.yaml
+          kubectl kustomize gitops/platform/external-secrets >/tmp/hiraya-gitops-rendered/platform-external-secrets.yaml
+          kubectl kustomize gitops/platform/edge >/tmp/hiraya-gitops-rendered/platform-edge.yaml
+          kubectl kustomize gitops/platform/argocd-access >/tmp/hiraya-gitops-rendered/platform-argocd-access.yaml
+          kubectl kustomize gitops/platform/monitoring >/tmp/hiraya-gitops-rendered/platform-monitoring.yaml
+
+          helm template aws-load-balancer-controller aws-load-balancer-controller --repo https://aws.github.io/eks-charts --version 3.4.0 --namespace kube-system -f gitops/platform/aws-load-balancer-controller/values-dev.yaml >/tmp/hiraya-gitops-rendered/aws-load-balancer-controller.yaml
+          helm template external-dns external-dns --repo https://kubernetes-sigs.github.io/external-dns/ --version 1.20.0 --namespace external-dns -f gitops/platform/external-dns/values-dev.yaml >/tmp/hiraya-gitops-rendered/external-dns.yaml
+          helm template external-secrets external-secrets --repo https://charts.external-secrets.io --version 0.10.7 --namespace external-secrets -f gitops/platform/external-secrets/values-dev.yaml >/tmp/hiraya-gitops-rendered/external-secrets.yaml
+          helm template aws-for-fluent-bit aws-for-fluent-bit --repo https://aws.github.io/eks-charts --version 0.2.0 --namespace amazon-cloudwatch -f gitops/platform/logging/values-dev.yaml >/tmp/hiraya-gitops-rendered/aws-for-fluent-bit.yaml
+          helm template kube-prometheus-stack kube-prometheus-stack --repo https://prometheus-community.github.io/helm-charts --version 56.21.0 --namespace monitoring -f gitops/platform/monitoring/values-dev.yaml >/tmp/hiraya-gitops-rendered/kube-prometheus-stack.yaml
+
+      - name: install-kubeconform
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=v0.7.0
+          curl --fail --silent --show-error --location \
+            "https://github.com/yannh/kubeconform/releases/download/${version}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz kubeconform
+          sudo install -m 0755 kubeconform /usr/local/bin/kubeconform
+
+      - name: schema-lint-rendered-gitops-manifests
+        shell: bash
+        run: |
+          kubeconform \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            /tmp/hiraya-gitops-rendered/*.yaml
 
       - name: render-local-helm-charts
         shell: bash
@@ -103,10 +138,8 @@ jobs:
     env:
       AWS_REGION: ap-northeast-1
       TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-      TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
       INFRA_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-plan
       PLATFORM_DIR: infra/envs/dev/platform-core
-      TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
       PLAN_ARTIFACT_NAME: terraform-pr-plan-dev-platform-core-${{ github.event.pull_request.number }}-${{ github.sha }}
 
     steps:
@@ -128,9 +161,9 @@ jobs:
           role-session-name: hiraya-infra-pr-plan-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: generate-platform-backend-config
+      - name: generate-platform-core-backend-config
         shell: bash
-        run: .github/scripts/write-terraform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh platform-core
 
       - name: initialize-platform-terraform
         shell: bash

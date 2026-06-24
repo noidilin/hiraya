@@ -13,11 +13,11 @@ concurrency:
 env:
   AWS_REGION: ap-northeast-1
   TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-  TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
   INFRA_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-plan
   INFRA_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-apply
+  CLUSTER_BOOTSTRAP_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-cluster-bootstrap
   PLATFORM_DIR: infra/envs/dev/platform-core
-  TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
+  CLUSTER_BOOTSTRAP_DIR: infra/envs/dev/cluster-bootstrap
 
 jobs:
   preflight-plan:
@@ -49,7 +49,7 @@ jobs:
 
       - name: generate-platform-core-backend-config
         shell: bash
-        run: .github/scripts/write-terraform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh platform-core
 
       - name: initialize-and-validate-platform-terraform
         shell: bash
@@ -87,7 +87,7 @@ jobs:
             echo "| --- | --- |"
             echo "| Stack | \`${PLATFORM_DIR}\` |"
             echo "| Commit | \`${GITHUB_SHA}\` |"
-            echo "| Mode | Full refreshed plan before \`dev\` approval |"
+            echo "| Mode | Full refreshed Platform Core plan before \`dev\` approval |"
             echo "| Summary | \`${summary}\` |"
             echo "| Full plan | Artifact \`terraform-preflight-plan-dev-platform-core-${GITHUB_SHA}\` |"
             echo
@@ -136,7 +136,7 @@ jobs:
 
       - name: generate-platform-core-backend-config
         shell: bash
-        run: .github/scripts/write-terraform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh platform-core
 
       - name: initialize-platform-terraform
         shell: bash
@@ -164,5 +164,92 @@ jobs:
             echo "| Environment | \`dev\` |"
             echo "| Result | \`${{ job.status }}\` |"
             echo
-            echo "Terraform applied the AWS-only Platform Core foundation. Cluster Bootstrap and GitOps smoke checks run in later deployment phases."
+            echo "Terraform applied the AWS-only Platform Core foundation. Cluster Bootstrap runs next with the dedicated bootstrap role."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply-cluster-bootstrap:
+    name: apply-cluster-bootstrap
+    needs: apply
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: configure-aws-credentials-with-cluster-bootstrap-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.CLUSTER_BOOTSTRAP_ROLE_ARN }}
+          role-session-name: hiraya-cluster-bootstrap-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-cluster-bootstrap-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh cluster-bootstrap
+
+      - name: initialize-and-validate-cluster-bootstrap-terraform
+        shell: bash
+        run: |
+          terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" validate -no-color
+
+      - name: create-cluster-bootstrap-binary-plan
+        shell: bash
+        run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" plan -input=false -out=tfplan.binary
+
+      - name: apply-cluster-bootstrap-binary-plan
+        shell: bash
+        run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" apply -input=false -auto-approve tfplan.binary
+
+      - name: wait-for-gitops-applications-through-kubernetes
+        shell: bash
+        run: |
+          set -euo pipefail
+          .github/scripts/write-terraform-backend.sh platform-core
+          terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          cluster_name=$(terraform -chdir="${PLATFORM_DIR}" output -raw cluster_name)
+          aws eks update-kubeconfig --region "${AWS_REGION}" --name "$cluster_name" >/dev/null
+
+          for attempt in {1..60}; do
+            kubectl get applications.argoproj.io -n argocd hiraya-root platform-namespaces platform-gateway-api-crds platform-aws-load-balancer-controller platform-external-dns platform-external-secrets platform-edge platform-logging platform-monitoring platform-argocd-access vintage >/tmp/hiraya-argocd-apps.txt 2>&1 && break
+            if [[ "$attempt" == "60" ]]; then
+              cat /tmp/hiraya-argocd-apps.txt >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+          cat /tmp/hiraya-argocd-apps.txt
+          kubectl get applications.argoproj.io -n argocd
+
+      - name: run-platform-route-smoke-checks
+        shell: bash
+        run: .github/scripts/platform-route-smoke.sh
+
+      - name: summarize-cluster-bootstrap
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Cluster Bootstrap and GitOps smoke"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack | \`${CLUSTER_BOOTSTRAP_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Result | \`${{ job.status }}\` |"
+            echo
+            echo "Cluster Bootstrap installed Argo CD/root GitOps and validated convergence via Kubernetes plus public route smoke checks. No Argo CD API credentials are used."
           } >> "$GITHUB_STEP_SUMMARY"
