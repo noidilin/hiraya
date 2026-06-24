@@ -49,22 +49,28 @@
 | Prometheus | 9090 | Metrics collection |
 | Grafana | 8080 | Metrics dashboards |
 
-## K8s Manifest structure
+## Kubernetes and GitOps structure
+
+Hiraya dev follows the ADR-0007 layered ownership model. For deeper implementation detail, read [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [docs/plan/gitops-refactor-implementation.md](plan/gitops-refactor-implementation.md), and [docs/plan/gitops-refactor-checklist.md](plan/gitops-refactor-checklist.md).
 
 ```
-infra/modules/argocd/
-└── application.yml          # ArgoCD Application spec — Terraform bootstraps this during platform provisioning
+infra/envs/dev/bootstrap/          # Project Bootstrap: durable state access, OIDC roles, ECR, app secrets
+infra/envs/dev/platform-core/      # Platform Core: AWS/EKS foundation only; no Kubernetes or Helm providers
+infra/envs/dev/cluster-bootstrap/  # Cluster Bootstrap: Argo CD install and root GitOps handoff
 
 gitops/
-├── kustomization.yml        # Kustomize entry point — lists all app resources
-├── namespace.yml            # Creates vintage namespace
-├── secrets.yml              # DB connection strings as a Kubernetes Secret
-└── k8s/
-    ├── backend/             # One Deployment + Service per backend service
-    ├── frontend/            # Frontend Deployment + Service
-    ├── database/            # PostgreSQL StatefulSet, Service, restore Job
-    └── grafana-dashboard.yml # Pre-loaded Grafana dashboard (ConfigMap)
+├── clusters/dev/root/             # root app-of-apps child Application manifests
+├── platform/                      # Cluster Platform: CRDs, controllers, edge, logging, monitoring, admin routes
+└── apps/vintage/                  # Vintage Storefront workload manifests
+    ├── external-secret.yml        # maps AWS Secrets Manager secret into the runtime Kubernetes Secret
+    └── k8s/
+        ├── backend/               # One Deployment + Service per backend service
+        ├── frontend/              # Frontend Deployment + Service + HTTPRoute
+        ├── database/              # PostgreSQL StatefulSet, Service, restore Job
+        └── grafana-dashboard.yml  # Pre-loaded Grafana dashboard (ConfigMap)
 ```
+
+Project Bootstrap is durable. Platform Core and Cluster Bootstrap are disposable. Argo CD owns Cluster Platform and GitOps Apps desired state after Cluster Bootstrap installs the root Application.
 
 ## GitHub Action Pipeline jobs
 
@@ -245,33 +251,34 @@ flowchart TD
 
 ---
 
-### Stage 4: Infrastructure — Terraform on AWS
+### Stage 4: Infrastructure — Terraform and GitOps on AWS
 
-Before the cluster can run anything, the infrastructure must exist. Terraform provisions everything from scratch.
+Before the cluster can run anything, the layered dev platform must exist.
 
 ```mermaid
 flowchart TD
-    TF[terraform apply] --> VPC[VPC — 3 AZs]
-    VPC --> Sub1[Subnet us-east-1a]
-    VPC --> Sub2[Subnet us-east-1b]
-    VPC --> Sub3[Subnet us-east-1c]
+    PB[Project Bootstrap\nlocal Terraform] --> ECR[ECR repositories]
+    PB --> Roles[GitHub OIDC roles]
+    PB --> State[Terraform state access]
+    PB --> AppSecret[Durable Vintage secret]
 
-    TF --> EKS[EKS Cluster]
-    EKS --> NG[Node Group\nm7i-flex.large]
-    Sub1 & Sub2 & Sub3 --> NG
+    PC[Platform Core\nTerraform] --> VPC[VPC + subnets + NAT + S3 endpoint]
+    PC --> EKS[EKS Cluster + managed node group]
+    PC --> Addons[EKS managed add-ons]
+    PC --> IAM[Controller IRSA roles]
+    PC --> DNS[ACM + Route 53 primitives]
+    PC --> Logs[CloudWatch log group\n/eks/hiraya/dev/pods]
+    PC --> AdminSecrets[Argo/Grafana admin secrets]
 
-    TF --> ECR1[ECR: hiraya-frontend]
-    TF --> ECR2[ECR: hiraya-gateway]
-    TF --> ECR3[ECR: hiraya-auth]
-    TF --> ECR4[ECR: hiraya-...]
+    CB[Cluster Bootstrap\nTerraform] --> Argo[Argo CD Helm release]
+    CB --> Projects[AppProjects]
+    CB --> Root[Root Application\ngitops/clusters/dev/root]
 
-    TF --> Helm2[Helm: kube-prometheus-stack\nnamespace: monitoring]
-    TF --> Helm1[Helm: ArgoCD\nnamespace: argocd]
-    Helm1 --> Helm3[Helm: argocd-gitops-application\nnamespace: argocd]
-    Helm3 --> App[ArgoCD Application\nname: vintage]
+    Root --> Platform[Cluster Platform\ngitops/platform]
+    Root --> Vintage[Vintage Storefront\ngitops/apps/vintage]
 ```
 
-Terraform installs the Prometheus/Grafana stack first, then installs ArgoCD, then bootstraps the `vintage` ArgoCD Application through a separate Helm release after the ArgoCD `Application` CRD exists. This gives ArgoCD the repo, branch, and path to watch, so the platform can deploy workloads automatically after `terraform apply`. GitOps manifests use Argo CD sync waves so Postgres starts first, the database restore Job runs next, and application Deployments start only after the restore Job is healthy.
+Project Bootstrap is applied manually/local from `main`. The deploy workflow applies Platform Core first, then Cluster Bootstrap. Platform Core owns only AWS/EKS-side foundation resources and must not use Kubernetes or Helm providers. Cluster Bootstrap installs Argo CD and the root app-of-apps. Argo CD then reconciles Cluster Platform add-ons and the Vintage Storefront from Git.
 
 ---
 
@@ -307,9 +314,10 @@ sequenceDiagram
 
 **Key files:**
 
-- `infra/modules/argocd/application.yml` — ArgoCD Application spec installed by the `argocd-gitops-application` Helm release during platform provisioning
-- `gitops/apps/vintage/kustomization.yml` — lists all Kubernetes resources to apply, including the dev database restore Job
-- `gitops/apps/vintage/k8s/` — Vintage service deployments, services, and reset-on-rebuild database resources
+- `gitops/clusters/dev/root/` — root app-of-apps child Applications for Cluster Platform and workloads
+- `gitops/platform/` — Argo CD-owned Cluster Platform resources such as Gateway API CRDs, AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, edge, logging, monitoring, and Argo CD access
+- `gitops/apps/vintage/kustomization.yml` — lists Vintage Storefront resources, including the dev database restore Job
+- `gitops/apps/vintage/k8s/` — Vintage service deployments, services, HTTPRoute, and reset-on-rebuild database resources
 - `gitops/apps/vintage/external-secret.yml` — maps the durable AWS Secrets Manager Vintage secret into the runtime Kubernetes Secret through ESO
 
 ---
@@ -335,7 +343,7 @@ flowchart LR
     end
 
     subgraph Logging [amazon-cloudwatch namespace]
-        FB[Fluent Bit] -->|pod logs| CW[CloudWatch\n/eks/vintage/pods]
+        FB[Fluent Bit] -->|pod logs| CW[CloudWatch\n/eks/hiraya/dev/pods]
     end
 
     GW & AU & PS & OS & OR & US --> SM
@@ -352,7 +360,7 @@ flowchart LR
 
 - Fluent Bit runs as a DaemonSet in `amazon-cloudwatch`
 - Captures stdout from every pod and ships logs to CloudWatch
-- Log group: `/eks/vintage/pods`
+- Log group: `/eks/hiraya/dev/pods`
 
 **What to check in Grafana:**
 
@@ -374,7 +382,7 @@ flowchart TD
     UI --> Agent[Bedrock Agent\nKira]
 
     Agent --> |Hypothesis: check logs| FL[Lambda: fetch_logs\nCloudWatch Logs]
-    Agent --> |Hypothesis: check metrics| FM[Lambda: fetch_metrics\nPrometheus API]
+    Agent --> |Hypothesis: check metrics| FM[Lambda: fetch_metrics\nCloudWatch Metrics]
     Agent --> |Hypothesis: check health| FH[Lambda: fetch_health\nEKS + Node Groups]
 
     FL --> |Log entries + timestamps| Agent
@@ -384,6 +392,8 @@ flowchart TD
     Agent --> |Root cause + evidence + fix| UI
     UI --> Engineer[Engineer sees:\n- Root cause\n- Evidence from logs/metrics\n- Immediate fix\n- Prevention steps]
 ```
+
+Kira's deployed query surface is CloudWatch Logs and CloudWatch Metrics. ADOT is deferred in the current GitOps migration; when it is implemented, Platform Core owns AWS/IAM/CloudWatch-side resources and Argo CD-owned Cluster Platform manifests own the in-cluster collector.
 
 **How Kira investigates:**
 
@@ -439,7 +449,11 @@ flowchart TD
     Kira -->|root cause + fix| Eng[ Engineer]
 
     subgraph IaC [Infrastructure as Code]
-        TF[Terraform\nVPC + EKS + ECR + Helm]
+        PB[Project Bootstrap\nECR + OIDC + state + durable secrets]
+        PC[Platform Core\nVPC + EKS + IAM + secrets]
+        CB[Cluster Bootstrap\nArgo CD + root app]
     end
-    TF --> EKS
+    PB --> PC
+    PC --> CB
+    CB --> Argo
 ```

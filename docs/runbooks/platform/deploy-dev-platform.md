@@ -1,37 +1,48 @@
 # Deploy dev platform
 
-Related: [infra CI/CD PRD #13](https://github.com/noidilin/hiraya/issues/13), [runbook issue #19](https://github.com/noidilin/hiraya/issues/19), [ADR 0001: EKS network redesign](../../adr/0001-eks-network-redesign.md), [infra workflow implementation plan](../../plan/infra-ci-workflow.md), [infra README](../../../infra/README.md).
+Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [implementation plan](../../plan/gitops-refactor-implementation.md), [implementation checklist](../../plan/gitops-refactor-checklist.md), [infra README](../../../infra/README.md).
 
 ## When to use this
 
-Use this runbook to manually deploy or recreate the disposable dev EKS platform from `main` using `.github/workflows/infra-deploy.yml`.
+Use this runbook to manually deploy or recreate the disposable Hiraya dev EKS platform from `main` using `.github/workflows/infra-deploy.yml`.
 
 ## Do not use this when
 
-- Bootstrap OIDC roles do not exist yet. Use [bootstrap-infra-workflows.md](bootstrap-infra-workflows.md).
+- Project Bootstrap has not been applied from current `main`. Apply [bootstrap-infra-workflows.md](bootstrap-infra-workflows.md) first.
 - You need to delete the platform. Use [destroy-dev-platform.md](destroy-dev-platform.md).
 - You need to roll back one service image. Use [../services/rollback-dev-service-image.md](../services/rollback-dev-service-image.md).
 
+## Ownership model
+
+Hiraya dev follows the ADR-0007 layered model:
+
+| Layer | Owner | What it owns |
+|---|---|---|
+| Project Bootstrap | manual/local Terraform in `infra/envs/dev/bootstrap` | durable state access, GitHub OIDC roles, ECR repositories, and durable Vintage Storefront secrets |
+| Platform Core | GitHub deploy Terraform in `infra/envs/dev/platform-core` | VPC, EKS, managed add-ons, ACM/DNS primitives, IAM/IRSA, CloudWatch log groups, and disposable platform admin secrets |
+| Cluster Bootstrap | GitHub deploy Terraform in `infra/envs/dev/cluster-bootstrap` | the `argocd` namespace, Argo CD Helm release, AppProjects, and root app-of-apps handoff |
+| Cluster Platform | Argo CD from `gitops/platform/**` | shared in-cluster controllers, CRDs, namespaces, edge Gateway resources, logging, monitoring, and public admin routes |
+| GitOps Apps | Argo CD from `gitops/apps/**` | workload desired state, starting with the Vintage Storefront |
+
+Platform Core must not use Kubernetes or Helm providers. Cluster Platform add-ons are no longer Terraform-owned. Argo CD reconciles them from Git after Cluster Bootstrap installs the root Application.
+
 ## Safety boundary
 
-The deploy workflow manages only `infra/envs/dev/platform`, including:
+The deploy workflow manages only disposable layers after Project Bootstrap exists:
 
-- VPC, public/private subnets, route tables, Internet Gateway, NAT Gateway, and S3 Gateway VPC endpoint.
-- EKS cluster, private managed node group, EKS OIDC provider, and Terraform-managed Kubernetes/Helm resources.
-- ACM certificate and DNS validation records for `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`.
-- AWS Load Balancer Controller, Gateway API CRDs, ExternalDNS, shared `edge/public` Gateway, Argo CD, monitoring/Grafana/Prometheus, and Fluent Bit.
-- Terraform-owned admin HTTPRoutes and generated Argo CD/Grafana credentials stored in Terraform state.
+- `infra/envs/dev/platform-core` creates the AWS/EKS foundation and non-secret outputs.
+- `infra/envs/dev/cluster-bootstrap` installs Argo CD and hands control to GitOps.
+- Argo CD then reconciles Cluster Platform and GitOps Apps from `main`.
 
-Do not modify or destroy durable bootstrap resources from this runbook.
+Do not modify or destroy durable Project Bootstrap resources from this runbook. Do not retrieve or print Argo CD or Grafana admin passwords in workflow logs; Operators read them directly from AWS Secrets Manager if needed.
 
 ## Prerequisites
 
 1. Target workflow code is merged to `main`.
-2. Bootstrap Terraform has created the GitHub infra plan/apply roles.
+2. Project Bootstrap has been applied from `main`, including the GitHub cluster-bootstrap role and durable `/hiraya/dev/apps/vintage` secret.
 3. The repository has a GitHub Environment named `dev` with required reviewers or equivalent approval controls.
-4. GitHub Actions OIDC is enabled through bootstrap trust policies; no long-lived AWS access keys are required.
+4. GitHub Actions OIDC is enabled through Project Bootstrap trust policies; no long-lived AWS access keys are required.
 5. The maintainer can access workflow artifacts, job summaries, AWS console/CLI evidence, and Kubernetes route checks.
-6. Generated Argo CD and Grafana credentials are treated as secrets.
 
 ## Procedure
 
@@ -39,25 +50,31 @@ Use `infra-deploy` only from `main`. It is intentionally `workflow_dispatch` onl
 
 1. In GitHub Actions, select `infra-deploy`.
 2. Choose branch `main` and run the workflow.
-3. Before approval, review the `Pre-approval platform plan` job:
+3. Before approval, review the Platform Core preflight plan:
    - It assumes the infra plan role.
-   - It initializes and validates `infra/envs/dev/platform`.
-   - It runs a full refreshed Terraform plan.
-   - It uploads `terraform-preflight-plan-dev-platform-<sha>`.
-   - It writes a summary to the workflow step summary.
+   - It initializes and validates `infra/envs/dev/platform-core`.
+   - It runs a full refreshed Terraform plan for Platform Core only.
+   - It uploads the Platform Core plan artifact and writes a summary.
 4. Capture evidence before approval:
    - Commit SHA.
-   - Preflight plan summary.
+   - Platform Core plan summary.
    - Uploaded preflight plan artifact name.
    - Any destructive changes you intend to approve.
 5. Approve the `dev` GitHub Environment gate only after reviewing the plan.
-6. Confirm the `Apply disposable dev platform` job:
+6. Confirm the Platform Core apply job:
    - Assumes the infra apply role through OIDC.
-   - Creates a fresh post-approval binary plan.
-   - Applies that exact local binary plan.
-   - Runs `.github/scripts/platform-route-smoke.sh`.
-
-Sensitive credential warning: route smoke and summaries must not retrieve or print Argo CD or Grafana admin passwords.
+   - Creates a fresh post-approval Platform Core binary plan.
+   - Applies that local binary plan.
+7. Confirm the Cluster Bootstrap apply job:
+   - Runs only after Platform Core succeeds.
+   - Assumes the GitHub cluster-bootstrap role.
+   - Initializes and applies `infra/envs/dev/cluster-bootstrap`.
+   - Installs Argo CD, AppProjects, and the root `hiraya-root` Application.
+8. Confirm the smoke job:
+   - Uses the cluster-bootstrap role for Kubernetes checks.
+   - Waits for Argo child Applications to become synced/healthy.
+   - Checks namespaces, Gateway/HTTPRoutes, pods, and public routes.
+   - Does not call the Argo CD API and does not require Argo credentials.
 
 ## Validation
 
@@ -66,14 +83,24 @@ Use workflow smoke output first, then run local checks if extra evidence is need
 ### EKS reachability
 
 ```bash
-aws eks update-kubeconfig --region ap-northeast-1 --name hiraya-dev
+aws eks update-kubeconfig --region ap-northeast-1 --name devops-hiraya-dev-eks
 kubectl get nodes -o wide
 kubectl get pods -A
-aws eks describe-cluster --name hiraya-dev --region ap-northeast-1 \
+aws eks describe-cluster --name devops-hiraya-dev-eks --region ap-northeast-1 \
   --query 'cluster.resourcesVpcConfig.{Private:endpointPrivateAccess,Public:endpointPublicAccess,PublicCidrs:publicAccessCidrs}'
 ```
 
-Expected: EKS API is reachable, nodes are registered, private endpoint access is enabled, and any public API access is the explicit temporary dev setting.
+Expected: EKS API is reachable, nodes are registered, private endpoint access is enabled, and any public API access is the explicit temporary dev setting for GitHub-hosted deploy/bootstrap/smoke jobs.
+
+### GitOps convergence
+
+```bash
+kubectl get applications.argoproj.io -n argocd
+kubectl get appprojects.argoproj.io -n argocd
+kubectl get ns argocd edge monitoring vintage external-dns external-secrets amazon-cloudwatch
+```
+
+Expected: `hiraya-root` and child Applications are present and synced/healthy; `argocd` exists from Cluster Bootstrap; public workload/platform namespaces exist from Cluster Platform.
 
 ### Gateway and HTTPRoute visibility
 
@@ -86,7 +113,7 @@ kubectl describe httproute -n argocd argocd
 kubectl describe httproute -n monitoring grafana
 ```
 
-Expected: shared `edge/public` Gateway is accepted/programmed; Vintage Storefront, Argo CD, and Grafana HTTPRoutes are accepted and attached.
+Expected: shared `edge/public` Gateway is accepted/programmed; Vintage Storefront, Argo CD, and Grafana HTTPRoutes are accepted and attached. Edge owns only shared Gateway policy and redirect resources; service owners own their HTTPRoutes.
 
 ### Public route health
 
@@ -101,32 +128,36 @@ Expected:
 - Vintage Storefront route responds successfully.
 - Argo CD route reaches the login/protected service.
 - Grafana route reaches the login/protected service.
-- HTTPS uses the expected ACM-backed certificate.
+- HTTPS uses the expected Platform Core ACM-backed certificate discovered by AWS Load Balancer Controller.
 
-### GitOps and admin service posture
+### Observability and admin service posture
 
 ```bash
 kubectl get pods -n argocd
 kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring | grep -E 'grafana|prometheus'
-kubectl get httproute -A | grep -i prometheus || true
+kubectl get pods -n amazon-cloudwatch
+aws logs describe-log-groups --region ap-northeast-1 --log-group-name-prefix /eks/hiraya/dev/pods
 ```
 
-Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only.
+Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only; Fluent Bit ships pod logs to `/eks/hiraya/dev/pods`.
 
 ## Evidence to capture
 
-- Apply job result.
-- Route-health smoke output showing EKS/node visibility, Gateway/HTTPRoute visibility, namespace visibility, and route checks.
+- Platform Core preflight plan summary and approval record.
+- Platform Core apply result.
+- Cluster Bootstrap apply result.
+- Route-health smoke output showing EKS/node visibility, Argo Application health, Gateway/HTTPRoute visibility, namespace visibility, and route checks.
 - Workflow summary result.
 
 ## Recovery
 
 If deploy fails after approval:
 
-1. Preserve evidence before retrying: plan artifact, apply logs, route-smoke logs, Gateway/HTTPRoute descriptions, ExternalDNS logs, and relevant AWS console screenshots.
-2. If the failure is an IAM gap, patch only the missing scoped bootstrap permission and rerun. See [../troubleshooting/infra-workflow-access-denied.md](../troubleshooting/infra-workflow-access-denied.md).
+1. Preserve evidence before retrying: plan artifact, apply logs, route-smoke logs, Argo Application status, Gateway/HTTPRoute descriptions, ExternalDNS logs, and relevant AWS console screenshots.
+2. If the failure is an IAM gap, patch only the missing scoped permission and rerun. See [../troubleshooting/infra-workflow-access-denied.md](../troubleshooting/infra-workflow-access-denied.md).
 3. If the GitHub runner cannot reach or manage EKS, see [../troubleshooting/eks-github-runner-access.md](../troubleshooting/eks-github-runner-access.md).
-4. If the platform is partially created and unrecoverable, use the approved destroy workflow, then redeploy from the last known-good `main` commit.
-5. Keep Prometheus private; do not add emergency public routes for debugging.
+4. If Cluster Bootstrap/GitOps sync fails, use the Dev SSO role or cluster-bootstrap role to inspect Argo/Kubernetes state, fix GitOps, and rerun bootstrap/smoke.
+5. If the platform is partially created and unrecoverable, use the approved destroy workflow, then redeploy from the last known-good `main` commit.
+6. Keep Prometheus private; do not add emergency public routes for debugging.

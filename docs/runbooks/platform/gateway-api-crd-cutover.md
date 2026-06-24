@@ -1,10 +1,12 @@
 # Gateway API CRD cutover runbook
 
-Related: [PRD #8](https://github.com/noidilin/hiraya/issues/8), [issue #12](https://github.com/noidilin/hiraya/issues/12), [ADR 0001](../../adr/0001-eks-network-redesign.md), [infra README](../../../infra/README.md).
+Status: archived legacy runbook. ADR-0007 supersedes this Terraform-owned CRD cutover model. Current Cluster Platform ownership is GitOps/Argo CD: Gateway API CRDs and AWS Load Balancer Controller Gateway CRDs are vendored/pinned under `gitops/platform/**`, protected from accidental prune, and reconciled by Argo CD after Cluster Bootstrap installs the root app. Use [deploy-dev-platform.md](deploy-dev-platform.md), [destroy-dev-platform.md](destroy-dev-platform.md), and the [GitOps refactor implementation plan](../../plan/gitops-refactor-implementation.md) for current operations.
+
+Related: [ADR 0007](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [implementation plan](../../plan/gitops-refactor-implementation.md), [implementation checklist](../../plan/gitops-refactor-checklist.md).
 
 ## When to use this
 
-Use this runbook to perform the live dev cutover from the old in-cluster Gateway API CRD installer Job to the Terraform-managed, vendored Gateway API CRD module.
+Do not use this runbook for current dev operations. It is retained only as historical context for the pre-ADR-0007 Gateway API CRD cutover.
 
 ## Do not use this when
 
@@ -16,12 +18,12 @@ Use this runbook to perform the live dev cutover from the old in-cluster Gateway
 
 Adding or updating this runbook does **not** execute the live dev apply. A human Operator must review the plan and run the apply in the deployment session.
 
-## Expected ownership after cutover
+## Historical expected ownership after pre-ADR-0007 cutover
 
 - Terraform `module.gateway_api_crds` installs upstream Gateway API core CRDs from `infra/modules/gateway-api-crds/chart/crds/`.
 - Terraform `module.gateway_api_crds` optionally installs upstream Gateway API validation resources from chart templates.
 - The AWS Load Balancer Controller Helm release installs AWS-specific Gateway CRDs with `skip_crds = false`.
-- Terraform still owns the shared `edge/public` Gateway, `GatewayClass`, `LoadBalancerConfiguration`, `TargetGroupConfiguration`, and Terraform-owned admin HTTPRoutes.
+- Terraform still owned the shared `edge/public` Gateway, `GatewayClass`, `LoadBalancerConfiguration`, `TargetGroupConfiguration`, and admin HTTPRoutes in that retired model.
 - GitOps still owns application manifests and the `vintage/frontend` app HTTPRoute.
 - Backend Services for the app, Argo CD, and Grafana remain private `ClusterIP` Services behind the shared Gateway/ALB.
 
@@ -52,11 +54,12 @@ helm template gateway-api-crds \
   --include-crds \
   > /tmp/gateway-api-crds.yaml
 kubectl apply --dry-run=client -f /tmp/gateway-api-crds.yaml
-terraform -chdir=infra/envs/dev/platform fmt -check -recursive
-terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl
-terraform -chdir=infra/envs/dev/platform validate
-terraform -chdir=infra/modules/gateway-api-crds test
-terraform -chdir=infra/envs/dev/platform plan
+# Historical only: the active platform no longer has infra/envs/dev/platform.
+# Do not run these commands for current dev operations.
+terraform -chdir=<retired-platform-stack> fmt -check -recursive
+terraform -chdir=<retired-platform-stack> init -backend-config=backend.hcl
+terraform -chdir=<retired-platform-stack> validate
+terraform -chdir=<retired-platform-stack> plan
 ```
 
 Confirm the rendered `/tmp/gateway-api-crds.yaml` includes the core Gateway API CRDs and validation resources:
@@ -70,8 +73,9 @@ grep -E '^kind: (CustomResourceDefinition|ValidatingAdmissionPolicy|ValidatingAd
 Only the human Operator runs this section after approving the plan.
 
 ```bash
-terraform -chdir=infra/envs/dev/platform apply
-aws eks update-kubeconfig --region ap-northeast-1 --name hiraya-dev
+# Historical only. Use deploy-dev-platform.md for current ADR-0007 operations.
+terraform -chdir=<retired-platform-stack> apply
+aws eks update-kubeconfig --region ap-northeast-1 --name <retired-cluster-name>
 ```
 
 ## Post-apply checklist

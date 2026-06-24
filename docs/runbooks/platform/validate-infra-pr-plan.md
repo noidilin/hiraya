@@ -1,10 +1,10 @@
 # Validate infra PR plan comment
 
-Related: [infra CI/CD PRD #13](https://github.com/noidilin/hiraya/issues/13), [ADR 0001: EKS network redesign](../../adr/0001-eks-network-redesign.md), [infra workflow implementation plan](../../plan/infra-ci-workflow.md).
+Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [implementation plan](../../plan/gitops-refactor-implementation.md), [implementation checklist](../../plan/gitops-refactor-checklist.md).
 
 ## When to use this
 
-Use this runbook when validating that `.github/workflows/infra-ci.yml` produces safe static checks and a trusted Terraform plan comment for same-repository pull requests.
+Use this runbook when validating that `.github/workflows/infra-ci.yml` produces safe static checks and a trusted Platform Core Terraform plan comment for same-repository pull requests.
 
 ## Do not use this when
 
@@ -14,7 +14,7 @@ Use this runbook when validating that `.github/workflows/infra-ci.yml` produces 
 ## Prerequisites
 
 1. The infra workflow changes are merged or present in the PR being tested.
-2. Bootstrap has created the GitHub infra plan role. See [bootstrap-infra-workflows.md](bootstrap-infra-workflows.md).
+2. Project Bootstrap has created the GitHub infra plan role. See [bootstrap-infra-workflows.md](bootstrap-infra-workflows.md).
 3. The test PR touches at least one watched path:
    - `infra/**`
    - `gitops/**`
@@ -37,7 +37,8 @@ Use this runbook when validating that `.github/workflows/infra-ci.yml` produces 
 The sticky plan comment should include:
 
 - Hidden sticky marker behavior, visible as one updated bot comment rather than repeated duplicate comments.
-- Stack label `Disposable dev platform`, corresponding to `infra/envs/dev/platform`.
+- Stack label for Platform Core, corresponding to `infra/envs/dev/platform-core`.
+- No Cluster Bootstrap plan; that stack depends on a live cluster and is validated statically only.
 - Commit SHA.
 - Fast PR mode using `-refresh=false -lock=false`.
 - Plan summary such as `Plan: X to add, Y to change, Z to destroy.` or `No changes.`

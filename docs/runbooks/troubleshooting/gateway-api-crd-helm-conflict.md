@@ -1,8 +1,10 @@
 # Troubleshoot Gateway API CRD Helm release conflict
 
+Status: archived legacy troubleshooting note. ADR-0007 supersedes the Terraform-owned Gateway API CRD Helm release model; current CRDs are GitOps-owned under `gitops/platform/**` and reconciled by Argo CD. Use this page only to understand historical pre-ADR-0007 failures.
+
 ## When to use this
 
-Use this runbook when the Gateway API CRD cutover reports that a Helm release named `gateway-api-crds` already exists in `kube-system`, or Terraform tries to create a second release instead of moving state.
+Do not use this runbook for current dev operations. It only applied when the retired monolithic Terraform platform stack managed a `gateway-api-crds` Helm release in `kube-system`.
 
 ## Do not use this when
 
@@ -17,9 +19,9 @@ Because this is dev-only infrastructure, a full disposable platform recreate is 
 
 The old and new Terraform resources both use the Helm release name `gateway-api-crds` in `kube-system`. Avoid creating the new release while the old state/address still owns the same live release.
 
-Preferred path for current dev state:
+Historical preferred path for the retired dev state:
 
-1. Keep `infra/envs/dev/platform/moved.tf` in the plan.
+1. Keep the old `moved.tf` state move in the plan.
 2. Run `terraform plan` and confirm Terraform moves the address instead of trying to create a second `gateway-api-crds` release.
 3. Apply only after the Operator accepts the plan.
 
@@ -29,10 +31,9 @@ Use this only if Terraform still reports a Helm release name conflict:
 
 ```bash
 helm -n kube-system status gateway-api-crds || true
-terraform -chdir=infra/envs/dev/platform state list | grep gateway_api_crds || true
-terraform -chdir=infra/envs/dev/platform state rm 'module.aws_load_balancer_controller.helm_release.gateway_api_crds'
+# Historical only: the active platform no longer has infra/envs/dev/platform.
+# Inspect the retired state manually before changing anything.
 helm -n kube-system uninstall gateway-api-crds || true
-terraform -chdir=infra/envs/dev/platform plan
 ```
 
 ## Validation
