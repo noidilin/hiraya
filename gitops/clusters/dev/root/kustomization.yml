@@ -11,3 +11,4 @@ resources:
   - applications/platform-logging.yml
   - applications/platform-monitoring.yml
   - applications/platform-argocd-access.yml
+  - applications/vintage.yml

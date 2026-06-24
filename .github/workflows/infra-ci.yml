@@ -68,7 +68,9 @@ jobs:
 
       - name: render-gitops-manifests
         shell: bash
-        run: kubectl kustomize gitops >/tmp/hiraya-gitops.yaml
+        run: |
+          kubectl kustomize gitops/clusters/dev/root >/tmp/hiraya-gitops-root.yaml
+          kubectl kustomize gitops/apps/vintage >/tmp/hiraya-gitops-vintage.yaml
 
       - name: render-local-helm-charts
         shell: bash

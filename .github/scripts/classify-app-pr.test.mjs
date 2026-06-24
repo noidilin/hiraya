@@ -22,7 +22,7 @@ async function createRepoFixture() {
         workspace: 'app/microservices/frontend',
         repository: 'hiraya-frontend',
         dockerfile: 'app/microservices/frontend/Dockerfile',
-        manifest: 'gitops/k8s/frontend/deployment.yml',
+        manifest: 'gitops/apps/vintage/k8s/frontend/deployment.yml',
         pathOwnership: [
           'app/microservices/frontend/**',
           'app/microservices/shared/**',
@@ -37,7 +37,7 @@ async function createRepoFixture() {
         workspace: 'app/microservices/backend/services/auth',
         repository: 'hiraya-auth',
         dockerfile: 'app/microservices/backend/services/auth/Dockerfile',
-        manifest: 'gitops/k8s/backend/auth.yml',
+        manifest: 'gitops/apps/vintage/k8s/backend/auth.yml',
         pathOwnership: [
           'app/microservices/backend/services/auth/**',
           'app/microservices/backend/shared/**',
@@ -58,10 +58,10 @@ async function createRepoFixture() {
   await writeFile(path.join(root, 'package.json'), `${JSON.stringify({ name: 'hiraya' }, null, 2)}\n`);
   await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
   await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - app/microservices/*\n');
-  await mkdir(path.join(root, 'gitops/k8s/backend'), { recursive: true });
-  await writeFile(path.join(root, 'gitops/k8s/backend/auth.yml'), 'image: old-auth\n');
-  await mkdir(path.join(root, 'gitops/k8s/frontend'), { recursive: true });
-  await writeFile(path.join(root, 'gitops/k8s/frontend/deployment.yml'), 'image: old-frontend\n');
+  await mkdir(path.join(root, 'gitops/apps/vintage/k8s/backend'), { recursive: true });
+  await writeFile(path.join(root, 'gitops/apps/vintage/k8s/backend/auth.yml'), 'image: old-auth\n');
+  await mkdir(path.join(root, 'gitops/apps/vintage/k8s/frontend'), { recursive: true });
+  await writeFile(path.join(root, 'gitops/apps/vintage/k8s/frontend/deployment.yml'), 'image: old-frontend\n');
   await mkdir(path.join(root, '.github/actions/setup-node-pnpm'), { recursive: true });
   await writeFile(path.join(root, '.github/actions/setup-node-pnpm/action.yml'), 'name: setup\n');
   await mkdir(path.join(root, '.github/workflows'), { recursive: true });
@@ -205,7 +205,7 @@ test('treats root package manager inputs as all service image inputs', async () 
 
 test('fast-paths Hiraya bot GitOps image-tag-only manifest promotions', async () => {
   const fixture = await createRepoFixture();
-  await writeFile(path.join(fixture.root, 'gitops/k8s/backend/auth.yml'), 'image: new-auth\n');
+  await writeFile(path.join(fixture.root, 'gitops/apps/vintage/k8s/backend/auth.yml'), 'image: new-auth\n');
   const head = await commitChange(fixture.root, 'promote image');
 
   const classification = classify({
@@ -223,7 +223,7 @@ test('fast-paths Hiraya bot GitOps image-tag-only manifest promotions', async ()
 
 test('rejects non-image bot GitOps changes from the manifest-promotion fast path', async () => {
   const fixture = await createRepoFixture();
-  await writeFile(path.join(fixture.root, 'gitops/k8s/backend/auth.yml'), 'image: old-auth\nreplicas: 2\n');
+  await writeFile(path.join(fixture.root, 'gitops/apps/vintage/k8s/backend/auth.yml'), 'image: old-auth\nreplicas: 2\n');
   const head = await commitChange(fixture.root, 'change replicas');
 
   const classification = classify({

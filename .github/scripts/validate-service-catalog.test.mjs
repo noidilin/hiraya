@@ -14,10 +14,10 @@ const scriptPath = path.resolve(
 async function createCatalogFixture(catalogOverrides = {}) {
   const root = await mkdtemp(path.join(tmpdir(), 'hiraya-service-catalog-'));
   await mkdir(path.join(root, 'app/microservices/frontend'), { recursive: true });
-  await mkdir(path.join(root, 'gitops/k8s/frontend'), { recursive: true });
+  await mkdir(path.join(root, 'gitops/apps/vintage/k8s/frontend'), { recursive: true });
   await writeFile(path.join(root, 'app/microservices/frontend/package.json'), '{"name":"frontend"}\n');
   await writeFile(path.join(root, 'app/microservices/frontend/Dockerfile'), 'FROM scratch\n');
-  await writeFile(path.join(root, 'gitops/k8s/frontend/deployment.yml'), '---\n');
+  await writeFile(path.join(root, 'gitops/apps/vintage/k8s/frontend/deployment.yml'), '---\n');
 
   const catalog = {
     services: [
@@ -30,7 +30,7 @@ async function createCatalogFixture(catalogOverrides = {}) {
           context: 'app/microservices/frontend',
           dockerfile: 'app/microservices/frontend/Dockerfile',
         },
-        manifest: { path: 'gitops/k8s/frontend/deployment.yml' },
+        manifest: { path: 'gitops/apps/vintage/k8s/frontend/deployment.yml' },
         pathOwnership: ['app/microservices/frontend/**'],
         vintageStorefrontBaseline: { active: true, critical: true },
       },
@@ -83,7 +83,7 @@ test('fails when referenced local paths do not exist', async () => {
           context: 'app/microservices/frontend',
           dockerfile: 'app/microservices/frontend/missing.Dockerfile',
         },
-        manifest: { path: 'gitops/k8s/frontend/missing.yml' },
+        manifest: { path: 'gitops/apps/vintage/k8s/frontend/missing.yml' },
         pathOwnership: ['app/microservices/frontend/**'],
         vintageStorefrontBaseline: { active: true, critical: true },
       },
@@ -110,7 +110,7 @@ test('fails when referenced local paths escape the repository root', async () =>
           context: 'app/microservices/frontend',
           dockerfile: 'app/microservices/frontend/Dockerfile',
         },
-        manifest: { path: 'gitops/k8s/frontend/deployment.yml' },
+        manifest: { path: 'gitops/apps/vintage/k8s/frontend/deployment.yml' },
         pathOwnership: ['../**'],
         vintageStorefrontBaseline: { active: true, critical: true },
       },
@@ -136,7 +136,7 @@ test('fails when a path ownership glob points at a missing local base path', asy
           context: 'app/microservices/frontend',
           dockerfile: 'app/microservices/frontend/Dockerfile',
         },
-        manifest: { path: 'gitops/k8s/frontend/deployment.yml' },
+        manifest: { path: 'gitops/apps/vintage/k8s/frontend/deployment.yml' },
         pathOwnership: ['app/microservices/missing-frontend/**'],
         vintageStorefrontBaseline: { active: true, critical: true },
       },
