@@ -7,6 +7,9 @@ environment  = "dev"
 
 github_repository = "noidilin/hiraya"
 
+# Increment intentionally to rotate the durable Vintage Storefront dev secret.
+vintage_secret_rotation_epoch = "1"
+
 repositories = [
   "hiraya-frontend",
   "hiraya-gateway",

@@ -50,6 +50,11 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition     = jsondecode(aws_iam_role.github_cluster_bootstrap.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example/hiraya:environment:dev"
+    error_message = "The cluster-bootstrap role must trust only the dev GitHub Environment subject."
+  }
+
+  assert {
     condition = alltrue(flatten([
       for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : [
         for resource in try(tolist(statement.Resource), [statement.Resource]) : endswith(resource, ".tflock")
@@ -65,9 +70,9 @@ run "creates_scoped_infra_oidc_roles" {
         for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
         if statement.Sid == "AllowTerraformStateLockfileMutationForPlan"
       ]),
-      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform-core/terraform.tfstate.tflock"
     )
-    error_message = "The plan role must allow Terraform S3 native lock-file mutation for deploy preflight plans."
+    error_message = "The plan role must allow Terraform S3 native lock-file mutation for Platform Core preflight plans."
   }
 
   assert {
@@ -76,9 +81,58 @@ run "creates_scoped_infra_oidc_roles" {
         for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : try(tolist(statement.Condition.StringLike["s3:prefix"]), [statement.Condition.StringLike["s3:prefix"]])
         if statement.Sid == "AllowTerraformStateBucketList"
       ]),
-      "devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+      "devops-hiraya-dev/dev/platform-core/terraform.tfstate.tflock"
     )
-    error_message = "The plan role must allow listing Terraform S3 native lock-file keys for deploy preflight plans."
+    error_message = "The plan role must allow listing Terraform S3 native lock-file keys for Platform Core preflight plans."
+  }
+
+  assert {
+    condition = !anytrue(flatten([
+      for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : [
+        for action in try(tolist(statement.Action), [statement.Action]) : action == "eks:AccessKubernetesApi"
+      ]
+    ]))
+    error_message = "The infra plan role must not receive Kubernetes API access."
+  }
+
+  assert {
+    condition = !anytrue(flatten([
+      for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : [
+        for action in try(tolist(statement.Action), [statement.Action]) : action == "eks:AccessKubernetesApi"
+      ]
+    ]))
+    error_message = "The infra apply role must not receive Kubernetes API access."
+  }
+
+  assert {
+    condition = anytrue(flatten([
+      for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : [
+        for action in try(tolist(statement.Action), [statement.Action]) : action == "eks:AccessKubernetesApi"
+      ]
+    ]))
+    error_message = "The cluster-bootstrap role must receive Kubernetes API access for bootstrap and smoke checks."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowClusterBootstrapStateMutation"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/cluster-bootstrap/terraform.tfstate"
+    )
+    error_message = "The cluster-bootstrap role must mutate the Cluster Bootstrap state object."
+  }
+
+  assert {
+    condition = !contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowClusterBootstrapStateMutation"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform-core/terraform.tfstate"
+    )
+    error_message = "The cluster-bootstrap role must not mutate the Platform Core state object."
   }
 
   assert {
@@ -121,9 +175,9 @@ run "creates_scoped_infra_oidc_roles" {
         for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
         if statement.Sid == "AllowTerraformStateMutation"
       ]),
-      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform-core/terraform.tfstate.tflock"
     )
-    error_message = "The apply policy must allow Terraform S3 native lock-file mutation for the platform state."
+    error_message = "The apply policy must allow Terraform S3 native lock-file mutation for the Platform Core state."
   }
 
   assert {
@@ -132,8 +186,28 @@ run "creates_scoped_infra_oidc_roles" {
         for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(tolist(statement.Condition.StringLike["s3:prefix"]), [statement.Condition.StringLike["s3:prefix"]])
         if statement.Sid == "AllowTerraformStateBucketList"
       ]),
-      "devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+      "devops-hiraya-dev/dev/platform-core/terraform.tfstate.tflock"
     )
     error_message = "The apply policy must allow listing Terraform S3 native lock-file keys."
+  }
+
+  assert {
+    condition     = aws_secretsmanager_secret.vintage.name == "/hiraya/dev/apps/vintage"
+    error_message = "Project Bootstrap must own the stable durable Vintage dev secret name."
+  }
+
+  assert {
+    condition     = output.platform_core_backend_config.key == "devops-hiraya-dev/dev/platform-core/terraform.tfstate"
+    error_message = "Project Bootstrap must expose the Platform Core backend key."
+  }
+
+  assert {
+    condition     = output.cluster_bootstrap_backend_config.key == "devops-hiraya-dev/dev/cluster-bootstrap/terraform.tfstate"
+    error_message = "Project Bootstrap must expose the Cluster Bootstrap backend key."
+  }
+
+  assert {
+    condition     = random_password.vintage_postgres.keepers.rotation_epoch == "1"
+    error_message = "The Vintage secret must rotate only when the manual rotation epoch changes."
   }
 }

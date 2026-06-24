@@ -4,6 +4,40 @@ module "ecr" {
   repositories = var.repositories
 }
 
+resource "random_password" "vintage_postgres" {
+  length           = 32
+  special          = true
+  override_special = "_-"
+
+  keepers = {
+    rotation_epoch = var.vintage_secret_rotation_epoch
+  }
+}
+
+resource "aws_secretsmanager_secret" "vintage" {
+  name                    = local.vintage_secret_name
+  description             = "Durable ${title(var.environment)} Vintage Storefront runtime database settings for External Secrets Operator."
+  recovery_window_in_days = 30
+
+  tags = merge(local.common_tags, {
+    Component = "project-bootstrap"
+    Workload  = "vintage"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "vintage" {
+  secret_id = aws_secretsmanager_secret.vintage.id
+  secret_string = jsonencode({
+    POSTGRES_DB       = "postgres"
+    POSTGRES_USER     = "postgres"
+    POSTGRES_PASSWORD = random_password.vintage_postgres.result
+    AUTH_DB_URL       = "postgresql://postgres:${random_password.vintage_postgres.result}@vintage-postgres:5432/auth_db"
+    PRODUCTS_DB_URL   = "postgresql://postgres:${random_password.vintage_postgres.result}@vintage-postgres:5432/products_db"
+    ORDERS_DB_URL     = "postgresql://postgres:${random_password.vintage_postgres.result}@vintage-postgres:5432/orders_db"
+    USERS_DB_URL      = "postgresql://postgres:${random_password.vintage_postgres.result}@vintage-postgres:5432/users_db"
+  })
+}
+
 resource "aws_iam_role" "github_image_push" {
   name                 = "${local.name_prefix}-github-image-push"
   permissions_boundary = local.runtime_boundary_arn
@@ -73,7 +107,7 @@ resource "aws_iam_policy" "github_infra_plan" {
           "s3:GetObject",
           "s3:GetObjectVersion"
         ]
-        Resource = local.terraform_state_object_arns
+        Resource = local.platform_core_state_read_object_arns
       },
       {
         Sid      = "AllowTerraformStateBucketList"
@@ -94,7 +128,7 @@ resource "aws_iam_policy" "github_infra_plan" {
           "s3:GetObject",
           "s3:PutObject"
         ]
-        Resource = local.terraform_state_lockfile_object_arns
+        Resource = [local.terraform_state_lockfile_object_arns.platform_core]
       },
       {
         Sid    = "AllowScopedReadOnlyPlanInspection"
@@ -111,7 +145,6 @@ resource "aws_iam_policy" "github_infra_plan" {
           "ecr:Describe*",
           "ecr:GetAuthorizationToken",
           "ecr:GetRepositoryPolicy",
-          "eks:AccessKubernetesApi",
           "eks:Describe*",
           "eks:List*",
           "elasticloadbalancing:Describe*",
@@ -138,6 +171,87 @@ resource "aws_iam_role_policy_attachment" "github_infra_plan" {
   policy_arn = aws_iam_policy.github_infra_plan.arn
 }
 
+resource "aws_iam_role" "github_cluster_bootstrap" {
+  name               = "${local.name_prefix}-github-cluster-bootstrap"
+  assume_role_policy = data.aws_iam_policy_document.github_cluster_bootstrap_assume_role.json
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_policy" "github_cluster_bootstrap" {
+  name        = "${local.name_prefix}-github-cluster-bootstrap"
+  description = "Scoped access for Cluster Bootstrap Terraform, Kubernetes bootstrap, smoke checks, and GitOps cleanup."
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowClusterBootstrapStateMutation"
+        Effect = "Allow"
+        Action = [
+          "s3:DeleteObject",
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = local.cluster_bootstrap_state_mutation_object_arns
+      },
+      {
+        Sid    = "AllowClusterBootstrapRemoteStateRead"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = local.cluster_bootstrap_state_read_object_arns
+      },
+      {
+        Sid      = "AllowTerraformStateBucketList"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = "arn:aws:s3:::${var.state_bucket_name}"
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.terraform_state_list_prefixes
+          }
+        }
+      },
+      {
+        Sid      = "AllowTerraformStateBucketLocation"
+        Effect   = "Allow"
+        Action   = ["s3:GetBucketLocation"]
+        Resource = "arn:aws:s3:::${var.state_bucket_name}"
+      },
+      {
+        Sid    = "AllowEksBootstrapAndSmokeRead"
+        Effect = "Allow"
+        Action = [
+          "eks:AccessKubernetesApi",
+          "eks:DescribeCluster",
+          "eks:ListClusters"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowArgoAdminSecretRead"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = local.argocd_admin_secret_arn_pattern
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "github_cluster_bootstrap" {
+  role       = aws_iam_role.github_cluster_bootstrap.name
+  policy_arn = aws_iam_policy.github_cluster_bootstrap.arn
+}
+
 resource "aws_iam_role" "github_infra_apply" {
   name               = "${local.name_prefix}-github-infra-apply"
   assume_role_policy = data.aws_iam_policy_document.github_infra_apply_assume_role.json
@@ -161,7 +275,7 @@ resource "aws_iam_policy" "github_infra_apply" {
           "s3:GetObjectVersion",
           "s3:PutObject"
         ]
-        Resource = local.terraform_state_mutation_object_arns
+        Resource = local.platform_core_state_mutation_object_arns
       },
       {
         Sid      = "AllowTerraformStateBucketAccessCheck"
@@ -181,6 +295,15 @@ resource "aws_iam_policy" "github_infra_apply" {
         }
       },
       {
+        Sid    = "AllowProjectBootstrapStateRead"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [local.terraform_state_object_arns.bootstrap]
+      },
+      {
         Sid    = "AllowPlatformReadInspection"
         Effect = "Allow"
         Action = [
@@ -195,7 +318,6 @@ resource "aws_iam_policy" "github_infra_apply" {
           "ecr:Describe*",
           "ecr:GetAuthorizationToken",
           "ecr:GetRepositoryPolicy",
-          "eks:AccessKubernetesApi",
           "eks:Describe*",
           "eks:List*",
           "elasticloadbalancing:Describe*",
