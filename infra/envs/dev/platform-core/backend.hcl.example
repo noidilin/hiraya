@@ -3,7 +3,7 @@
 # The bucket is externally managed, not created by Terraform.
 
 bucket       = "devops-hiraya-dev-tf-state"
-key          = "devops-hiraya-dev/dev/platform/terraform.tfstate"
+key          = "devops-hiraya-dev/dev/platform-core/terraform.tfstate"
 region       = "ap-northeast-1"
 use_lockfile = true
 encrypt      = true

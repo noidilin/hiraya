@@ -2,7 +2,7 @@
 set -euo pipefail
 
 AWS_REGION="${AWS_REGION:-ap-northeast-1}"
-PLATFORM_DIR="${PLATFORM_DIR:-infra/envs/dev/platform}"
+PLATFORM_DIR="${PLATFORM_DIR:-infra/envs/dev/platform-core}"
 
 require_output() {
   local name="$1"
@@ -46,7 +46,7 @@ CLUSTER_NAME=$(require_output cluster_name)
 EDGE_GATEWAY_NAMESPACE=$(require_output edge_gateway_namespace)
 EDGE_GATEWAY_NAME=$(require_output edge_gateway_name)
 APP_HOSTNAME=$(require_output app_hostname)
-ARGOCD_HOSTNAME=$(require_output argocd_admin_hostname)
+ARGOCD_HOSTNAME=$(require_output argocd_hostname)
 GRAFANA_HOSTNAME=$(require_output grafana_hostname)
 
 APP_URL="https://${APP_HOSTNAME}"

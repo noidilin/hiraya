@@ -13,14 +13,15 @@ concurrency:
 env:
   AWS_REGION: ap-northeast-1
   TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-  TF_PLATFORM_STATE_KEY: devops-hiraya-dev/dev/platform/terraform.tfstate
+  TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
   INFRA_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-plan
   INFRA_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-apply
-  PLATFORM_DIR: infra/envs/dev/platform
+  PLATFORM_DIR: infra/envs/dev/platform-core
+  TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
 
 jobs:
   preflight-plan:
-    name: pre-approval-platform-plan
+    name: pre-approval-platform-core-plan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -46,9 +47,9 @@ jobs:
           role-session-name: hiraya-infra-deploy-plan-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: generate-platform-backend-config
+      - name: generate-platform-core-backend-config
         shell: bash
-        run: .github/scripts/write-platform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh
 
       - name: initialize-and-validate-platform-terraform
         shell: bash
@@ -65,7 +66,7 @@ jobs:
       - name: upload-pre-approval-plan-artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: terraform-preflight-plan-dev-platform-${{ github.sha }}
+          name: terraform-preflight-plan-dev-platform-core-${{ github.sha }}
           path: ${{ env.PLATFORM_DIR }}/preflight-plan.txt
           retention-days: 14
 
@@ -88,7 +89,7 @@ jobs:
             echo "| Commit | \`${GITHUB_SHA}\` |"
             echo "| Mode | Full refreshed plan before \`dev\` approval |"
             echo "| Summary | \`${summary}\` |"
-            echo "| Full plan | Artifact \`terraform-preflight-plan-dev-platform-${GITHUB_SHA}\` |"
+            echo "| Full plan | Artifact \`terraform-preflight-plan-dev-platform-core-${GITHUB_SHA}\` |"
             echo
             echo "<details><summary>Show plan excerpt</summary>"
             echo
@@ -105,7 +106,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   apply:
-    name: apply-disposable-dev-platform
+    name: apply-platform-core
     needs: preflight-plan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -133,9 +134,9 @@ jobs:
           role-session-name: hiraya-infra-apply-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: generate-platform-backend-config
+      - name: generate-platform-core-backend-config
         shell: bash
-        run: .github/scripts/write-platform-backend.sh
+        run: .github/scripts/write-terraform-backend.sh
 
       - name: initialize-platform-terraform
         shell: bash
@@ -149,16 +150,12 @@ jobs:
         shell: bash
         run: terraform -chdir="${PLATFORM_DIR}" apply -input=false -auto-approve tfplan.binary
 
-      - name: run-route-health-smoke-checks
-        shell: bash
-        run: .github/scripts/platform-route-smoke.sh
-
       - name: summarize-deployment
         if: always()
         shell: bash
         run: |
           {
-            echo "## Dev platform deploy"
+            echo "## Platform Core deploy"
             echo
             echo "| Field | Value |"
             echo "| --- | --- |"
@@ -167,5 +164,5 @@ jobs:
             echo "| Environment | \`dev\` |"
             echo "| Result | \`${{ job.status }}\` |"
             echo
-            echo "Terraform applied the fresh post-approval binary plan, then ran EKS, Gateway, HTTPRoute, and public route smoke checks. Sensitive Argo CD and Grafana passwords are not printed."
+            echo "Terraform applied the AWS-only Platform Core foundation. Cluster Bootstrap and GitOps smoke checks run in later deployment phases."
           } >> "$GITHUB_STEP_SUMMARY"
