@@ -45,8 +45,11 @@ module "eks" {
   endpoint_private_access      = var.eks_endpoint_private_access
   endpoint_public_access       = var.eks_endpoint_public_access
   endpoint_public_access_cidrs = var.eks_endpoint_public_access_cidrs
-  cluster_admin_principal_arns = [data.terraform_remote_state.bootstrap.outputs.github_infra_apply_role_arn]
-  depends_on                   = [module.vpc]
+  cluster_admin_principal_arns = toset(concat(
+    [data.terraform_remote_state.bootstrap.outputs.github_infra_apply_role_arn],
+    var.cluster_admin_principal_arns,
+  ))
+  depends_on = [module.vpc]
 }
 
 module "edge_certificate" {
