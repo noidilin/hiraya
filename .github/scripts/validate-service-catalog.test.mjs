@@ -71,6 +71,33 @@ test('fails when required service metadata is missing', async () => {
   assert.match(result.stderr, /services\[0\]\.build\.context is required/);
 });
 
+test('fails when Vintage manifests use the retired flat GitOps path', async () => {
+  const { root, catalogPath } = await createCatalogFixture({
+    services: [
+      {
+        name: 'frontend',
+        packageName: 'frontend',
+        workspace: 'app/microservices/frontend',
+        image: { repository: 'hiraya-frontend' },
+        build: {
+          context: 'app/microservices/frontend',
+          dockerfile: 'app/microservices/frontend/Dockerfile',
+        },
+        manifest: { path: 'gitops/k8s/frontend/deployment.yml' },
+        pathOwnership: ['app/microservices/frontend/**'],
+        vintageStorefrontBaseline: { active: true, critical: true },
+      },
+    ],
+  });
+  await mkdir(path.join(root, 'gitops/k8s/frontend'), { recursive: true });
+  await writeFile(path.join(root, 'gitops/k8s/frontend/deployment.yml'), '---\n');
+
+  const result = validate(catalogPath, root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /manifest\.path must use gitops\/apps\/vintage\/k8s\//);
+});
+
 test('fails when referenced local paths do not exist', async () => {
   const { root, catalogPath } = await createCatalogFixture({
     services: [

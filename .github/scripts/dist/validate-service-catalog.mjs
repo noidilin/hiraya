@@ -139,6 +139,16 @@ function globBase(pattern) {
     const trimmedBase = rawBase.replace(/[/\\]+$/, '');
     return trimmedBase === '' ? '.' : trimmedBase;
 }
+function validatePathConventions(catalog) {
+    const errors = [];
+    for (const [index, service] of catalog.services.entries()) {
+        const manifestPath = readField(service, 'manifest.path');
+        if (typeof manifestPath === 'string' && !manifestPath.startsWith('gitops/apps/vintage/k8s/')) {
+            errors.push(`services[${index}].manifest.path must use gitops/apps/vintage/k8s/: ${manifestPath}`);
+        }
+    }
+    return errors;
+}
 async function validatePaths(catalog, root) {
     const errors = [];
     for (const [index, service] of catalog.services.entries()) {
@@ -175,6 +185,7 @@ async function main() {
     const shapeErrors = validateShape(catalog);
     const errors = [
         ...shapeErrors,
+        ...isCatalog(catalog) ? validatePathConventions(catalog) : [],
         ...isCatalog(catalog) ? await validatePaths(catalog, root) : [],
     ];
     if (errors.length > 0) {
