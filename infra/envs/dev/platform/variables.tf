@@ -62,6 +62,12 @@ variable "node_group_name" {
   description = "EKS node group name"
 }
 
+variable "cluster_admin_principal_arns" {
+  description = "Additional IAM principal ARNs granted cluster-scoped EKS admin access for dev platform applies. The GitHub infra apply role is always included."
+  type        = list(string)
+  default     = []
+}
+
 variable "instance_types" {
   type        = list(string)
   description = "Instance types for worker nodes (t3.medium, t3.large)"

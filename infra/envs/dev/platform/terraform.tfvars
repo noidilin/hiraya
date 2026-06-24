@@ -32,6 +32,12 @@ eks_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 cluster_name    = "devops-hiraya-dev-eks"
 node_group_name = "devops-hiraya-dev-node-group"
 
+# Local/dev workstation applies use the AWS IAM Identity Center Dev role. The
+# GitHub infra apply role is always included by main.tf for CI applies.
+cluster_admin_principal_arns = [
+  "arn:aws:iam::549475122024:role/aws-reserved/sso.amazonaws.com/ap-northeast-1/AWSReservedSSO_Dev_c315945bb49b88d5",
+]
+
 instance_types = ["t3.medium"]
 capacity_type  = "SPOT"
 
