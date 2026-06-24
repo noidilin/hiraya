@@ -78,7 +78,7 @@ namespace_gone() {
 app_namespace_pvs_gone() {
   local remaining
   remaining=$(kubectl get pv -o jsonpath='{range .items[*]}{.spec.claimRef.namespace}{"\n"}{end}' 2>/dev/null \
-    | awk -v namespace="$APP_NAMESPACE" '$0 == namespace { count++ } END { print count + 0 }')
+    | awk -v target_namespace="$APP_NAMESPACE" '$0 == target_namespace { count++ } END { print count + 0 }')
 
   [[ "$remaining" == "0" ]]
 }
