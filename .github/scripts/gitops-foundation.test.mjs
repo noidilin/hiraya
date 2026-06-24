@@ -54,19 +54,25 @@ test('Cluster Platform grants Public Gateway Access namespaces, excluding argocd
   assert.equal(docs(rendered).some((doc) => kind(doc) === 'Namespace' && metadataName(doc) === 'argocd'), false, 'argocd namespace must remain Cluster Bootstrap-owned');
 });
 
-test('Edge and Argo CD access render as separated Cluster Platform Applications', () => {
+test('Edge, logging, monitoring, and Argo CD access render as separated Cluster Platform Applications', () => {
   const rendered = render('gitops/clusters/dev/root');
   const expectedApps = [
-    ['platform-edge', '-14', 'gitops/platform/edge'],
-    ['platform-argocd-access', '-8', 'gitops/platform/argocd-access'],
+    ['platform-edge', '-14', 'path', 'gitops/platform/edge', true],
+    ['platform-logging', '-10', 'values', 'gitops/platform/logging/values-dev.yaml', true],
+    ['platform-monitoring', '-10', 'path', 'gitops/platform/monitoring', false],
+    ['platform-argocd-access', '-8', 'path', 'gitops/platform/argocd-access', true],
   ];
 
-  for (const [name, wave, sourcePath] of expectedApps) {
+  for (const [name, wave, sourceKind, sourcePath, shouldPrune] of expectedApps) {
     const app = byKindName(rendered, 'Application', name);
     assert.match(app, new RegExp(`argocd.argoproj.io/sync-wave:\\s*['"]?${wave}['"]?`), `${name} should have sync wave ${wave}`);
     assert.match(app, /project:\s*hiraya-platform/, `${name} should use the Cluster Platform project`);
-    assert.match(app, new RegExp(`path:\\s*${sourcePath}`), `${name} should target ${sourcePath}`);
-    assert.match(app, /prune:\s*true/, `${name} should enable automated prune`);
+    if (sourceKind === 'values') {
+      assert.match(app, new RegExp(sourcePath.replaceAll('/', '\\/')), `${name} should use ${sourcePath}`);
+    } else {
+      assert.match(app, new RegExp(`path:\\s*${sourcePath}`), `${name} should target ${sourcePath}`);
+    }
+    assert.match(app, new RegExp(`prune:\\s*${shouldPrune}`), `${name} should set automated prune to ${shouldPrune}`);
     assert.match(app, /selfHeal:\s*true/, `${name} should enable automated self-heal`);
   }
 });
@@ -96,6 +102,28 @@ test('Argo CD access owns only the public Argo CD route', () => {
   assert.match(route, /argocd\.hiraya\.noidilin\.dev/, 'Argo CD route should preserve its public hostname');
   assert.match(route, /namespace:\s*edge/, 'Argo CD route should attach to the shared edge Gateway');
   assert.match(route, /name:\s*argocd-server/, 'Argo CD route should target the Argo CD server Service');
+});
+
+test('Logging and monitoring platform apps use Terraform-owned secrets and log group contracts', () => {
+  const root = render('gitops/clusters/dev/root');
+  const loggingApp = byKindName(root, 'Application', 'platform-logging');
+  const monitoringApp = byKindName(root, 'Application', 'platform-monitoring');
+
+  assert.match(loggingApp, /chart:\s*aws-for-fluent-bit/, 'logging should use the Fluent Bit Helm chart');
+  assert.match(loggingApp, /targetRevision:\s*0\.2\.0/, 'logging chart version should be pinned');
+  assert.match(monitoringApp, /chart:\s*kube-prometheus-stack/, 'monitoring should use kube-prometheus-stack');
+  assert.match(monitoringApp, /targetRevision:\s*56\.21\.0/, 'monitoring chart version should be pinned');
+  assert.match(monitoringApp, /prune:\s*false/, 'monitoring should protect chart-owned CRDs/resources from unsafe automated Argo prune');
+
+  const monitoring = render('gitops/platform/monitoring');
+  const grafanaSecret = byKindName(monitoring, 'ExternalSecret', 'grafana-admin');
+  const grafanaRoute = byKindName(monitoring, 'HTTPRoute', 'grafana');
+
+  assert.match(grafanaSecret, /hiraya-dev-secrets-manager/, 'Grafana credentials should come from ESO ClusterSecretStore');
+  assert.match(grafanaSecret, /\/hiraya\/dev\/platform\/grafana-admin/, 'Grafana credentials should use the stable Secrets Manager name');
+  assert.match(grafanaRoute, /grafana\.hiraya\.noidilin\.dev/, 'Grafana route should preserve its public hostname');
+  assert.match(grafanaRoute, /namespace:\s*edge/, 'Grafana route should attach to the shared edge Gateway');
+  assert.match(grafanaRoute, /name:\s*kube-prometheus-stack-grafana/, 'Grafana route should target the chart Grafana Service');
 });
 
 test('Gateway API and AWS Load Balancer Controller CRDs are vendored and no-prune protected', () => {

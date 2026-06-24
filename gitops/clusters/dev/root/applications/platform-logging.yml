@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-logging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hiraya-platform
+  sources:
+    - repoURL: https://aws.github.io/eks-charts
+      chart: aws-for-fluent-bit
+      targetRevision: 0.2.0
+      helm:
+        releaseName: aws-for-fluent-bit
+        valueFiles:
+          - $values/gitops/platform/logging/values-dev.yaml
+    - repoURL: https://github.com/noidilin/hiraya.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: amazon-cloudwatch
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
