@@ -170,6 +170,19 @@ function globBase(pattern: string): string {
   return trimmedBase === '' ? '.' : trimmedBase;
 }
 
+function validatePathConventions(catalog: ServiceCatalog): string[] {
+  const errors: string[] = [];
+
+  for (const [index, service] of catalog.services.entries()) {
+    const manifestPath = readField(service, 'manifest.path');
+    if (typeof manifestPath === 'string' && !manifestPath.startsWith('gitops/apps/vintage/k8s/')) {
+      errors.push(`services[${index}].manifest.path must use gitops/apps/vintage/k8s/: ${manifestPath}`);
+    }
+  }
+
+  return errors;
+}
+
 async function validatePaths(catalog: ServiceCatalog, root: string): Promise<string[]> {
   const errors: string[] = [];
 
@@ -211,6 +224,7 @@ async function main(): Promise<void> {
   const shapeErrors = validateShape(catalog);
   const errors = [
     ...shapeErrors,
+    ...isCatalog(catalog) ? validatePathConventions(catalog) : [],
     ...isCatalog(catalog) ? await validatePaths(catalog, root) : [],
   ];
 
