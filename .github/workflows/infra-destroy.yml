@@ -18,9 +18,10 @@ concurrency:
 env:
   AWS_REGION: ap-northeast-1
   TF_STATE_BUCKET: devops-hiraya-dev-tf-state
-  TF_STATE_KEY: devops-hiraya-dev/dev/platform-core/terraform.tfstate
   INFRA_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-infra-apply
-  TF_BACKEND_PATH: infra/envs/dev/platform-core/backend.hcl
+  CLUSTER_BOOTSTRAP_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-cluster-bootstrap
+  PLATFORM_DIR: infra/envs/dev/platform-core
+  CLUSTER_BOOTSTRAP_DIR: infra/envs/dev/cluster-bootstrap
   DESTROY_CONFIRMATION: destroy dev platform
 
 jobs:
@@ -47,7 +48,7 @@ jobs:
           fi
 
   destroy:
-    name: destroy-platform-core
+    name: ordered-gitops-prune-and-layered-destroy
     needs: preflight
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -68,20 +69,22 @@ jobs:
           install: true
           cache: true
 
-      - name: configure-aws-credentials-with-oidc
+      - name: configure-aws-credentials-with-cluster-bootstrap-role
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
         with:
-          role-to-assume: ${{ env.INFRA_APPLY_ROLE_ARN }}
-          role-session-name: hiraya-infra-destroy-${{ github.run_id }}
+          role-to-assume: ${{ env.CLUSTER_BOOTSTRAP_ROLE_ARN }}
+          role-session-name: hiraya-gitops-prune-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: generate-platform-backend-config
+      - name: generate-layered-backend-configs
         shell: bash
-        run: .github/scripts/write-terraform-backend.sh
+        run: |
+          .github/scripts/write-terraform-backend.sh platform-core
+          .github/scripts/write-terraform-backend.sh cluster-bootstrap
 
-      - name: initialize-platform-terraform
+      - name: initialize-platform-core-state-for-destroy-inputs
         shell: bash
-        run: terraform -chdir=infra/envs/dev/platform-core init -backend-config=backend.hcl -reconfigure -input=false
+        run: terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
 
       - name: capture-platform-identifiers
         id: platform
@@ -92,7 +95,7 @@ jobs:
           capture_output() {
             local name="$1"
             local value
-            value=$(terraform -chdir=infra/envs/dev/platform-core output -raw "$name" 2>/dev/null || true)
+            value=$(terraform -chdir="${PLATFORM_DIR}" output -raw "$name" 2>/dev/null || true)
             if [[ -z "$value" ]]; then
               echo "Terraform output ${name} is empty; destroy verification would be unsafe." >&2
               exit 1
@@ -103,15 +106,52 @@ jobs:
           capture_output cluster_name
           capture_output vpc_id
           capture_output edge_load_balancer_name
+          capture_output external_dns_hosted_zone_id
+          capture_output app_hostname
+          capture_output argocd_hostname
+          capture_output grafana_hostname
 
-      - name: destroy-disposable-platform-stack
+      - name: prune-gitops-resources-before-terraform-destroy
+        env:
+          CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
+          EDGE_LOAD_BALANCER_NAME: ${{ steps.platform.outputs.edge_load_balancer_name }}
+          EXTERNAL_DNS_HOSTED_ZONE_ID: ${{ steps.platform.outputs.external_dns_hosted_zone_id }}
+          EXTERNAL_DNS_HOSTNAMES: >-
+            ${{ steps.platform.outputs.app_hostname }}
+            ${{ steps.platform.outputs.argocd_hostname }}
+            ${{ steps.platform.outputs.grafana_hostname }}
+          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
         shell: bash
-        run: terraform -chdir=infra/envs/dev/platform-core destroy -input=false -auto-approve
+        run: .github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh
+
+      - name: initialize-cluster-bootstrap-terraform
+        shell: bash
+        run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: destroy-cluster-bootstrap-state
+        shell: bash
+        run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" destroy -input=false -auto-approve
+
+      - name: configure-aws-credentials-with-platform-core-apply-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.INFRA_APPLY_ROLE_ARN }}
+          role-session-name: hiraya-platform-core-destroy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: initialize-platform-core-terraform
+        shell: bash
+        run: terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: destroy-platform-core-stack
+        shell: bash
+        run: terraform -chdir="${PLATFORM_DIR}" destroy -input=false -auto-approve
 
       - name: verify-platform-removal-and-durable-resources
         env:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           VPC_ID: ${{ steps.platform.outputs.vpc_id }}
           EDGE_LOAD_BALANCER_NAME: ${{ steps.platform.outputs.edge_load_balancer_name }}
+          K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
         shell: bash
         run: .github/scripts/platform-destroy-verify.sh

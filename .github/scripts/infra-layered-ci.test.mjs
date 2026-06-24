@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 const infraCiWorkflowPath = '.github/workflows/infra-ci.yml';
 const infraDeployWorkflowPath = '.github/workflows/infra-deploy.yml';
+const infraDestroyWorkflowPath = '.github/workflows/infra-destroy.yml';
 const backendWriterPath = '.github/scripts/write-terraform-backend.sh';
 
 function blockBetween(text, start, end) {
@@ -69,6 +70,31 @@ test('deploy workflow applies Platform Core before Cluster Bootstrap and then sm
   assert.match(workflow, /terraform -chdir="\$\{CLUSTER_BOOTSTRAP_DIR\}" apply/, 'deploy should apply the Cluster Bootstrap state');
   assert.match(workflow, /platform-route-smoke\.sh/, 'deploy should run Kubernetes and public route smoke checks after GitOps convergence');
   assert.doesNotMatch(workflow, /argocd login|argocd app sync|ARGOCD_AUTH_TOKEN/, 'deploy validation must not call the Argo CD API');
+});
+
+test('destroy workflow prunes GitOps before layered Terraform teardown', async () => {
+  const workflow = await readFile(infraDestroyWorkflowPath, 'utf8');
+
+  assert.match(workflow, /CLUSTER_BOOTSTRAP_ROLE_ARN/, 'destroy should use the dedicated Cluster Bootstrap role for Kubernetes cleanup');
+  assert.match(workflow, /configure-aws-credentials-with-cluster-bootstrap-role[\s\S]*platform-pre-destroy-k8s-ebs-cleanup\.sh/, 'GitOps/Kubernetes cleanup should run under the Cluster Bootstrap role');
+  assert.match(workflow, /destroy-cluster-bootstrap-state[\s\S]*terraform -chdir="\$\{CLUSTER_BOOTSTRAP_DIR\}" destroy/, 'Cluster Bootstrap state should be destroyed before Platform Core');
+  assert.match(workflow, /configure-aws-credentials-with-platform-core-apply-role[\s\S]*destroy-platform-core-stack/, 'Platform Core destroy should use the infra apply role after Cluster Bootstrap teardown');
+  assert.match(workflow, /write-terraform-backend\.sh cluster-bootstrap/, 'destroy should initialize the Cluster Bootstrap layered state');
+  assert.match(workflow, /write-terraform-backend\.sh platform-core/, 'destroy should initialize the Platform Core layered state');
+});
+
+test('pre-destroy script stops root reconciliation and prunes child apps in safe order', async () => {
+  const script = await readFile('.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh', 'utf8');
+
+  assert.match(script, /ROOT_ARGOCD_APPLICATION/, 'cleanup should know the root app name');
+  assert.match(script, /suspend_root_application/, 'cleanup should suspend or orphan-delete the root app before child pruning');
+  assert.match(script, /delete_child_application vintage/, 'Vintage workload must be pruned first');
+  assert.match(script, /wait_for_vintage_storage_cleanup/, 'cleanup should wait for Vintage PVC/PV/EBS cleanup before controller teardown');
+  assert.match(script, /delete_child_application platform-edge[\s\S]*wait_for_alb_cleanup/, 'edge resources should be removed while AWS LBC is still running');
+  assert.match(script, /wait_for_external_dns_cleanup/, 'cleanup should wait for ExternalDNS-managed records to disappear');
+  assert.match(script, /delete_child_application platform-aws-load-balancer-controller/, 'AWS Load Balancer Controller should be pruned only after ALB cleanup');
+  assert.match(script, /delete_child_application platform-external-dns/, 'ExternalDNS should be pruned only after DNS cleanup');
+  assert.match(script, /delete_child_application platform-gateway-api-crds/, 'CRD app should be pruned last');
 });
 
 test('platform smoke script validates GitOps health and layered public surface', async () => {
