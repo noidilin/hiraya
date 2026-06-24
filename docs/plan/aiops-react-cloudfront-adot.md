@@ -1,7 +1,9 @@
 # AIOps React UI and CloudWatch-backed Kira Plan
 
 Status: planned
-Related ADR: [`docs/adr/0002-aiops-cloudwatch-metrics-via-adot.md`](../adr/0002-aiops-cloudwatch-metrics-via-adot.md)
+Related ADRs: [`docs/adr/0002-aiops-cloudwatch-metrics-via-adot.md`](../adr/0002-aiops-cloudwatch-metrics-via-adot.md), [`docs/adr/0007-gitops-owned-cluster-platform.md`](../adr/0007-gitops-owned-cluster-platform.md)
+
+Ownership note: ADR-0007 supersedes the Terraform-owned in-cluster ADOT module described in this plan. Terraform should own ADOT IAM/CloudWatch-side resources and outputs; Argo CD Cluster Platform should own the in-cluster ADOT collector manifests when ADOT is implemented.
 Depends on: GitHub issue #1 / [`docs/plan/network-improvement.md`](./network-improvement.md)
 
 ## Goal

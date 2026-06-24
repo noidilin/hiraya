@@ -1,6 +1,6 @@
 # EKS network redesign for dev
 
-Status: accepted
+Status: accepted; shared-controller ownership superseded by ADR-0007
 
 The dev EKS platform will move from public worker nodes to private EKS nodes in private subnets, with a single public shared ALB at the edge, one NAT Gateway plus an S3 gateway endpoint for private outbound egress, and EKS API private access enabled while public API access remains an explicit temporary dev toggle. This improves the portfolio network design without adopting the full cost of production HA networking.
 
