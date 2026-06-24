@@ -50,8 +50,35 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
-    condition     = length([for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : statement if try(contains(tolist(statement.Action), "s3:PutObject"), false) || try(contains(tolist(statement.Action), "s3:DeleteObject"), false)]) == 0
-    error_message = "The plan role must not have Terraform state mutation access."
+    condition = alltrue(flatten([
+      for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : [
+        for resource in try(tolist(statement.Resource), [statement.Resource]) : endswith(resource, ".tflock")
+        if try(contains(tolist(statement.Action), "s3:PutObject"), false) || try(contains(tolist(statement.Action), "s3:DeleteObject"), false)
+      ]
+    ]))
+    error_message = "The plan role must only mutate Terraform S3 native lock-file objects, not state objects."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowTerraformStateLockfileMutationForPlan"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+    )
+    error_message = "The plan role must allow Terraform S3 native lock-file mutation for deploy preflight plans."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_infra_plan.policy).Statement : try(tolist(statement.Condition.StringLike["s3:prefix"]), [statement.Condition.StringLike["s3:prefix"]])
+        if statement.Sid == "AllowTerraformStateBucketList"
+      ]),
+      "devops-hiraya-dev/dev/platform/terraform.tfstate.tflock"
+    )
+    error_message = "The plan role must allow listing Terraform S3 native lock-file keys for deploy preflight plans."
   }
 
   assert {
@@ -65,6 +92,14 @@ run "creates_scoped_infra_oidc_roles" {
       if statement.Sid == "AllowPlatformInfrastructureMutation"
     ])
     error_message = "The apply policy must allow EC2 EIP disassociation during VPC destroy."
+  }
+
+  assert {
+    condition = anytrue([
+      for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(contains(tolist(statement.Action), "logs:TagResource"), false)
+      if statement.Sid == "AllowPlatformInfrastructureMutation"
+    ])
+    error_message = "The apply policy must allow tagging CloudWatch log groups during tagged creation."
   }
 
   assert {

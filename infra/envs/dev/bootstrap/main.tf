@@ -82,9 +82,19 @@ resource "aws_iam_policy" "github_infra_plan" {
         Resource = "arn:aws:s3:::${var.state_bucket_name}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.terraform_state_keys
+            "s3:prefix" = local.terraform_state_list_prefixes
           }
         }
+      },
+      {
+        Sid    = "AllowTerraformStateLockfileMutationForPlan"
+        Effect = "Allow"
+        Action = [
+          "s3:DeleteObject",
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Resource = local.terraform_state_lockfile_object_arns
       },
       {
         Sid    = "AllowScopedReadOnlyPlanInspection"
@@ -284,6 +294,8 @@ resource "aws_iam_policy" "github_infra_apply" {
           "logs:DeleteRetentionPolicy",
           "logs:DisassociateKmsKey",
           "logs:PutRetentionPolicy",
+          "logs:TagResource",
+          "logs:UntagResource",
           "route53:ChangeResourceRecordSets"
         ]
         Resource = "*"
