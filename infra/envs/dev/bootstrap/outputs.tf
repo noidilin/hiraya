@@ -24,17 +24,41 @@ output "github_infra_plan_role_arn" {
 }
 
 output "github_infra_apply_role_arn" {
-  description = "GitHub Actions OIDC role ARN for approved Terraform platform apply and destroy workflows."
+  description = "GitHub Actions OIDC role ARN for approved Platform Core apply and destroy workflows."
   value       = aws_iam_role.github_infra_apply.arn
 }
 
+output "github_cluster_bootstrap_role_arn" {
+  description = "GitHub Actions OIDC role ARN for Cluster Bootstrap apply, GitOps cleanup, and smoke checks."
+  value       = aws_iam_role.github_cluster_bootstrap.arn
+}
+
+output "vintage_secret_name" {
+  description = "Stable AWS Secrets Manager name for durable Vintage Storefront dev runtime secrets."
+  value       = aws_secretsmanager_secret.vintage.name
+}
+
+output "vintage_secret_arn" {
+  description = "ARN of the durable Vintage Storefront dev runtime secret. Secret values are not output."
+  value       = aws_secretsmanager_secret.vintage.arn
+}
+
+output "backend_configs" {
+  description = "Backend config values for downstream Terraform states keyed by stack name."
+  value       = local.backend_configs
+}
+
+output "platform_core_backend_config" {
+  description = "Backend config values for ../platform-core/backend.hcl."
+  value       = local.backend_configs["platform-core"]
+}
+
+output "cluster_bootstrap_backend_config" {
+  description = "Backend config values for ../cluster-bootstrap/backend.hcl."
+  value       = local.backend_configs["cluster-bootstrap"]
+}
+
 output "backend_config" {
-  description = "Backend config values for ../platform/backend.hcl."
-  value = {
-    bucket       = var.state_bucket_name
-    key          = "devops-hiraya-dev/dev/platform/terraform.tfstate"
-    region       = var.aws_region
-    use_lockfile = true
-    encrypt      = true
-  }
+  description = "Deprecated compatibility alias for platform_core_backend_config."
+  value       = local.backend_configs["platform-core"]
 }

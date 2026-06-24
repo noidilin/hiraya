@@ -48,6 +48,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "vintage_secret_rotation_epoch" {
+  description = "Manual rotation epoch for the durable Vintage Storefront secret. Increment intentionally to replace generated values."
+  type        = string
+  default     = "1"
+}
+
 variable "skip_aws_credentials_validation" {
   description = "Skip AWS provider credential validation for static CI checks that must not request AWS credentials."
   type        = bool

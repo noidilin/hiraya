@@ -2,30 +2,69 @@ locals {
   name_prefix          = "devops-${var.project_name}-${var.environment}"
   runtime_boundary_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
 
-  terraform_state_keys = [
-    "devops-hiraya-dev/dev/bootstrap/terraform.tfstate",
-    "devops-hiraya-dev/dev/platform/terraform.tfstate",
+  terraform_state_keys = {
+    bootstrap         = "${local.name_prefix}/${var.environment}/bootstrap/terraform.tfstate"
+    platform_core     = "${local.name_prefix}/${var.environment}/platform-core/terraform.tfstate"
+    cluster_bootstrap = "${local.name_prefix}/${var.environment}/cluster-bootstrap/terraform.tfstate"
+  }
+
+  terraform_state_lockfile_keys = {
+    for name, key in local.terraform_state_keys : name => "${key}.tflock"
+  }
+
+  terraform_state_list_prefixes = concat(values(local.terraform_state_keys), values(local.terraform_state_lockfile_keys))
+
+  terraform_state_object_arns = {
+    for name, key in local.terraform_state_keys : name => "arn:aws:s3:::${var.state_bucket_name}/${key}"
+  }
+
+  terraform_state_lockfile_object_arns = {
+    for name, key in local.terraform_state_lockfile_keys : name => "arn:aws:s3:::${var.state_bucket_name}/${key}"
+  }
+
+  platform_core_state_mutation_object_arns = [
+    local.terraform_state_object_arns.platform_core,
+    local.terraform_state_lockfile_object_arns.platform_core,
   ]
 
-  terraform_state_lockfile_keys = [
-    for key in local.terraform_state_keys : "${key}.tflock"
+  platform_core_state_read_object_arns = [
+    local.terraform_state_object_arns.bootstrap,
+    local.terraform_state_object_arns.platform_core,
   ]
 
-  terraform_state_list_prefixes = concat(local.terraform_state_keys, local.terraform_state_lockfile_keys)
-
-  terraform_state_object_arns = [
-    for key in local.terraform_state_keys : "arn:aws:s3:::${var.state_bucket_name}/${key}"
+  cluster_bootstrap_state_mutation_object_arns = [
+    local.terraform_state_object_arns.cluster_bootstrap,
+    local.terraform_state_lockfile_object_arns.cluster_bootstrap,
   ]
 
-  terraform_state_lockfile_object_arns = [
-    for key in local.terraform_state_lockfile_keys : "arn:aws:s3:::${var.state_bucket_name}/${key}"
+  cluster_bootstrap_state_read_object_arns = [
+    local.terraform_state_object_arns.bootstrap,
+    local.terraform_state_object_arns.platform_core,
   ]
-
-  terraform_state_mutation_object_arns = concat(local.terraform_state_object_arns, local.terraform_state_lockfile_object_arns)
 
   platform_role_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-*"
   platform_policy_arn_pattern        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-*"
   platform_oidc_provider_arn_pattern = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${var.aws_region}.amazonaws.com/id/*"
+  argocd_admin_secret_arn_pattern    = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:/hiraya/${var.environment}/platform/argocd-admin-*"
+
+  backend_configs = {
+    platform-core = {
+      bucket       = var.state_bucket_name
+      key          = local.terraform_state_keys.platform_core
+      region       = var.aws_region
+      use_lockfile = true
+      encrypt      = true
+    }
+    cluster-bootstrap = {
+      bucket       = var.state_bucket_name
+      key          = local.terraform_state_keys.cluster_bootstrap
+      region       = var.aws_region
+      use_lockfile = true
+      encrypt      = true
+    }
+  }
+
+  vintage_secret_name = "/hiraya/${var.environment}/apps/vintage"
 
   common_tags = merge(var.tags, {
     Project     = var.project_name
