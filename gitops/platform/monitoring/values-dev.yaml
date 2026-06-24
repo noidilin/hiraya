@@ -1,0 +1,22 @@
+crds:
+  enabled: true
+
+prometheus:
+  service:
+    type: ClusterIP
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+grafana:
+  service:
+    type: ClusterIP
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL

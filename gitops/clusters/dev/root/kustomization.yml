@@ -8,4 +8,6 @@ resources:
   - applications/platform-aws-load-balancer-controller.yml
   - applications/platform-external-dns.yml
   - applications/platform-edge.yml
+  - applications/platform-logging.yml
+  - applications/platform-monitoring.yml
   - applications/platform-argocd-access.yml
