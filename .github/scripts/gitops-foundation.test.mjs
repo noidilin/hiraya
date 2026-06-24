@@ -54,6 +54,50 @@ test('Cluster Platform grants Public Gateway Access namespaces, excluding argocd
   assert.equal(docs(rendered).some((doc) => kind(doc) === 'Namespace' && metadataName(doc) === 'argocd'), false, 'argocd namespace must remain Cluster Bootstrap-owned');
 });
 
+test('Edge and Argo CD access render as separated Cluster Platform Applications', () => {
+  const rendered = render('gitops/clusters/dev/root');
+  const expectedApps = [
+    ['platform-edge', '-14', 'gitops/platform/edge'],
+    ['platform-argocd-access', '-8', 'gitops/platform/argocd-access'],
+  ];
+
+  for (const [name, wave, sourcePath] of expectedApps) {
+    const app = byKindName(rendered, 'Application', name);
+    assert.match(app, new RegExp(`argocd.argoproj.io/sync-wave:\\s*['"]?${wave}['"]?`), `${name} should have sync wave ${wave}`);
+    assert.match(app, /project:\s*hiraya-platform/, `${name} should use the Cluster Platform project`);
+    assert.match(app, new RegExp(`path:\\s*${sourcePath}`), `${name} should target ${sourcePath}`);
+    assert.match(app, /prune:\s*true/, `${name} should enable automated prune`);
+    assert.match(app, /selfHeal:\s*true/, `${name} should enable automated self-heal`);
+  }
+});
+
+test('Edge owns only shared Gateway policy and redirect route', () => {
+  const rendered = render('gitops/platform/edge');
+
+  byKindName(rendered, 'GatewayClass', 'aws-alb');
+  byKindName(rendered, 'Gateway', 'public');
+  const loadBalancerConfiguration = byKindName(rendered, 'LoadBalancerConfiguration', 'public-alb');
+  byKindName(rendered, 'TargetGroupConfiguration', 'public-target-group');
+  const redirectRoute = byKindName(rendered, 'HTTPRoute', 'public-http-redirect');
+
+  assert.doesNotMatch(loadBalancerConfiguration, /vpc-[0-9a-f]+/, 'Edge must not commit VPC IDs');
+  assert.doesNotMatch(loadBalancerConfiguration, /arn:aws:acm:/, 'Edge must not commit ACM certificate ARNs');
+  assert.match(redirectRoute, /RequestRedirect/, 'Edge should own the shared HTTP-to-HTTPS redirect');
+  assert.match(redirectRoute, /statusCode:\s*301/, 'Edge redirect should use permanent HTTPS redirects');
+  assert.equal(docs(rendered).filter((doc) => kind(doc) === 'HTTPRoute').length, 1, 'Edge must not own service-specific HTTPRoutes');
+});
+
+test('Argo CD access owns only the public Argo CD route', () => {
+  const rendered = render('gitops/platform/argocd-access');
+  const route = byKindName(rendered, 'HTTPRoute', 'argocd');
+
+  assert.equal(docs(rendered).length, 1, 'Argo CD access should render only route/access manifests');
+  assert.match(route, /namespace:\s*argocd/, 'Argo CD route should live in the argocd namespace');
+  assert.match(route, /argocd\.hiraya\.noidilin\.dev/, 'Argo CD route should preserve its public hostname');
+  assert.match(route, /namespace:\s*edge/, 'Argo CD route should attach to the shared edge Gateway');
+  assert.match(route, /name:\s*argocd-server/, 'Argo CD route should target the Argo CD server Service');
+});
+
 test('Gateway API and AWS Load Balancer Controller CRDs are vendored and no-prune protected', () => {
   const rendered = render('gitops/platform/gateway-api-crds');
   const crdNames = [
