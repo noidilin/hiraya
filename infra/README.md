@@ -37,8 +37,7 @@ Platform Core creates the disposable AWS/EKS foundation with:
 - VPC, public edge subnets, private workload subnets, NAT Gateway, and S3 Gateway endpoint.
 - EKS cluster, managed node group, OIDC provider, and EKS managed add-ons such as EBS CSI.
 - ACM certificate and Route 53 DNS validation primitives for `hiraya.noidilin.dev` and `*.hiraya.noidilin.dev`.
-- AWS-only IRSA roles for AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, and Fluent Bit.
-- CloudWatch pod log group `/eks/hiraya/dev/pods`.
+- AWS-only IRSA roles for AWS Load Balancer Controller, ExternalDNS, and External Secrets Operator.
 - disposable Argo CD and Grafana admin secrets in AWS Secrets Manager.
 - non-secret outputs consumed by later Cluster Bootstrap and GitOps phases.
 
@@ -66,11 +65,10 @@ Cluster Bootstrap does not own long-lived Cluster Platform add-ons. Argo CD owns
 Use these docs before changing deploy, destroy, or ownership boundaries:
 
 - [ADR-0007: GitOps-owned Cluster Platform add-ons](../docs/adr/0007-gitops-owned-cluster-platform.md)
-- [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93)
-- [GitOps refactor implementation plan](../docs/plan/gitops-refactor-implementation.md)
-- [GitOps refactor checklist](../docs/plan/gitops-refactor-checklist.md)
+- [Bootstrap runbook](../docs/runbooks/platform/bootstrap-infra-workflows.md)
 - [Deploy runbook](../docs/runbooks/platform/deploy-dev-platform.md)
 - [Destroy runbook](../docs/runbooks/platform/destroy-dev-platform.md)
+- [Infra PR plan validation runbook](../docs/runbooks/platform/validate-infra-pr-plan.md)
 
 ## Legacy platform stack retired
 

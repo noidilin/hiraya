@@ -1,3 +1,0 @@
-{{- if .Values.application }}
-{{- toYaml .Values.application }}
-{{- end }}

@@ -1,9 +1,0 @@
-route:
-  name: argocd
-  hostname: argocd.hiraya.noidilin.dev
-gateway:
-  name: public
-  namespace: edge
-service:
-  name: argocd-server
-  port: 80

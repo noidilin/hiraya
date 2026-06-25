@@ -41,8 +41,8 @@ cluster_admin_principal_arns = [
 instance_types = ["t3.medium"]
 capacity_type  = "SPOT"
 
-# Three t3.medium nodes are used while AIOps and CloudWatch pod log forwarding
-# are postponed. Prometheus/Grafana observability remains enabled in-cluster.
+# Three t3.medium nodes are used while AIOps and pod log forwarding are
+# postponed. Prometheus/Grafana observability remains enabled in-cluster.
 desired_size = 3
 min_size     = 2
 max_size     = 3

@@ -118,22 +118,6 @@ output "external_secrets_service_account_name" {
   value = module.external_secrets_irsa.service_account_name
 }
 
-output "fluent_bit_role_arn" {
-  value = module.fluent_bit_irsa.role_arn
-}
-
-output "fluent_bit_namespace" {
-  value = module.fluent_bit_irsa.namespace
-}
-
-output "fluent_bit_service_account_name" {
-  value = module.fluent_bit_irsa.service_account_name
-}
-
-output "pod_log_group_name" {
-  value = module.fluent_bit_irsa.log_group_name
-}
-
 output "argocd_admin_secret_name" {
   value = module.platform_admin_secrets.argocd_admin_secret_name
 }
