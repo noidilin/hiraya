@@ -137,7 +137,7 @@ kubectl get pods -n argocd
 kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring | grep -E 'grafana|prometheus'
-kubectl get pods -n amazon-cloudwatch || true
+! kubectl get ns amazon-cloudwatch
 ```
 
 Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only. Pod log forwarding is not deployed; the `amazon-cloudwatch` namespace should be absent unless a future AIOps logging design reintroduces it.

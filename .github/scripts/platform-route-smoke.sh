@@ -124,20 +124,22 @@ wait_for_http_route() {
 }
 
 list_expected_argocd_applications() {
-  printf '%s\n' hiraya-root
-  kubectl kustomize gitops/clusters/dev/root \
-    | awk '
-      /^kind:[[:space:]]*Application[[:space:]]*$/ { in_app = 1; in_meta = 0; next }
-      /^---[[:space:]]*$/ { in_app = 0; in_meta = 0; next }
-      in_app && /^metadata:[[:space:]]*$/ { in_meta = 1; next }
-      in_app && in_meta && /^[^[:space:]]/ { in_meta = 0 }
-      in_app && in_meta && /^[[:space:]]+name:[[:space:]]*/ {
-        name = $0
-        sub(/^[[:space:]]+name:[[:space:]]*/, "", name)
-        gsub(/[\"'"'"']/, "", name)
-        print name
-      }
-    '
+  local rendered child_apps
+  rendered=$(kubectl kustomize gitops/clusters/dev/root) || return 1
+  child_apps=$(awk '
+    /^kind:[[:space:]]*Application[[:space:]]*$/ { in_app = 1; in_meta = 0; next }
+    /^---[[:space:]]*$/ { in_app = 0; in_meta = 0; next }
+    in_app && /^metadata:[[:space:]]*$/ { in_meta = 1; next }
+    in_app && in_meta && /^[^[:space:]]/ { in_meta = 0 }
+    in_app && in_meta && /^[[:space:]]+name:[[:space:]]*/ {
+      name = $0
+      sub(/^[[:space:]]+name:[[:space:]]*/, "", name)
+      gsub(/[\"'"'"']/, "", name)
+      print name
+    }
+  ' <<<"$rendered")
+  [[ -n "$child_apps" ]] || return 1
+  printf '%s\n%s\n' hiraya-root "$child_apps"
 }
 
 CLUSTER_NAME=$(require_output cluster_name)
@@ -159,10 +161,20 @@ kubectl get nodes -o wide
 kubectl wait node --all --for=condition=Ready --timeout=10m
 
 echo "Verifying Argo CD Applications through Kubernetes."
+expected_apps=$(list_expected_argocd_applications) || {
+  echo "Failed to render expected Argo CD Applications from gitops/clusters/dev/root." >&2
+  exit 1
+}
+app_count=0
 while IFS= read -r app_name; do
   [[ -n "$app_name" ]] || continue
+  app_count=$((app_count + 1))
   wait_for_argocd_application "$app_name"
-done < <(list_expected_argocd_applications)
+done <<<"$expected_apps"
+if (( app_count <= 1 )); then
+  echo "Discovered only ${app_count} Argo CD Application(s); expected platform children too." >&2
+  exit 1
+fi
 kubectl get applications.argoproj.io -n argocd
 
 echo "Verifying expected namespaces are visible."

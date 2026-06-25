@@ -7,9 +7,13 @@ Pinned sources:
 - Gateway API CRDs: upstream Gateway API release `v1.5.0`, exported with:
 
 ```bash
-curl -L https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml
-curl -L https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/experimental-install.yaml
+curl -L https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml \
+  -o standard-install.yaml
+curl -L https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/experimental-install.yaml \
+  -o experimental-install.yaml
 ```
+
+Split the required `CustomResourceDefinition` documents from those release files into `crds/*.yaml` and list them in `kustomization.yml`.
 - AWS Load Balancer Controller CRDs: Helm chart `aws-load-balancer-controller` `3.4.0` (`appVersion: v3.4.0`), exported with:
 
 ```bash

@@ -128,6 +128,6 @@ aws secretsmanager get-secret-value \
   --output text
 ```
 
-## Log Forwarding to CloudWatch
+## Log Forwarding
 
 Pod log forwarding is not part of the current dev platform. Fluent Bit and the former CloudWatch pod log group were removed after the GitOps refactor; future AIOps work should introduce a fresh logging design instead of relying on dormant scaffold.
