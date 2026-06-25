@@ -11,7 +11,7 @@ spec:
   project: hiraya-platform
   source:
     repoURL: https://github.com/noidilin/hiraya.git
-    targetRevision: main
+    targetRevision: refactor/gitops-refactor
     path: gitops/platform/argocd-access
   destination:
     server: https://kubernetes.default.svc
