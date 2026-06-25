@@ -55,7 +55,7 @@ destroy dev platform
 7. Confirm the destroy job runs in this order:
    - Assumes the Cluster Bootstrap role.
    - Reads Platform Core outputs needed for cleanup and verification.
-   - Runs `.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh` to suspend/delete the root Argo CD Application non-cascading, prune child Applications in safe order, and wait for Vintage EBS, shared ALB, and ExternalDNS Route 53 cleanup while controllers are still running.
+   - Runs `.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh` to suspend/delete the root Argo CD Application non-cascading, prune child Applications in safe order, and wait for Vintage EBS, shared ALB, and ExternalDNS Route 53 cleanup while controllers are still running. The script intentionally deletes/waits managed namespaces only after the namespace-owning `platform-namespaces` Application is pruned, so Argo CD self-heal cannot recreate empty namespaces during cleanup.
    - Destroys `infra/envs/dev/cluster-bootstrap`.
    - Assumes the Platform Core apply role.
    - Destroys `infra/envs/dev/platform-core`.
@@ -71,7 +71,7 @@ aws ec2 describe-vpcs --region ap-northeast-1 --vpc-ids <captured-vpc-id> || tru
 aws elbv2 describe-load-balancers --region ap-northeast-1 --names hiraya-dev-public || true
 ```
 
-Expected: EKS cluster is gone or not `ACTIVE`; captured Kubernetes EBS volume IDs are deleted; Hiraya-tagged Kubernetes EBS volumes for the cluster are deleted; legacy `kubernetes.io/cluster/<cluster>=owned` EBS volumes are deleted; captured VPC is deleted; shared public ALB is deleted; ExternalDNS-created public records are gone.
+Expected: EKS cluster is gone or not `ACTIVE`; captured Kubernetes EBS volume IDs are deleted; Hiraya-tagged Kubernetes EBS volumes for the cluster are deleted; legacy `kubernetes.io/cluster/<cluster>=owned` EBS volumes are deleted; captured VPC is deleted; shared public ALB is deleted; ExternalDNS-created public records are gone. The verification script checks the captured app, Argo CD, and Grafana hostnames in Route 53 after Terraform destroy.
 
 ### Durable bootstrap preservation
 

@@ -6,6 +6,8 @@ TF_STATE_BUCKET="${TF_STATE_BUCKET:-devops-hiraya-dev-tf-state}"
 CLUSTER_NAME="${CLUSTER_NAME:-}"
 VPC_ID="${VPC_ID:-}"
 EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
+EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
+EXTERNAL_DNS_HOSTNAMES="${EXTERNAL_DNS_HOSTNAMES:-hiraya.noidilin.dev argocd.hiraya.noidilin.dev grafana.hiraya.noidilin.dev}"
 K8S_EBS_CLEANUP_VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
 HIRAYA_EBS_CLUSTER_TAG_KEY="${HIRAYA_EBS_CLUSTER_TAG_KEY:-HirayaCluster}"
 DURABLE_VINTAGE_SECRET_ID="${DURABLE_VINTAGE_SECRET_ID:-/hiraya/dev/apps/vintage}"
@@ -89,6 +91,28 @@ load_balancer_gone() {
     --output text >/dev/null 2>&1
 }
 
+external_dns_records_gone() {
+  if [[ -z "$EXTERNAL_DNS_HOSTED_ZONE_ID" ]]; then
+    echo "EXTERNAL_DNS_HOSTED_ZONE_ID is empty; cannot verify Route 53 cleanup." >&2
+    return 1
+  fi
+
+  local hostname record_count
+  for hostname in $EXTERNAL_DNS_HOSTNAMES; do
+    [[ -n "$hostname" ]] || continue
+    record_count=$(aws route53 list-resource-record-sets \
+      --hosted-zone-id "$EXTERNAL_DNS_HOSTED_ZONE_ID" \
+      --query "length(ResourceRecordSets[?Name == '${hostname}.'])" \
+      --output text)
+    if [[ "$record_count" != "0" ]]; then
+      echo "ExternalDNS record for ${hostname} still exists in hosted zone ${EXTERNAL_DNS_HOSTED_ZONE_ID}."
+      return 1
+    fi
+  done
+
+  return 0
+}
+
 volume_deleted() {
   local volume_id="$1"
   local output
@@ -153,6 +177,7 @@ legacy_kubernetes_ebs_volumes_gone() {
 require_value CLUSTER_NAME "$CLUSTER_NAME"
 require_value VPC_ID "$VPC_ID"
 require_value EDGE_LOAD_BALANCER_NAME "$EDGE_LOAD_BALANCER_NAME"
+require_value EXTERNAL_DNS_HOSTED_ZONE_ID "$EXTERNAL_DNS_HOSTED_ZONE_ID"
 
 wait_until "EKS cluster ${CLUSTER_NAME} is gone or not ACTIVE" 60 30 cluster_gone_or_inactive
 wait_until "captured Kubernetes EBS volume IDs are deleted" 20 30 captured_kubernetes_ebs_volumes_gone
@@ -160,6 +185,7 @@ wait_until "Hiraya-tagged Kubernetes EBS volumes for cluster ${CLUSTER_NAME} are
 wait_until "legacy Kubernetes EBS volumes tagged for cluster ${CLUSTER_NAME} are deleted" 20 30 legacy_kubernetes_ebs_volumes_gone
 wait_until "VPC ${VPC_ID} is deleted" 60 30 vpc_gone
 wait_until "shared public load balancer ${EDGE_LOAD_BALANCER_NAME} is deleted" 60 30 load_balancer_gone
+wait_until "ExternalDNS-managed public Route 53 records are deleted" 20 30 external_dns_records_gone
 
 echo "Verifying Terraform remote-state bucket remains accessible: ${TF_STATE_BUCKET}"
 aws s3api head-bucket --bucket "$TF_STATE_BUCKET" >/dev/null
