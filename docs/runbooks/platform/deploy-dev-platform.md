@@ -1,6 +1,6 @@
 # Deploy dev platform
 
-Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [implementation plan](../../plan/gitops-refactor-implementation.md), [implementation checklist](../../plan/gitops-refactor-checklist.md), [infra README](../../../infra/README.md).
+Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [infra README](../../../infra/README.md), [bootstrap runbook](bootstrap-infra-workflows.md), [destroy runbook](destroy-dev-platform.md).
 
 ## When to use this
 
@@ -19,7 +19,7 @@ Hiraya dev follows the ADR-0007 layered model:
 | Layer | Owner | What it owns |
 |---|---|---|
 | Project Bootstrap | manual/local Terraform in `infra/envs/dev/bootstrap` | durable state access, GitHub OIDC roles, ECR repositories, and durable Vintage Storefront secrets |
-| Platform Core | GitHub deploy Terraform in `infra/envs/dev/platform-core` | VPC, EKS, managed add-ons, ACM/DNS primitives, IAM/IRSA, CloudWatch log groups, and disposable platform admin secrets |
+| Platform Core | GitHub deploy Terraform in `infra/envs/dev/platform-core` | VPC, EKS, managed add-ons, ACM/DNS primitives, IAM/IRSA, and disposable platform admin secrets |
 | Cluster Bootstrap | GitHub deploy Terraform in `infra/envs/dev/cluster-bootstrap` | the `argocd` namespace, Argo CD Helm release, AppProjects, and root app-of-apps handoff |
 | Cluster Platform | Argo CD from `gitops/platform/**` | shared in-cluster controllers, CRDs, namespaces, edge Gateway resources, logging, monitoring, and public admin routes |
 | GitOps Apps | Argo CD from `gitops/apps/**` | workload desired state, starting with the Vintage Storefront |
@@ -98,10 +98,9 @@ Expected: EKS API is reachable, nodes are registered, private endpoint access is
 kubectl get applications.argoproj.io -n argocd
 kubectl get appprojects.argoproj.io -n argocd
 kubectl get ns argocd edge monitoring vintage external-dns external-secrets
-kubectl get application.argoproj.io platform-logging -n argocd || true
 ```
 
-Expected: `hiraya-root` and child Applications are present and synced/healthy; `argocd` exists from Cluster Bootstrap; public workload/platform namespaces exist from Cluster Platform. `platform-logging` is absent while CloudWatch pod log forwarding is disabled.
+Expected: `hiraya-root` and child Applications are present and synced/healthy; `argocd` exists from Cluster Bootstrap; public workload/platform namespaces exist from Cluster Platform. Pod log forwarding is intentionally absent until future AIOps logging design work.
 
 ### Gateway and HTTPRoute visibility
 
@@ -139,10 +138,9 @@ kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring | grep -E 'grafana|prometheus'
 kubectl get pods -n amazon-cloudwatch || true
-aws logs describe-log-groups --region ap-northeast-1 --log-group-name-prefix /eks/hiraya/dev/pods
 ```
 
-Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only. Fluent Bit is disabled while AIOps is postponed, so the `amazon-cloudwatch` namespace may be absent and no new pod logs should be shipped to `/eks/hiraya/dev/pods`.
+Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only. Pod log forwarding is not deployed; the `amazon-cloudwatch` namespace should be absent unless a future AIOps logging design reintroduces it.
 
 ## Evidence to capture
 
