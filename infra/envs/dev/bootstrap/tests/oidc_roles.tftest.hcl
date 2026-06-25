@@ -114,6 +114,35 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition = alltrue([
+      for required_action in [
+        "ec2:DescribeVolumes",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "route53:ListResourceRecordSets",
+        ] : anytrue(flatten([
+          for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : [
+            for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          ]
+      ]))
+    ])
+    error_message = "The cluster-bootstrap role must allow read-only AWS checks used by ordered GitOps destroy cleanup."
+  }
+
+  assert {
+    condition = !anytrue(flatten([
+      for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : [
+        for action in try(tolist(statement.Action), [statement.Action]) : contains(["ec2", "elasticloadbalancing", "route53"], split(":", action)[0]) && !anytrue([
+          startswith(action, "ec2:Describe"),
+          startswith(action, "elasticloadbalancing:Describe"),
+          startswith(action, "route53:List"),
+          startswith(action, "route53:Get"),
+        ])
+      ]
+    ]))
+    error_message = "The cluster-bootstrap role must not receive AWS infrastructure mutation permissions for GitOps cleanup."
+  }
+
+  assert {
     condition = contains(
       flatten([
         for statement in jsondecode(aws_iam_policy.github_cluster_bootstrap.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
@@ -167,6 +196,17 @@ run "creates_scoped_infra_oidc_roles" {
       if statement.Sid == "AllowTerraformStateBucketAccessCheck" && try(statement.Resource, "") == "arn:aws:s3:::hiraya-tf-state" && !can(statement.Condition)
     ]) == 1
     error_message = "The apply policy must allow unprefixed S3 bucket access checks used by destroy verification."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_infra_apply.policy).Statement : try(tolist(statement.Condition.StringEquals["iam:AWSServiceName"]), [statement.Condition.StringEquals["iam:AWSServiceName"]])
+        if statement.Sid == "AllowPlatformServiceLinkedRoles"
+      ]),
+      "spot.amazonaws.com"
+    )
+    error_message = "The apply policy must be able to create the EC2 Spot service-linked role required by SPOT EKS node groups."
   }
 
   assert {

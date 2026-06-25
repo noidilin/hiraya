@@ -288,6 +288,7 @@ suspend_root_application
 delete_child_application vintage
 wait_for_vintage_storage_cleanup
 
+delete_child_application platform-storage
 delete_child_application platform-argocd-access
 delete_child_application platform-monitoring
 delete_child_application platform-edge

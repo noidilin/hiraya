@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -27,11 +28,19 @@ function byKindName(rendered, expectedKind, expectedName) {
   return found;
 }
 
+function platformProjectSourceRepos() {
+  const variables = readFileSync('infra/envs/dev/cluster-bootstrap/variables.tf', 'utf8');
+  const defaultList = variables.match(/variable "platform_project_source_repos"[\s\S]*?default\s*=\s*\[([\s\S]*?)\]/)?.[1];
+  assert.ok(defaultList, 'expected platform_project_source_repos default list to be readable');
+  return new Set([...defaultList.matchAll(/"([^"]+)"/g)].map((match) => match[1]));
+}
+
 test('dev GitOps root renders foundation child Applications with ordered automated sync', () => {
   const rendered = render('gitops/clusters/dev/root');
   const expectedApps = [
     ['platform-namespaces', '-30', 'hiraya-platform', 'gitops/platform/namespaces'],
     ['platform-gateway-api-crds', '-25', 'hiraya-platform', 'gitops/platform/gateway-api-crds'],
+    ['platform-storage', '-24', 'hiraya-platform', 'gitops/platform/storage'],
   ];
 
   for (const [name, wave, project, sourcePath] of expectedApps) {
@@ -42,6 +51,22 @@ test('dev GitOps root renders foundation child Applications with ordered automat
     assert.match(app, /prune:\s*true/, `${name} should enable automated prune`);
     assert.match(app, /selfHeal:\s*true/, `${name} should enable automated self-heal`);
     assert.match(app, /resources-finalizer\.argocd\.argoproj\.io/, `${name} should declare the Argo cleanup finalizer`);
+  }
+});
+
+test('Cluster Bootstrap AppProject allowlist covers platform child Application source repos', () => {
+  const rendered = render('gitops/clusters/dev/root');
+  const allowlist = platformProjectSourceRepos();
+  const platformApps = docs(rendered).filter((doc) => kind(doc) === 'Application' && /^\s*project:\s*hiraya-platform\s*$/m.test(doc));
+  assert.ok(platformApps.length > 0, 'expected platform Applications to render');
+
+  for (const app of platformApps) {
+    const name = metadataName(app);
+    const repoUrls = [...app.matchAll(/^\s*repoURL:\s*([^\s#]+)\s*$/gm)].map((match) => match[1].replace(/["']/g, ''));
+    assert.ok(repoUrls.length > 0, `${name} should declare at least one source repoURL`);
+    for (const repoUrl of repoUrls) {
+      assert.ok(allowlist.has(repoUrl), `${name} repoURL ${repoUrl} must be allowed by platform_project_source_repos`);
+    }
   }
 });
 
@@ -124,6 +149,28 @@ test('Logging and monitoring platform apps use Terraform-owned secrets and log g
   assert.match(grafanaRoute, /grafana\.hiraya\.noidilin\.dev/, 'Grafana route should preserve its public hostname');
   assert.match(grafanaRoute, /namespace:\s*edge/, 'Grafana route should attach to the shared edge Gateway');
   assert.match(grafanaRoute, /name:\s*kube-prometheus-stack-grafana/, 'Grafana route should target the chart Grafana Service');
+});
+
+test('Cluster Platform owns the Vintage EBS StorageClass', () => {
+  const root = render('gitops/clusters/dev/root');
+  const app = byKindName(root, 'Application', 'platform-storage');
+
+  assert.match(app, /argocd\.argoproj\.io\/sync-wave:\s*['"]?-24['"]?/, 'storage should sync before workload apps');
+  assert.match(app, /project:\s*hiraya-platform/, 'storage should use the Cluster Platform project');
+  assert.match(app, /path:\s*gitops\/platform\/storage/, 'storage should target the platform storage GitOps tree');
+  assert.match(app, /prune:\s*true/, 'storage should enable automated prune');
+  assert.match(app, /selfHeal:\s*true/, 'storage should enable automated self-heal');
+
+  const storage = render('gitops/platform/storage');
+  const storageClass = byKindName(storage, 'StorageClass', 'hiraya-ebs-gp3');
+  assert.match(storageClass, /provisioner:\s*ebs\.csi\.aws\.com/, 'StorageClass should use the EBS CSI provisioner');
+  assert.match(storageClass, /type:\s*gp3/, 'StorageClass should provision gp3 volumes');
+  assert.match(storageClass, /reclaimPolicy:\s*Delete/, 'StorageClass should preserve reset-on-rebuild deletion behavior');
+  assert.match(storageClass, /volumeBindingMode:\s*WaitForFirstConsumer/, 'StorageClass should wait for pod scheduling before binding');
+
+  const vintage = render('gitops/apps/vintage');
+  const postgres = byKindName(vintage, 'StatefulSet', 'vintage-postgres');
+  assert.match(postgres, /storageClassName:\s*hiraya-ebs-gp3/, 'Vintage Postgres should reference the platform-owned EBS StorageClass');
 });
 
 test('Vintage workload is a GitOps app backed by ESO secrets', () => {

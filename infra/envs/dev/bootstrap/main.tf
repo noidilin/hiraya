@@ -237,6 +237,21 @@ resource "aws_iam_policy" "github_cluster_bootstrap" {
         Resource = "*"
       },
       {
+        Sid    = "AllowGitOpsCleanupAwsRead"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeVolumes",
+          "elasticloadbalancing:DescribeLoadBalancers"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "AllowGitOpsCleanupRoute53RecordRead"
+        Effect   = "Allow"
+        Action   = ["route53:ListResourceRecordSets"]
+        Resource = "arn:aws:route53:::hostedzone/*"
+      },
+      {
         Sid    = "AllowArgoAdminSecretRead"
         Effect = "Allow"
         Action = [
@@ -487,7 +502,8 @@ resource "aws_iam_policy" "github_infra_apply" {
             "iam:AWSServiceName" = [
               "autoscaling.amazonaws.com",
               "elasticloadbalancing.amazonaws.com",
-              "eks.amazonaws.com"
+              "eks.amazonaws.com",
+              "spot.amazonaws.com"
             ]
           }
         }
