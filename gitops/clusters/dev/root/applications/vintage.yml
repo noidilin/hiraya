@@ -11,7 +11,7 @@ spec:
   project: hiraya-workloads
   source:
     repoURL: https://github.com/noidilin/hiraya.git
-    targetRevision: main
+    targetRevision: refactor/gitops-refactor
     path: gitops/apps/vintage
   destination:
     server: https://kubernetes.default.svc
