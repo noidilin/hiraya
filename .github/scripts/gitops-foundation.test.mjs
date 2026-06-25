@@ -28,6 +28,35 @@ function byKindName(rendered, expectedKind, expectedName) {
   return found;
 }
 
+function gitRepoSourceBlocks(app) {
+  const lines = app.split('\n');
+  const blocks = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const repoMatch = lines[index].match(/^(\s*)repoURL:\s*https:\/\/github\.com\/noidilin\/hiraya\.git\s*$/);
+    if (!repoMatch) continue;
+
+    const repoIndent = repoMatch[1].length;
+    let start = index;
+    while (start > 0) {
+      const previous = lines[start - 1];
+      if (previous.trim() && previous.match(/^\s*/)[0].length < repoIndent) break;
+      start -= 1;
+    }
+
+    let end = index + 1;
+    while (end < lines.length) {
+      const next = lines[end];
+      if (next.trim() && next.match(/^\s*/)[0].length < repoIndent) break;
+      end += 1;
+    }
+
+    blocks.push(lines.slice(start, end).join('\n'));
+  }
+
+  return blocks;
+}
+
 function platformProjectSourceRepos() {
   const variables = readFileSync('infra/envs/dev/cluster-bootstrap/variables.tf', 'utf8');
   const defaultList = variables.match(/variable "platform_project_source_repos"[\s\S]*?default\s*=\s*\[([\s\S]*?)\]/)?.[1];
@@ -57,11 +86,20 @@ test('dev GitOps root renders foundation child Applications with ordered automat
 test('dev Git-backed child Applications track main', () => {
   const rendered = render('gitops/clusters/dev/root');
   assert.doesNotMatch(rendered, /refactor\/gitops-refactor/, 'GitOps Applications must not track the deleted PR branch');
-  assert.doesNotMatch(
-    rendered,
-    /repoURL:[ \t]*https:\/\/github\.com\/noidilin\/hiraya\.git\n[ \t]*targetRevision:(?![ \t]*main\b)[^\n]+/,
-    'Git-backed child Applications should track main after the GitOps refactor PR is merged',
-  );
+
+  const gitApps = docs(rendered).filter((doc) => kind(doc) === 'Application' && gitRepoSourceBlocks(doc).length > 0);
+  assert.ok(gitApps.length > 0, 'expected Git-backed child Applications to render');
+
+  for (const app of gitApps) {
+    const name = metadataName(app);
+    for (const sourceBlock of gitRepoSourceBlocks(app)) {
+      assert.match(
+        sourceBlock,
+        /^\s*targetRevision:\s*main\s*$/m,
+        `${name} Git-backed source should track main after the GitOps refactor PR is merged`,
+      );
+    }
+  }
 });
 
 test('Cluster Bootstrap AppProject allowlist covers platform child Application source repos', () => {

@@ -60,7 +60,7 @@ infra/envs/dev/cluster-bootstrap/  # Cluster Bootstrap: Argo CD install and root
 
 gitops/
 ├── clusters/dev/root/             # root app-of-apps child Application manifests
-├── platform/                      # Cluster Platform: CRDs, controllers, edge, logging, monitoring, admin routes
+├── platform/                      # Cluster Platform: CRDs, controllers, edge, monitoring, admin routes
 └── apps/vintage/                  # Vintage Storefront workload manifests
     ├── external-secret.yml        # maps AWS Secrets Manager secret into the runtime Kubernetes Secret
     └── k8s/

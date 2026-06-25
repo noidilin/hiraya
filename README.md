@@ -50,14 +50,14 @@ GitHub Actions
   → updates image tags in gitops manifests
 
 Terraform
-  → creates AWS/EKS platform
-  → installs ArgoCD + monitoring
-  → registers the GitOps Application
+  → creates AWS/EKS foundation resources
+  → installs Argo CD
+  → creates the root GitOps Application handoff
 
-ArgoCD
+Argo CD
   → clones repo
   → reads gitops/
-  → applies manifests into EKS
+  → applies platform add-ons and app manifests into EKS
   → keeps cluster in sync with Git
 
 Kubernetes
