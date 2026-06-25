@@ -56,7 +56,6 @@
       "standardControlTitle": "Detect and investigate security events",
       "standardControlFamily": "Detection and investigation",
       "projectControlIds": [
-        "sec.irsa.fluent-bit",
         "ops.monitoring.read-access",
         "sec.audit.permission-deployment-records",
         "ops.incident.aiops-investigation"

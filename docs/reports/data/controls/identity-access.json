@@ -4,7 +4,9 @@
     "id": "permission-controls.identity-access",
     "title": "Permission controls: identity access",
     "version": "1.0.0",
-    "domains": ["identity_access"],
+    "domains": [
+      "identity_access"
+    ],
     "updatedAt": "2026-06-22"
   },
   "controls": [
@@ -189,11 +191,11 @@
           "summary": "EKS roles are configured with a permission boundary."
         },
         {
-          "path": "infra/modules/aws-load-balancer-controller/main.tf",
+          "path": "infra/modules/aws-load-balancer-controller-irsa/main.tf",
           "summary": "Controller IRSA role is bounded."
         },
         {
-          "path": "infra/modules/external-dns/main.tf",
+          "path": "infra/modules/external-dns-irsa/main.tf",
           "summary": "ExternalDNS IRSA role is bounded."
         }
       ],

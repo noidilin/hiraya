@@ -4,7 +4,11 @@
     "id": "permission-controls.eks-kubernetes",
     "title": "Permission controls: eks kubernetes",
     "version": "1.0.0",
-    "domains": ["eks_kubernetes", "network_ingress", "observability_incident"],
+    "domains": [
+      "eks_kubernetes",
+      "network_ingress",
+      "observability_incident"
+    ],
     "updatedAt": "2026-06-22"
   },
   "controls": [
@@ -95,7 +99,7 @@
       ],
       "evidence": [
         {
-          "path": "infra/envs/dev/platform/terraform.tfvars",
+          "path": "infra/envs/dev/platform-core/terraform.tfvars",
           "summary": "Dev endpoint CIDR settings capture accepted public-access tradeoff."
         },
         {
@@ -165,11 +169,11 @@
       ],
       "evidence": [
         {
-          "path": "infra/modules/aws-load-balancer-controller/main.tf",
+          "path": "infra/modules/aws-load-balancer-controller-irsa/main.tf",
           "summary": "Module defines the controller IRSA trust and IAM policy."
         },
         {
-          "path": "infra/modules/edge-gateway/main.tf",
+          "path": "gitops/platform/edge/kustomization.yml",
           "summary": "Gateway infrastructure depends on the controller boundary."
         }
       ],
@@ -228,11 +232,11 @@
       ],
       "evidence": [
         {
-          "path": "infra/modules/external-dns/main.tf",
+          "path": "infra/modules/external-dns-irsa/main.tf",
           "summary": "ExternalDNS IRSA and hosted-zone permissions are declared in Terraform."
         },
         {
-          "path": "infra/envs/dev/platform/main.tf",
+          "path": "infra/envs/dev/platform-core/main.tf",
           "summary": "Platform stack wires ExternalDNS to the public hosted zone and domain filter."
         }
       ],
@@ -258,69 +262,6 @@
       "status": "implemented",
       "risk": {
         "impact": 4,
-        "likelihood": 2,
-        "exposure": 3,
-        "effort": 2,
-        "deploymentRisk": 2
-      }
-    },
-    {
-      "rationale": "Allow the log agent to write pod logs without reading or managing unrelated cloud resources.",
-      "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
-      "implementedSummary": "IRSA trust is locked to amazon-cloudwatch/aws-for-fluent-bit with aud/sub conditions, and the IAM policy only permits creating streams, describing streams, and writing events for the pod log group.",
-      "gapSummary": "No explicit gap recorded.",
-      "frameworks": {
-        "awsWellArchitected": [
-          "security",
-          "operational_excellence"
-        ],
-        "custom": [
-          "least_privilege",
-          "incident_readiness"
-        ]
-      },
-      "resources": [
-        {
-          "type": "k8s_service_account",
-          "name": "amazon-cloudwatch/aws-for-fluent-bit"
-        },
-        {
-          "type": "aws_cloudwatch_log_group",
-          "name": "/eks/vintage/pods"
-        }
-      ],
-      "evidence": [
-        {
-          "path": "infra/modules/fluent-bit/main.tf",
-          "summary": "Fluent Bit module defines log group, IRSA trust, and write-only log permissions."
-        },
-        {
-          "path": "docs/runbooks/platform/deploy-dev-platform.md",
-          "summary": "Deployment runbook includes platform observability validation context."
-        }
-      ],
-      "reportViews": [
-        {
-          "report": "security_permission_design",
-          "section": "IRSA",
-          "rowTitle": "Fluent Bit",
-          "sortKey": 19
-        }
-      ],
-      "id": "sec.irsa.fluent-bit",
-      "title": "Fluent Bit can only write pod logs",
-      "domain": "observability_incident",
-      "lifecyclePhases": [
-        "runtime_operations",
-        "incident_response"
-      ],
-      "actors": [
-        "platform_controller"
-      ],
-      "objective": "Allow the log agent to write pod logs without reading or managing unrelated cloud resources.",
-      "status": "implemented",
-      "risk": {
-        "impact": 3,
         "likelihood": 2,
         "exposure": 3,
         "effort": 2,
@@ -358,7 +299,7 @@
           "summary": "EKS module configures the EBS CSI add-on and service account role."
         },
         {
-          "path": "gitops/k8s/database/statefulset.yml",
+          "path": "gitops/apps/vintage/k8s/database/statefulset.yml",
           "summary": "PostgreSQL StatefulSet relies on Kubernetes storage provisioning."
         }
       ],
@@ -417,15 +358,15 @@
       ],
       "evidence": [
         {
-          "path": "gitops/k8s/backend/gateway.yml",
+          "path": "gitops/apps/vintage/k8s/backend/gateway.yml",
           "summary": "Application deployments are defined without IRSA annotations or dedicated service account controls."
         },
         {
-          "path": "gitops/k8s/frontend/deployment.yml",
+          "path": "gitops/apps/vintage/k8s/frontend/deployment.yml",
           "summary": "Frontend deployment is part of the app workload set."
         },
         {
-          "path": "gitops/kustomization.yml",
+          "path": "gitops/apps/vintage/kustomization.yml",
           "summary": "Kustomize deploys app manifests through GitOps."
         }
       ],
@@ -502,15 +443,15 @@
       ],
       "evidence": [
         {
-          "path": "infra/modules/edge-gateway/chart/templates/gateway.yaml",
+          "path": "gitops/platform/edge/gateway.yml",
           "summary": "Gateway listener restricts route attachment with namespace selectors."
         },
         {
-          "path": "gitops/namespace.yml",
+          "path": "gitops/platform/namespaces/vintage.yml",
           "summary": "Application namespace declares the public gateway access label."
         },
         {
-          "path": "infra/modules/external-dns/main.tf",
+          "path": "infra/modules/external-dns-irsa/main.tf",
           "summary": "ExternalDNS is constrained to the configured hosted zone and domain."
         }
       ],
@@ -579,15 +520,15 @@
       ],
       "evidence": [
         {
-          "path": "infra/modules/argocd/application.yml",
+          "path": "infra/envs/dev/cluster-bootstrap/chart/templates/resources.yaml",
           "summary": "Application syncs the gitops path from main with automated prune and self-heal."
         },
         {
-          "path": "infra/modules/argocd/gitops-application/templates/application.yaml",
+          "path": "infra/envs/dev/cluster-bootstrap/chart/templates/resources.yaml",
           "summary": "Helm template creates the Argo CD Application."
         },
         {
-          "path": "gitops/kustomization.yml",
+          "path": "gitops/apps/vintage/kustomization.yml",
           "summary": "GitOps tree defines the synced desired state."
         }
       ],
@@ -652,15 +593,15 @@
       ],
       "evidence": [
         {
-          "path": "gitops/kustomization.yml",
+          "path": "gitops/apps/vintage/kustomization.yml",
           "summary": "Kustomize includes application, database, route, dashboard, and secret resources."
         },
         {
-          "path": "gitops/k8s/backend/service-monitor.yml",
+          "path": "gitops/apps/vintage/k8s/backend/service-monitor.yml",
           "summary": "Application resources include monitoring custom resources."
         },
         {
-          "path": "infra/modules/gateway-api-crds/chart/templates/validatingadmissionpolicy-safe-upgrades.gateway.networking.k8s.io.yaml",
+          "path": "gitops/platform/gateway-api-crds/README.md",
           "summary": "Existing validation policy pattern could be extended to app resource guardrails."
         }
       ],

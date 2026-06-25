@@ -41,11 +41,10 @@
       "standardControlFamily": "Controller permissions",
       "projectControlIds": [
         "sec.irsa.aws-load-balancer-controller",
-        "sec.irsa.external-dns",
-        "sec.irsa.fluent-bit"
+        "sec.irsa.external-dns"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Controllers use dedicated IRSA roles and scoped trust; ExternalDNS and Fluent Bit have narrow policies, while the load balancer controller still needs broad AWS API actions.",
+      "notes": "Controllers use dedicated IRSA roles and scoped trust; ExternalDNS has narrow policies, while the load balancer controller still needs broad AWS API actions.",
       "gapSummary": "Document and test unavoidable wildcard scope and add guardrails for controller policy expansion.",
       "sortKey": 30
     },
@@ -81,12 +80,11 @@
       "standardControlTitle": "Collect runtime logs and retain audit evidence",
       "standardControlFamily": "Audit and logging",
       "projectControlIds": [
-        "sec.irsa.fluent-bit",
         "ops.monitoring.read-access",
         "sec.audit.permission-deployment-records"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Fluent Bit writes pod logs and monitoring is deployed, but centralized audit retention and reviewer-only audit access are not codified.",
+      "notes": "Monitoring is deployed, but pod log forwarding, centralized audit retention, and reviewer-only audit access are not codified.",
       "gapSummary": "Define audit retention, immutable storage, and access boundaries for Kubernetes and deployment evidence.",
       "sortKey": 60
     },
