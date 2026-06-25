@@ -45,7 +45,7 @@ test('infra CI renders and schema-lints GitOps desired state with CRD allowances
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/aws-load-balancer-controller\/values-dev\.yaml/, 'AWS LBC Helm values should render in CI');
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/external-dns\/values-dev\.yaml/, 'ExternalDNS Helm values should render in CI');
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/external-secrets\/values-dev\.yaml/, 'ESO Helm values should render in CI');
-  assert.match(workflow, /helm template[\s\S]*gitops\/platform\/logging\/values-dev\.yaml/, 'logging Helm values should render in CI');
+  assert.doesNotMatch(workflow, /helm template[\s\S]*gitops\/platform\/logging\/values-dev\.yaml/, 'disabled logging Helm values should not render in active CI');
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/monitoring\/values-dev\.yaml/, 'monitoring Helm values should render in CI');
   assert.match(workflow, /kubeconform/, 'CI should run practical schema linting');
   assert.match(workflow, /-ignore-missing-schemas/, 'schema lint should allow known custom resources and CRDs without live cluster schemas');
@@ -106,7 +106,7 @@ test('platform smoke script validates GitOps health and layered public surface',
   assert.match(script, /status\.sync\.status/, 'smoke should require Argo sync status');
   assert.match(script, /status\.health\.status/, 'smoke should require Argo health status');
 
-  for (const namespace of ['argocd', 'edge', 'monitoring', 'vintage', 'external-dns', 'external-secrets', 'amazon-cloudwatch']) {
+  for (const namespace of ['argocd', 'edge', 'monitoring', 'vintage', 'external-dns', 'external-secrets']) {
     assert.match(script, new RegExp(`\\b${namespace}\\b`), `${namespace} namespace should be covered by smoke checks`);
   }
 

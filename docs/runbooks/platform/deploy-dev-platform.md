@@ -97,10 +97,11 @@ Expected: EKS API is reachable, nodes are registered, private endpoint access is
 ```bash
 kubectl get applications.argoproj.io -n argocd
 kubectl get appprojects.argoproj.io -n argocd
-kubectl get ns argocd edge monitoring vintage external-dns external-secrets amazon-cloudwatch
+kubectl get ns argocd edge monitoring vintage external-dns external-secrets
+kubectl get application.argoproj.io platform-logging -n argocd || true
 ```
 
-Expected: `hiraya-root` and child Applications are present and synced/healthy; `argocd` exists from Cluster Bootstrap; public workload/platform namespaces exist from Cluster Platform.
+Expected: `hiraya-root` and child Applications are present and synced/healthy; `argocd` exists from Cluster Bootstrap; public workload/platform namespaces exist from Cluster Platform. `platform-logging` is absent while CloudWatch pod log forwarding is disabled.
 
 ### Gateway and HTTPRoute visibility
 
@@ -137,11 +138,11 @@ kubectl get pods -n argocd
 kubectl get svc -n argocd argocd-server -o jsonpath='{.spec.type}{"\n"}'
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring | grep -E 'grafana|prometheus'
-kubectl get pods -n amazon-cloudwatch
+kubectl get pods -n amazon-cloudwatch || true
 aws logs describe-log-groups --region ap-northeast-1 --log-group-name-prefix /eks/hiraya/dev/pods
 ```
 
-Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only; Fluent Bit ships pod logs to `/eks/hiraya/dev/pods`.
+Expected: Argo CD and Grafana are reachable through approved public routes; services remain `ClusterIP`; Prometheus has no public HTTPRoute and remains private/port-forward only. Fluent Bit is disabled while AIOps is postponed, so the `amazon-cloudwatch` namespace may be absent and no new pod logs should be shipped to `/eks/hiraya/dev/pods`.
 
 ## Evidence to capture
 
