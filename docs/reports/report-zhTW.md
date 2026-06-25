@@ -2,7 +2,7 @@
 
 ## 一、專題概覽與設計理念
 
-本專題在 AWS 雲端環境上，建立一套以精品電商為情境的微服務系統，並整合 DevOps、GitOps、可觀測性與 AI 輔助運維能力。整體架構從本地 Docker Compose 開發環境出發，延伸至 AWS EKS 上的 Kubernetes 部署，搭配 Terraform 建置基礎設施、GitHub Actions 建置容器映像、ArgoCD 管理 GitOps 部署流程，最後以 Prometheus、Grafana、CloudWatch Logs 與 Amazon Bedrock Agent 組成 AIOps 診斷層。
+本專題在 AWS 雲端環境上，建立一套以精品電商為情境的微服務系統，並整合 DevOps、GitOps、可觀測性與 AI 輔助運維能力。整體架構從本地 Docker Compose 開發環境出發，延伸至 AWS EKS 上的 Kubernetes 部署，搭配 Terraform 建置基礎設施、GitHub Actions 建置容器映像、ArgoCD 管理 GitOps 部署流程，最後以 Prometheus、Grafana 與 Amazon Bedrock Agent 作為 AIOps 診斷層的基礎。
 
 核心設計理念：
 
@@ -33,14 +33,16 @@
 
 ### 2.2 計算與應用層
 
-雲端執行平台為 **Amazon EKS**：
+雲端執行平台為 **Amazon EKS**。目前 dev 環境實測狀態如下：
 
-- **EKS Cluster**：`eks-cluster`
-- **Kubernetes 版本**：Terraform 設定為 `1.34`
-- **Managed Node Group**：`eks-node-group`
-- **Instance Type**：`m7i-flex.large`
-- **Capacity Type**：`ON_DEMAND`
-- **節點數量**：desired 1、min 1、max 2
+- **AWS Region**：`ap-northeast-1`
+- **EKS Cluster**：`devops-hiraya-dev-eks`
+- **Kubernetes 版本**：`1.34`
+- **Managed Node Group**：`devops-hiraya-dev-node-group`
+- **Instance Type**：`t3.medium`
+- **Capacity Type**：`SPOT`
+- **節點數量**：desired 3、min 2、max 3
+- **單節點可配置資源**：約 1930m CPU、3.2 GiB memory、17 pods
 - **磁碟大小**：30 GiB
 - **EBS CSI Driver**：透過 EKS Add-on 與 IRSA 啟用，供 PostgreSQL PVC 使用。
 
@@ -57,7 +59,42 @@
 | user-service | Deployment + ClusterIP Service | 1 | 3006 | 使用者資料與帳戶管理 |
 | vintage-postgres | StatefulSet + Headless Service | 1 | 5432 | PostgreSQL 資料庫 |
 
-目前所有 Service 皆為 `ClusterIP`，因此主要透過 `kubectl port-forward` 存取前端、Gateway、Prometheus、Grafana 與 ArgoCD。這適合教學與實驗環境；若要對外正式服務，建議新增 Ingress Controller 或 LoadBalancer Service，並補上 TLS、WAF、DNS 與流量限制。
+目前平台透過 AWS Load Balancer Controller、Gateway API HTTPRoute、ExternalDNS 與 Route 53 對外發布主要入口：
+
+- `https://hiraya.noidilin.dev`：Vintage Storefront
+- `https://argocd.hiraya.noidilin.dev`：Argo CD
+- `https://grafana.hiraya.noidilin.dev`：Grafana
+
+### 2.2.1 目前 GitOps Pod 容量使用狀態
+
+本次重建 `cluster-bootstrap` 後，Argo CD 12 個 Application 皆為 `Synced / Healthy`，route smoke test 也通過。當前 dev 叢集在 3 台 `t3.medium` Spot 節點上的 Pod 容量如下：
+
+| 指標 | 數值 |
+|---|---:|
+| 節點數 | 3 |
+| 單節點 pod 上限 | 17 |
+| 叢集 pod slot 總數 | 51 |
+| 目前 Running pods | 42 |
+| 剩餘 pod slot | 9 |
+
+節點分布如下：
+
+| 節點 | Pod 使用量 |
+|---|---:|
+| `ip-10-1-11-21` | 8 / 17 |
+| `ip-10-1-12-124` | 17 / 17 |
+| `ip-10-1-13-156` | 17 / 17 |
+
+目前沒有 `MemoryPressure`、`DiskPressure` 或 `PIDPressure`，CPU 與記憶體壓力也偏低；主要限制不是 CPU/memory，而是 **t3.medium 在 EKS 上的 pod/IP 密度**。以目前 42 個 Running pods 來看，3 台 `t3.medium` 足夠支撐 dev GitOps 平台，但容量已偏緊，且其中兩台節點已達 pod slot 上限。
+
+若 Node Group 依照 min size 降到 2 台，總 pod slot 會變成 `2 × 17 = 34`，低於目前 42 個 Running pods，因此 Spot 中斷或短暫縮容時會有 Pod 無法排程的風險。
+
+建議：
+
+- 維持目前功能測試：3 台 `t3.medium` 可接受。
+- 提高基本穩定性：將 Node Group `minSize` 調整為 3，避免 2 節點時 pod slot 不足。
+- 增加部署餘裕：將 `maxSize` 調整為 4，讓 Spot 替換或短期擴容有緩衝。
+- 若後續加入更多 controller、monitoring、AIOps 或多副本服務，建議改用 `t3.large` 或其他 pod/IP 與記憶體餘裕更高的 instance type。
 
 ### 2.3 資料庫與資料持久化策略
 
@@ -73,12 +110,12 @@
 本地 Docker Compose 與 Kubernetes 都採用 PostgreSQL，並附有完整 SQL dump 與 restore job：
 
 - 本地：`app/microservices/database/vintage_full.sql`
-- K8s：`gitops/k8s/database/vintage_full.sql`
-- Restore Job：`gitops/k8s/database/restore-job.yml`
+- K8s：`gitops/apps/vintage/k8s/database/vintage_full.sql`
+- Restore Job：`gitops/apps/vintage/k8s/database/restore-job.yml`
 
-目前 `gitops/kustomization.yml` 已將 SQL dump 建為 ConfigMap，並將 restore job 納入 Kustomize resources；Terraform 佈建 ArgoCD 後會自動建立 `vintage` Application，由 ArgoCD 在首次 sync 時執行 restore job 載入種子資料。
+目前 `gitops/apps/vintage/kustomization.yml` 已將 SQL dump 建為 ConfigMap，並將 restore job 納入 Kustomize resources；Cluster Bootstrap 佈建 Argo CD root app 後會自動建立 `vintage` Application，由 Argo CD 在首次 sync 時執行 restore job 載入種子資料。
 
-目前資料庫密碼與連線字串存放於 `gitops/secrets.yml` 的 `stringData`，例如 `POSTGRES_PASSWORD=postgres123`。此方式便於教學，但正式環境建議改用 External Secrets、AWS Secrets Manager、Sealed Secrets 或 SOPS，並避免明文密碼進入 Git。
+資料庫密碼與連線字串不再以明文 Kubernetes Secret committed 到 Git；Vintage 透過 `ExternalSecret` 從 AWS Secrets Manager `/hiraya/dev/apps/vintage` materialize runtime secret。
 
 ### 2.4 容器映像、CI/CD 與 GitOps 層
 
@@ -103,36 +140,31 @@ GitHub Actions pipeline 位於 `.github/workflows/image-ci.yml`：
 - 目前觸發方式為 `workflow_dispatch`，也就是手動觸發。
 - Matrix 同時建置 7 個服務映像。
 - 映像推送至 ECR，tag 使用 Git commit SHA。
-- `update-manifests` job 會更新 `gitops/k8s/` 中的 image tag，並 commit 回 repository。
+- `update-manifests` job 會更新 `gitops/apps/vintage/k8s/` 中的 image tag，並 commit 回 repository。
 
-GitOps 層由 ArgoCD 管理：
+GitOps 層由 Argo CD 管理：
 
-- Terraform 透過 Helm 安裝 ArgoCD 至 `argocd` namespace。
-- Terraform 讀取 `infra/modules/argocd/application.yml` 作為 Application spec，並透過 ArgoCD Helm release 建立，監控 repository 的 `gitops` path。
-- 目前已啟用 automated sync，包含 `prune: true` 與 `selfHeal: true`，讓 dev 環境可在首次 provisioning 後自動部署並持續回復到 Git 狀態。
+- Cluster Bootstrap Terraform 透過 Helm 安裝 Argo CD 至 `argocd` namespace。
+- Cluster Bootstrap 建立 root `hiraya-root` Application，監控 `gitops/clusters/dev/root` app-of-apps path。
+- Root app 建立 Cluster Platform 與 Vintage child Applications；目前已啟用 automated sync，包含 `prune: true` 與 `selfHeal: true`，讓 dev 環境可在首次 provisioning 後自動部署並持續回復到 Git 狀態。
 
 ### 2.5 可觀測性與 AIOps 層（專題特色）
 
-可觀測性由 Prometheus、Grafana、CloudWatch Logs 與 AIOps Assistant 組成。
+可觀測性目前由 Prometheus、Grafana 與 AIOps Assistant 基礎設計組成；Pod log forwarding 待後續 logging design 補齊。
 
 **Prometheus / Grafana**
 
-Terraform 透過 Helm 安裝 `kube-prometheus-stack` 至 `monitoring` namespace：
+Argo CD Cluster Platform 透過 Helm 安裝 `kube-prometheus-stack` 至 `monitoring` namespace：
 
 - Prometheus、Grafana、Alertmanager 皆設為 `ClusterIP`。
-- `gitops/k8s/grafana-dashboard.yml` 以 ConfigMap 方式預載 Vintage dashboard。
+- `gitops/apps/vintage/k8s/grafana-dashboard.yml` 以 ConfigMap 方式預載 Vintage dashboard。
 - Dashboard 涵蓋 request rate、response time、active requests、error rate、Pod CPU/Memory、Pod restart、service health 等指標。
 
 目前 Kubernetes 內的 `ServiceMonitor` 只選取 label `app: gateway`，代表 EKS 環境目前主要 scrape Gateway 的 `/metrics`。本地 Docker Compose 的 Prometheus 設定則 scrape gateway、auth、product-service、order-service、orders、user-service 等所有服務。若要讓雲端可觀測性完整對齊本地環境，建議為所有後端服務加上 `app` label 與 ServiceMonitor selector。
 
 **CloudWatch Logs**
 
-專案文件提供 Fluent Bit 安裝方式，將 Pod logs forwarding 至 CloudWatch Log Group：
-
-- 目前 Log Group：`/eks/hiraya/dev/pods`（ADR-0007 前曾使用 Vintage 專屬名稱）
-- AIOps Lambda `fetch_logs` 會查詢此 log group。
-
-CloudWatch Logs forwarding 在本歷史報告撰寫時由 Terraform 平台堆疊安裝。ADR-0007 後，Platform Core 擁有 `/eks/hiraya/dev/pods` Log Group 與 Fluent Bit IRSA，Argo CD-owned Cluster Platform 擁有 in-cluster Fluent Bit manifests。
+目前 dev platform 不部署 Fluent Bit，也不建立專用的 Pod log forwarding Log Group。AIOps 的 `fetch_logs` 應等未來 logging design 明確定義允許查詢的 CloudWatch Logs group 後再啟用相關能力。
 
 **Amazon Bedrock Agent — Kira**
 
@@ -157,7 +189,7 @@ AIOps Assistant 位於 `app/aiops/`，核心設計如下：
 
 ### 3.1 卓越營運（Operational Excellence）
 
-Terraform 將 VPC、EKS、ECR、ArgoCD、Prometheus/Grafana 模組化管理，降低手動建置差異。GitHub Actions 負責建置映像與更新 manifests，ArgoCD 負責將 GitOps 狀態同步至 Kubernetes。AIOps Assistant 透過 Bedrock Agent 將 logs、metrics、EKS health 串成診斷流程，協助工程師用資料驅動方式排查問題。
+Terraform 將 durable bootstrap、Platform Core AWS/EKS foundation、Cluster Bootstrap Argo CD handoff 模組化管理；Argo CD 負責 Cluster Platform 與 workload manifests。GitHub Actions 負責建置映像與更新 manifests，Argo CD 負責將 GitOps 狀態同步至 Kubernetes。AIOps Assistant 透過 Bedrock Agent 將 logs、metrics、EKS health 串成診斷流程，協助工程師用資料驅動方式排查問題。
 
 使用服務：Terraform, EKS, ECR, GitHub Actions, ArgoCD, Prometheus, Grafana, Lambda, Amazon Bedrock
 

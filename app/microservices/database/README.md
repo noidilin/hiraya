@@ -35,4 +35,4 @@ For quick manual seeding against an existing products database:
 psql -d products_db -f quick-seed.sql
 ```
 
-For GitOps restore flows, the Kubernetes config map uses `gitops/k8s/database/vintage_full.sql`.
+For GitOps restore flows, the Kubernetes ConfigMap uses `gitops/apps/vintage/k8s/database/vintage_full.sql`.

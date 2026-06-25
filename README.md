@@ -11,7 +11,7 @@
 | CI/CD | GitHub Actions |
 | GitOps | ArgoCD + Kustomize |
 | Monitoring | Prometheus + Grafana |
-| Log Forwarding | AWS Fluent Bit → CloudWatch |
+| Log Forwarding | Deferred until future AIOps logging design |
 | AIOps | AWS Bedrock Agent (Kira) |
 
 ## Root pnpm monorepo
@@ -37,7 +37,7 @@ Common root commands:
 
 ## Structure
 
-- Terraform owns AWS infra + EKS platform add-ons
+- Terraform owns AWS/EKS foundation resources; Argo CD owns in-cluster platform add-ons
 - GitHub Actions owns image build/push + manifest image tag updates
 - ECR stores built images
 - ArgoCD owns application deployment into Kubernetes

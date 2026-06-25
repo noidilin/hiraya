@@ -2,37 +2,17 @@
 
 ## Shutdown the lab safely
 
-The normal lab shutdown destroys only the disposable platform stack in `infra/envs/dev/platform`: EKS, worker nodes, VPC, NAT Gateway, ALB/Gateway resources, ExternalDNS, Argo CD, monitoring/Grafana/Prometheus, Fluent Bit, and platform-managed DNS/certificate records.
+The normal lab shutdown destroys only the disposable dev layers:
 
-Do **not** destroy `infra/envs/dev/bootstrap` for routine lab shutdown. Bootstrap owns durable/shared resources such as ECR repositories, GitHub image-push IAM/OIDC resources, and remote-state dependencies.
+- `infra/envs/dev/cluster-bootstrap`: Argo CD, AppProjects, and the root GitOps handoff.
+- `infra/envs/dev/platform-core`: EKS, worker nodes, VPC, NAT Gateway, controller IAM/IRSA, disposable admin secrets, and AWS/EKS foundation resources.
 
-```sh
-# Confirm AWS identity before destructive work
-aws sts get-caller-identity
+Do **not** destroy `infra/envs/dev/bootstrap` for routine lab shutdown. Bootstrap owns durable/shared resources such as ECR repositories, GitHub OIDC roles, remote-state dependencies, and the durable Vintage Storefront secret.
 
-# Connect kubectl to the dev cluster
-aws eks update-kubeconfig \
-  --region ap-northeast-1 \
-  --name devops-hiraya-dev-eks
-kubectl config current-context
+Use the current destroy workflow/runbook instead of the retired monolithic `infra/envs/dev/platform` stack:
 
-# Optional: back up current app database data before deleting PVCs
-kubectl -n vintage exec statefulset/vintage-postgres -- \
-  pg_dumpall -U postgres > /tmp/vintage-backup.sql
-
-# Stop Argo CD from healing the app while it is being removed
-kubectl delete application vintage -n argocd --ignore-not-found
-
-# Delete app namespace and PVCs safely
-kubectl delete namespace vintage --wait=true --timeout=10m --ignore-not-found
-
-# Review and apply the Terraform destroy plan for the disposable platform only
-terraform -chdir=infra/envs/dev/platform init -backend-config=backend.hcl
-terraform -chdir=infra/envs/dev/platform plan \
-  -destroy \
-  -out=/tmp/hiraya-platform-destroy.tfplan
-terraform -chdir=infra/envs/dev/platform apply /tmp/hiraya-platform-destroy.tfplan
-```
+- `.github/workflows/infra-destroy.yml`
+- `docs/runbooks/platform/destroy-dev-platform.md`
 
 After shutdown, verify the EKS cluster is gone:
 
@@ -76,8 +56,8 @@ kubectl get pods -n argocd
 ## From Docker to Kubernetes
 
 - Each service has a `Dockerfile` in its directory under `app/microservices/`.
-- When deployed to Kubernetes, these become container images stored in ECR, referenced by the manifests in `gitops/k8s/`.
-- During platform provisioning, Terraform installs ArgoCD and bootstraps the `vintage` ArgoCD Application. ArgoCD then syncs `gitops/` automatically, so first deploy no longer requires `kubectl apply -k gitops/`.
+- When deployed to Kubernetes, these become container images stored in ECR, referenced by the manifests in `gitops/apps/vintage/`.
+- During platform provisioning, Platform Core creates AWS/EKS foundations, Cluster Bootstrap installs Argo CD and the root app-of-apps, and Argo CD syncs `gitops/` automatically. First deploy no longer requires `kubectl apply -k gitops/`.
 
 ```bash
 # Check the GitOps app and workload rollout after terraform apply
@@ -87,7 +67,7 @@ kubectl get pods -n vintage
 
 ### Restore the database
 
-The application needs seed data. The restore Job is included in `gitops/kustomization.yml`, so ArgoCD runs it during the first GitOps sync.
+The application needs seed data. The restore Job is included in `gitops/apps/vintage/kustomization.yml`, so Argo CD runs it during the first GitOps sync.
 
 ```bash
 # Monitor it
@@ -110,52 +90,44 @@ kubectl logs -n vintage -l job-name=vintage-db-restore
 
 ArgoCD watches the `main` branch of this repo. Any change pushed to `gitops/` is automatically synced to the cluster — no manual `kubectl apply` needed for first deploy or later rollouts.
 
-- ArgoCD is installed by Terraform into the `argocd` namespace
-- Terraform bootstraps the `vintage` **Application** through the ArgoCD Helm release, using `infra/modules/argocd/application.yml`
-- The Application tells ArgoCD which repo, branch, and path to watch
-- When the CI pipeline updates image tags and commits to `main`, ArgoCD detects the change and rolls out the new pods automatically
+- Cluster Bootstrap Terraform installs Argo CD into the `argocd` namespace.
+- Cluster Bootstrap creates the root `hiraya-root` Application pointed at `gitops/clusters/dev/root`.
+- The root app creates child Applications for Cluster Platform add-ons and Vintage.
+- When the CI pipeline updates image tags and commits to `main`, Argo CD detects the change and rolls out the new pods automatically.
 
 ```bash
 # Check sync status
 kubectl get application -n argocd # should see `STATUS: Synced` and `HEALTH: Healthy` once initial sync completes
 
 # Username: `admin`
-# Get the admin password:
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 --decode
+# Get the admin password from AWS Secrets Manager:
+aws secretsmanager get-secret-value \
+  --region ap-northeast-1 \
+  --secret-id /hiraya/dev/platform/argocd-admin \
+  --query SecretString \
+  --output text
 ```
 
 ---
 
 ## Prometheus
 
-Prometheus is installed by Terraform via `kube-prometheus-stack`. It scrapes metrics from the cluster and the vintage services.
+Prometheus is installed by Argo CD through the Cluster Platform monitoring Application. It scrapes metrics from the cluster and the vintage services.
 
 ## Grafana
 
-Grafana is also installed by `kube-prometheus-stack`. It is pre-configured with Prometheus as a datasource and comes with a custom vintage dashboard automatically loaded.
+Grafana is installed by the same monitoring Application. It is pre-configured with Prometheus as a datasource and comes with a custom vintage dashboard automatically loaded.
 
 ```bash
 # Username: `admin`
-# Get the admin password
-kubectl get secret kube-prometheus-stack-grafana -n monitoring \
-  -o jsonpath="{.data.admin-password}" | base64 --decode
+# Get the admin password from AWS Secrets Manager
+aws secretsmanager get-secret-value \
+  --region ap-northeast-1 \
+  --secret-id /hiraya/dev/platform/grafana-admin \
+  --query SecretString \
+  --output text
 ```
 
 ## Log Forwarding to CloudWatch
 
-Logs appear in **CloudWatch → Log groups → `/eks/vintage/pods`**.
-
-Terraform manages this through `infra/modules/fluent-bit`:
-
-- Creates the `/eks/vintage/pods` CloudWatch log group.
-- Creates an IRSA role for `system:serviceaccount:amazon-cloudwatch:aws-for-fluent-bit`.
-- Adds the inline `FluentBitCloudWatchPolicy` with scoped CloudWatch Logs write access.
-- Installs the `aws-for-fluent-bit` Helm chart in the `amazon-cloudwatch` namespace.
-
-Verify:
-
-```bash
-kubectl get pods -n amazon-cloudwatch
-kubectl logs -n amazon-cloudwatch daemonset/aws-for-fluent-bit
-```
+Pod log forwarding is not part of the current dev platform. Fluent Bit and the former CloudWatch pod log group were removed after the GitOps refactor; future AIOps work should introduce a fresh logging design instead of relying on dormant scaffold.

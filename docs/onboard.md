@@ -51,7 +51,7 @@
 
 ## Kubernetes and GitOps structure
 
-Hiraya dev follows the ADR-0007 layered ownership model. For deeper implementation detail, read [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [docs/plan/gitops-refactor-implementation.md](plan/gitops-refactor-implementation.md), and [docs/plan/gitops-refactor-checklist.md](plan/gitops-refactor-checklist.md).
+Hiraya dev follows the implemented ADR-0007 layered ownership model. Use [ADR-0007](adr/0007-gitops-owned-cluster-platform.md) for ownership boundaries and the platform runbooks for current deploy/destroy operations.
 
 ```
 infra/envs/dev/bootstrap/          # Project Bootstrap: durable state access, OIDC roles, ECR, app secrets
@@ -267,7 +267,6 @@ flowchart TD
     PC --> Addons[EKS managed add-ons]
     PC --> IAM[Controller IRSA roles]
     PC --> DNS[ACM + Route 53 primitives]
-    PC --> Logs[CloudWatch log group\n/eks/hiraya/dev/pods]
     PC --> AdminSecrets[Argo/Grafana admin secrets]
 
     CB[Cluster Bootstrap\nTerraform] --> Argo[Argo CD Helm release]
@@ -315,7 +314,7 @@ sequenceDiagram
 **Key files:**
 
 - `gitops/clusters/dev/root/` — root app-of-apps child Applications for Cluster Platform and workloads
-- `gitops/platform/` — Argo CD-owned Cluster Platform resources such as Gateway API CRDs, AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, edge, logging, monitoring, and Argo CD access
+- `gitops/platform/` — Argo CD-owned Cluster Platform resources such as Gateway API CRDs, AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, edge, monitoring, and Argo CD access
 - `gitops/apps/vintage/kustomization.yml` — lists Vintage Storefront resources, including the dev database restore Job
 - `gitops/apps/vintage/k8s/` — Vintage service deployments, services, HTTPRoute, and reset-on-rebuild database resources
 - `gitops/apps/vintage/external-secret.yml` — maps the durable AWS Secrets Manager Vintage secret into the runtime Kubernetes Secret through ESO
@@ -324,7 +323,7 @@ sequenceDiagram
 
 ### Stage 6: Observability
 
-Once the application is running in EKS, three layers of observability keep watch.
+Once the application is running in EKS, the current observability layer focuses on metrics and dashboards.
 
 ```mermaid
 flowchart LR
@@ -342,12 +341,7 @@ flowchart LR
         PR --> GR[Grafana\nDashboard]
     end
 
-    subgraph Logging [amazon-cloudwatch namespace]
-        FB[Fluent Bit] -->|pod logs| CW[CloudWatch\n/eks/hiraya/dev/pods]
-    end
-
     GW & AU & PS & OS & OR & US --> SM
-    GW & AU & PS & OS & OR & US --> FB
 ```
 
 **Metrics — Prometheus + Grafana**
@@ -356,11 +350,10 @@ flowchart LR
 - A `ServiceMonitor` resource tells the Prometheus Operator which pods to scrape
 - Grafana is pre-loaded with a vintage dashboard via a ConfigMap labelled `grafana_dashboard: "1"` — the Grafana sidecar auto-imports it
 
-**Logs — Fluent Bit + CloudWatch**
+**Logs**
 
-- Fluent Bit runs as a DaemonSet in `amazon-cloudwatch`
-- Captures stdout from every pod and ships logs to CloudWatch
-- Log group: `/eks/hiraya/dev/pods`
+- Pod log forwarding is deferred until future AIOps work defines the logging design.
+- The current platform does not deploy Fluent Bit or create a dedicated pod log group.
 
 **What to check in Grafana:**
 
@@ -441,11 +434,8 @@ flowchart TD
     GH -->|ArgoCD detects change| Argo[ArgoCD\nRolling Deploy to EKS]
     Argo --> EKS[EKS Cluster\n7 microservices]
     EKS -->|metrics /metrics| Prom[Prometheus]
-    EKS -->|pod logs| FB[Fluent Bit]
     Prom --> Grafana[Grafana\nDashboards]
-    FB --> CW[CloudWatch\nLog Groups]
     Grafana -->|anomaly detected| Kira[Kira — AIOps Agent\nBedrock + Lambda]
-    CW --> Kira
     Kira -->|root cause + fix| Eng[ Engineer]
 
     subgraph IaC [Infrastructure as Code]

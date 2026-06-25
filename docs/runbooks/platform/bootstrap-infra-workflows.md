@@ -1,6 +1,6 @@
 # Bootstrap infra workflows
 
-Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [implementation plan](../../plan/gitops-refactor-implementation.md), [implementation checklist](../../plan/gitops-refactor-checklist.md), [infra README](../../../infra/README.md).
+Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [infra README](../../../infra/README.md), [deploy runbook](deploy-dev-platform.md), [destroy runbook](destroy-dev-platform.md).
 
 ## When to use this
 

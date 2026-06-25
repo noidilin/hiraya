@@ -45,14 +45,15 @@ Backend services /metrics, kube-state-metrics, cAdvisor
   -> CloudWatch Metrics / EMF namespace Hiraya/AIOps
 ```
 
-Existing logs path remains:
+Pod log forwarding is deferred:
 
 ```text
-EKS pod logs
-  -> aws-for-fluent-bit
-  -> CloudWatch Logs /eks/hiraya/dev/pods
+Future AIOps logging design
+  -> selected CloudWatch Logs groups
   -> fetch_logs Lambda
 ```
+
+The current platform no longer deploys Fluent Bit or a dedicated pod log group. AIOps must introduce an explicit logging design before depending on pod logs.
 
 Existing dashboard path remains:
 
@@ -209,11 +210,7 @@ Use separate least-privilege IAM roles or policies per Lambda type:
 
 Restrict `fetch_logs` to approved log groups.
 
-Initial deployed allowlist:
-
-```text
-/eks/hiraya/dev/pods
-```
+Initial deployed allowlist: empty until a future AIOps logging design creates or selects log groups.
 
 The EKS control-plane log group `/aws/eks/devops-hiraya-dev-eks/cluster` should be added only if Platform Core explicitly enables EKS control-plane logging and exports the log group name. Synthetic `/app/production` can remain local/demo-only, but should not be included in deployed Terraform by default.
 
@@ -312,12 +309,10 @@ Telemetry production/export follows the ADR-0007 split:
 ```text
 infra/envs/dev/platform-core/
   - EKS
-  - CloudWatch log group /eks/hiraya/dev/pods
-  - Fluent Bit and future ADOT IAM/IRSA and CloudWatch-side resources
+  - future ADOT IAM/IRSA and CloudWatch-side resources
 
 gitops/platform/
   - kube-prometheus-stack
-  - Fluent Bit in-cluster manifests -> CloudWatch Logs
   - future ADOT in-cluster manifests -> CloudWatch Metrics
 ```
 
@@ -344,7 +339,6 @@ Expected platform outputs:
 ```text
 cluster_name
 region
-pod_log_group_name
 eks_cluster_log_group_name, only if control-plane logging is enabled
 aiops_metric_namespace = "Hiraya/AIOps"
 aiops_allowed_namespaces = ["vintage"]
@@ -450,7 +444,7 @@ Verify logs path:
 ```bash
 aws logs describe-log-groups \
   --region ap-northeast-1 \
-  --log-group-name-prefix /eks/hiraya/dev/pods
+  --log-group-name-prefix /aws/eks/devops-hiraya-dev-eks/cluster
 ```
 
 AIOps stack validation:
