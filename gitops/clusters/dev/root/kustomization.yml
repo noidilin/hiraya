@@ -9,9 +9,8 @@ resources:
   - applications/platform-aws-load-balancer-controller.yml
   - applications/platform-external-dns.yml
   - applications/platform-edge.yml
-  # Fluent Bit is kept in repo but disabled while AIOps is postponed.
   # Prometheus/Grafana observability is split between config and stack apps.
-  # - applications/platform-logging.yml
+  # Pod log forwarding is deferred until AIOps work resumes.
   - applications/platform-monitoring-config.yml
   - applications/platform-monitoring.yml
   - applications/platform-argocd-access.yml
