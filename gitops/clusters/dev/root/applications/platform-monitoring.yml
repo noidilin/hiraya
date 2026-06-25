@@ -19,7 +19,6 @@ spec:
           - $values/gitops/platform/monitoring/values-dev.yaml
     - repoURL: https://github.com/noidilin/hiraya.git
       targetRevision: refactor/gitops-refactor
-      path: gitops/platform/monitoring
       ref: values
   destination:
     server: https://kubernetes.default.svc
