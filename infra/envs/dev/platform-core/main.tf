@@ -32,6 +32,7 @@ module "vpc" {
   private_subnet_cidrs = var.private_subnet_cidrs
   cluster_name         = var.cluster_name
   enable_flow_logs     = var.enable_vpc_flow_logs
+  tags                 = local.common_tags
 }
 
 module "eks" {
