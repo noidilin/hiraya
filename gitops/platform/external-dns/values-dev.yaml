@@ -4,11 +4,18 @@ provider:
 sources:
   - gateway-httproute
 
+gatewayNamespace: edge
+extraArgs:
+  gateway-name: public
+
 policy: sync
 registry: txt
 txtOwnerId: hiraya-dev-eks
+# ExternalDNS matches Route53 hosted zones from domainFilters before it
+# considers individual Gateway/HTTPRoute hostnames. The hosted zone is the
+# parent zone (noidilin.dev), while app records live under hiraya.noidilin.dev.
 domainFilters:
-  - hiraya.noidilin.dev
+  - noidilin.dev
 triggerLoopOnEvent: true
 
 serviceAccount:

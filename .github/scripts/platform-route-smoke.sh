@@ -70,10 +70,28 @@ wait_for_http_routes_accepted() {
 
   echo "Waiting for all HTTPRoutes to report Accepted=True."
   for ((attempt = 1; attempt <= attempts; attempt++)); do
-    local routes_json route_count accepted_count
-    routes_json=$(kubectl get httproute -A -o json 2>/dev/null || true)
-    route_count=$(jq '.items | length' <<<"${routes_json:-{\"items\":[]}}")
-    accepted_count=$(jq '[.items[] | select(any(.status.parents[]?.conditions[]?; .type == "Accepted" and .status == "True"))] | length' <<<"${routes_json:-{\"items\":[]}}")
+    local routes_file route_count accepted_count
+    routes_file=$(mktemp)
+
+    if ! kubectl get httproute -A -o json >"$routes_file" 2>/dev/null; then
+      printf '{"items":[]}' >"$routes_file"
+    fi
+
+    if ! route_count=$(jq -r '(.items // []) | length' "$routes_file"); then
+      echo "Failed to parse HTTPRoute JSON from kubectl." >&2
+      rm -f "$routes_file"
+      kubectl get httproute -A -o yaml >&2 || true
+      return 1
+    fi
+
+    if ! accepted_count=$(jq -r '[.items[]? | select(any(.status.parents[]?.conditions[]?; .type == "Accepted" and .status == "True"))] | length' "$routes_file"); then
+      echo "Failed to evaluate HTTPRoute Accepted conditions." >&2
+      rm -f "$routes_file"
+      kubectl get httproute -A -o yaml >&2 || true
+      return 1
+    fi
+
+    rm -f "$routes_file"
 
     if (( route_count > 0 && accepted_count == route_count )); then
       echo "All ${route_count} HTTPRoutes are Accepted."
