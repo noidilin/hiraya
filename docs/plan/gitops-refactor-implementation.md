@@ -64,6 +64,7 @@ gitops/
       platform-external-secrets.yml
       platform-edge.yml
       platform-logging.yml
+      platform-monitoring-config.yml
       platform-monitoring.yml
       platform-argocd-access.yml
       vintage.yml
@@ -503,6 +504,7 @@ Suggested sync waves:
 -18 platform-aws-load-balancer-controller
 -16 platform-external-dns
 -14 platform-edge
+-11 platform-monitoring-config
 -10 platform-logging
 -10 platform-monitoring
  -8 platform-argocd-access
