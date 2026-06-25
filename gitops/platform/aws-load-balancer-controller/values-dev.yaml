@@ -1,5 +1,6 @@
 clusterName: devops-hiraya-dev-eks
 region: ap-northeast-1
+vpcId: vpc-08dda9d4545fd2ecd
 
 serviceAccount:
   create: true
