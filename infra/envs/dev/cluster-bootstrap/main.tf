@@ -68,100 +68,100 @@ resource "helm_release" "argocd" {
   ]
 }
 
-resource "kubernetes_manifest" "platform_project" {
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "AppProject"
-    metadata = {
-      name      = var.platform_project_name
-      namespace = var.argocd_namespace
-    }
-    spec = {
-      description = "Cluster Platform and root app-of-apps resources for Hiraya dev."
-      sourceRepos = var.platform_project_source_repos
-      destinations = [
+resource "helm_release" "argocd_bootstrap" {
+  name      = "argocd-bootstrap"
+  namespace = kubernetes_namespace_v1.argocd.metadata[0].name
+  chart     = "${path.module}/chart"
+
+  wait    = true
+  timeout = 300
+
+  values = [
+    yamlencode({
+      resources = [
         {
-          namespace = "*"
-          server    = "https://kubernetes.default.svc"
-        }
-      ]
-      clusterResourceWhitelist = [
+          apiVersion = "argoproj.io/v1alpha1"
+          kind       = "AppProject"
+          metadata = {
+            name      = var.platform_project_name
+            namespace = var.argocd_namespace
+          }
+          spec = {
+            description = "Cluster Platform and root app-of-apps resources for Hiraya dev."
+            sourceRepos = var.platform_project_source_repos
+            destinations = [
+              {
+                namespace = "*"
+                server    = "https://kubernetes.default.svc"
+              }
+            ]
+            clusterResourceWhitelist = [
+              {
+                group = "*"
+                kind  = "*"
+              }
+            ]
+            namespaceResourceWhitelist = [
+              {
+                group = "*"
+                kind  = "*"
+              }
+            ]
+          }
+        },
         {
-          group = "*"
-          kind  = "*"
-        }
-      ]
-      namespaceResourceWhitelist = [
+          apiVersion = "argoproj.io/v1alpha1"
+          kind       = "AppProject"
+          metadata = {
+            name      = var.workloads_project_name
+            namespace = var.argocd_namespace
+          }
+          spec = {
+            description = "Hiraya workload applications."
+            sourceRepos = [var.root_application_repo_url]
+            destinations = [
+              for namespace in var.workload_namespaces : {
+                namespace = namespace
+                server    = "https://kubernetes.default.svc"
+              }
+            ]
+            namespaceResourceWhitelist = [
+              {
+                group = "*"
+                kind  = "*"
+              }
+            ]
+          }
+        },
         {
-          group = "*"
-          kind  = "*"
-        }
+          apiVersion = "argoproj.io/v1alpha1"
+          kind       = "Application"
+          metadata = {
+            name      = "hiraya-root"
+            namespace = var.argocd_namespace
+          }
+          spec = {
+            project = var.platform_project_name
+            source = {
+              repoURL        = var.root_application_repo_url
+              targetRevision = var.root_application_target_revision
+              path           = var.root_application_path
+            }
+            destination = {
+              server    = "https://kubernetes.default.svc"
+              namespace = var.argocd_namespace
+            }
+            syncPolicy = {
+              automated = {
+                prune    = true
+                selfHeal = true
+              }
+            }
+          }
+        },
       ]
-    }
-  }
-
-  depends_on = [helm_release.argocd]
-}
-
-resource "kubernetes_manifest" "workloads_project" {
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "AppProject"
-    metadata = {
-      name      = var.workloads_project_name
-      namespace = var.argocd_namespace
-    }
-    spec = {
-      description = "Hiraya workload applications."
-      sourceRepos = [var.root_application_repo_url]
-      destinations = [
-        for namespace in var.workload_namespaces : {
-          namespace = namespace
-          server    = "https://kubernetes.default.svc"
-        }
-      ]
-      namespaceResourceWhitelist = [
-        {
-          group = "*"
-          kind  = "*"
-        }
-      ]
-    }
-  }
-
-  depends_on = [helm_release.argocd]
-}
-
-resource "kubernetes_manifest" "root_application" {
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "hiraya-root"
-      namespace = var.argocd_namespace
-    }
-    spec = {
-      project = var.platform_project_name
-      source = {
-        repoURL        = var.root_application_repo_url
-        targetRevision = var.root_application_target_revision
-        path           = var.root_application_path
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = var.argocd_namespace
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-      }
-    }
-  }
-
-  depends_on = [
-    kubernetes_manifest.platform_project,
-    kubernetes_manifest.workloads_project,
+    })
   ]
+
+  depends_on = [helm_release.argocd]
 }
