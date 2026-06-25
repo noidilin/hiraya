@@ -11,7 +11,7 @@ spec:
   project: hiraya-platform
   source:
     repoURL: https://github.com/noidilin/hiraya.git
-    targetRevision: refactor/gitops-refactor
+    targetRevision: main
     path: gitops/platform/monitoring
   destination:
     server: https://kubernetes.default.svc

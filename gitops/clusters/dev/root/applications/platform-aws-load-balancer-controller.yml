@@ -18,7 +18,7 @@ spec:
         valueFiles:
           - $values/gitops/platform/aws-load-balancer-controller/values-dev.yaml
     - repoURL: https://github.com/noidilin/hiraya.git
-      targetRevision: refactor/gitops-refactor
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

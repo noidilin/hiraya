@@ -18,7 +18,7 @@ spec:
         valueFiles:
           - $values/gitops/platform/external-dns/values-dev.yaml
     - repoURL: https://github.com/noidilin/hiraya.git
-      targetRevision: refactor/gitops-refactor
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc
