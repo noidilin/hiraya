@@ -1,6 +1,0 @@
-apiVersion: v2
-name: argocd-admin-route
-description: Legacy public HTTPRoute for the Argo CD admin UI.
-type: application
-version: 0.1.0
-appVersion: 0.1.0

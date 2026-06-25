@@ -1,9 +1,0 @@
-route:
-  name: grafana
-  hostname: grafana.hiraya.noidilin.dev
-gateway:
-  name: public
-  namespace: edge
-service:
-  name: kube-prometheus-stack-grafana
-  port: 80

@@ -115,18 +115,6 @@ variable "bootstrap_state_region" {
   default     = "ap-northeast-1"
 }
 
-variable "pod_log_group_name" {
-  description = "CloudWatch Logs log group for Kubernetes pod logs."
-  type        = string
-  default     = "/eks/hiraya/dev/pods"
-}
-
-variable "pod_log_retention_days" {
-  description = "Retention period in days for Kubernetes pod logs in CloudWatch Logs."
-  type        = number
-  default     = 14
-}
-
 variable "public_zone_name" {
   description = "Public Route 53 hosted zone used for shared edge DNS validation."
   type        = string

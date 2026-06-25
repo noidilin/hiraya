@@ -104,21 +104,6 @@ module "external_dns_irsa" {
   depends_on = [module.eks]
 }
 
-module "fluent_bit_irsa" {
-  source = "../../../modules/fluent-bit-irsa"
-
-  cluster_name             = var.cluster_name
-  region                   = var.region
-  oidc_provider_arn        = module.eks.oidc_provider_arn
-  oidc_issuer_url          = module.eks.oidc_issuer_url
-  log_group_name           = var.pod_log_group_name
-  log_retention_days       = var.pod_log_retention_days
-  permissions_boundary_arn = local.runtime_boundary_arn
-  tags                     = local.common_tags
-
-  depends_on = [module.eks]
-}
-
 module "external_secrets_irsa" {
   source = "../../../modules/external-secrets-irsa"
 
