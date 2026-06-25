@@ -1,0 +1,5 @@
+apiVersion: v2
+name: hiraya-cluster-bootstrap
+version: 0.1.0
+description: Argo CD bootstrap resources applied after Argo CD CRDs exist.
+type: application

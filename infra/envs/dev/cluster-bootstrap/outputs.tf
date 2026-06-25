@@ -20,5 +20,5 @@ output "workloads_project_name" {
 
 output "root_application_name" {
   description = "Root Argo CD Application handed off to GitOps."
-  value       = kubernetes_manifest.root_application.manifest.metadata.name
+  value       = "hiraya-root"
 }
