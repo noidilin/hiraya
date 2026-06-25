@@ -40,6 +40,7 @@ test('infra CI renders and schema-lints GitOps desired state with CRD allowances
   const workflow = await readFile(infraCiWorkflowPath, 'utf8');
 
   assert.match(workflow, /kubectl kustomize gitops\/clusters\/dev\/root/, 'root app-of-apps should render in CI');
+  assert.match(workflow, /kubectl kustomize gitops\/platform\/storage/, 'platform storage app should render in CI');
   assert.match(workflow, /kubectl kustomize gitops\/apps\/vintage/, 'Vintage workload app should render in CI');
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/aws-load-balancer-controller\/values-dev\.yaml/, 'AWS LBC Helm values should render in CI');
   assert.match(workflow, /helm template[\s\S]*gitops\/platform\/external-dns\/values-dev\.yaml/, 'ExternalDNS Helm values should render in CI');
@@ -90,6 +91,7 @@ test('pre-destroy script stops root reconciliation and prunes child apps in safe
   assert.match(script, /suspend_root_application/, 'cleanup should suspend or orphan-delete the root app before child pruning');
   assert.match(script, /delete_child_application vintage/, 'Vintage workload must be pruned first');
   assert.match(script, /wait_for_vintage_storage_cleanup/, 'cleanup should wait for Vintage PVC/PV/EBS cleanup before controller teardown');
+  assert.match(script, /wait_for_vintage_storage_cleanup[\s\S]*delete_child_application platform-storage/, 'platform storage should be pruned only after Vintage PVC/PV/EBS cleanup');
   assert.match(script, /delete_child_application platform-edge[\s\S]*wait_for_alb_cleanup/, 'edge resources should be removed while AWS LBC is still running');
   assert.match(script, /wait_for_external_dns_cleanup/, 'cleanup should wait for ExternalDNS-managed records to disappear');
   assert.match(script, /delete_child_application platform-aws-load-balancer-controller/, 'AWS Load Balancer Controller should be pruned only after ALB cleanup');

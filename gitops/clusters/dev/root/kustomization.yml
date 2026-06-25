@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - applications/platform-namespaces.yml
   - applications/platform-gateway-api-crds.yml
+  - applications/platform-storage.yml
   - applications/platform-external-secrets.yml
   - applications/platform-aws-load-balancer-controller.yml
   - applications/platform-external-dns.yml
