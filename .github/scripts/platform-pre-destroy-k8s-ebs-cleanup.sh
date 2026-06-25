@@ -9,6 +9,7 @@ ROOT_ARGOCD_APPLICATION="${ROOT_ARGOCD_APPLICATION:-hiraya-root}"
 EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
 EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
 EXTERNAL_DNS_HOSTNAMES="${EXTERNAL_DNS_HOSTNAMES:-hiraya.noidilin.dev argocd.hiraya.noidilin.dev grafana.hiraya.noidilin.dev}"
+MANAGED_NAMESPACE_CLEANUP_LIST="${MANAGED_NAMESPACE_CLEANUP_LIST:-vintage monitoring edge external-dns external-secrets amazon-cloudwatch}"
 WAIT_ATTEMPTS="${K8S_EBS_CLEANUP_WAIT_ATTEMPTS:-60}"
 WAIT_DELAY_SECONDS="${K8S_EBS_CLEANUP_WAIT_DELAY_SECONDS:-10}"
 VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
@@ -225,7 +226,7 @@ wait_for_vintage_storage_cleanup() {
   if kubectl get namespace "$APP_NAMESPACE" >/dev/null 2>&1; then
     echo "Deleting Vintage namespace ${APP_NAMESPACE} after workload Application prune to release PVCs."
     kubectl delete namespace "$APP_NAMESPACE" --ignore-not-found=true --wait=false
-    wait_until "namespace ${APP_NAMESPACE} to be deleted" namespace_gone "$APP_NAMESPACE"
+    echo "Not waiting for namespace absence yet; platform-namespaces may recreate empty managed namespaces until that Application is pruned."
   else
     echo "Vintage namespace ${APP_NAMESPACE} is already absent."
   fi
@@ -238,6 +239,25 @@ wait_for_vintage_storage_cleanup() {
       wait_until "EBS volume ${volume_id} to be deleted by the Kubernetes reclaim policy" volume_deleted "$volume_id"
     done <"$volume_ids_file"
   fi
+}
+
+delete_managed_namespaces() {
+  local namespace
+
+  for namespace in $MANAGED_NAMESPACE_CLEANUP_LIST; do
+    [[ -n "$namespace" ]] || continue
+    if kubectl get namespace "$namespace" >/dev/null 2>&1; then
+      echo "Deleting managed namespace ${namespace} after namespace-owning Application prune."
+      kubectl delete namespace "$namespace" --ignore-not-found=true --wait=false
+    else
+      echo "Managed namespace ${namespace} is already absent."
+    fi
+  done
+
+  for namespace in $MANAGED_NAMESPACE_CLEANUP_LIST; do
+    [[ -n "$namespace" ]] || continue
+    wait_until "managed namespace ${namespace} to be deleted or absent" namespace_gone "$namespace"
+  done
 }
 
 wait_for_alb_cleanup() {
@@ -290,6 +310,7 @@ wait_for_vintage_storage_cleanup
 
 delete_child_application platform-storage
 delete_child_application platform-argocd-access
+delete_child_application platform-monitoring-config
 delete_child_application platform-monitoring
 delete_child_application platform-edge
 wait_for_alb_cleanup
@@ -301,6 +322,7 @@ delete_child_application platform-external-secrets
 delete_child_application platform-external-dns
 delete_child_application platform-aws-load-balancer-controller
 delete_child_application platform-namespaces
+delete_managed_namespaces
 delete_child_application platform-gateway-api-crds
 
 echo "Ordered GitOps pre-destroy cleanup completed."

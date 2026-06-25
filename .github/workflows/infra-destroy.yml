@@ -152,6 +152,11 @@ jobs:
           CLUSTER_NAME: ${{ steps.platform.outputs.cluster_name }}
           VPC_ID: ${{ steps.platform.outputs.vpc_id }}
           EDGE_LOAD_BALANCER_NAME: ${{ steps.platform.outputs.edge_load_balancer_name }}
+          EXTERNAL_DNS_HOSTED_ZONE_ID: ${{ steps.platform.outputs.external_dns_hosted_zone_id }}
+          EXTERNAL_DNS_HOSTNAMES: >-
+            ${{ steps.platform.outputs.app_hostname }}
+            ${{ steps.platform.outputs.argocd_hostname }}
+            ${{ steps.platform.outputs.grafana_hostname }}
           K8S_EBS_CLEANUP_VOLUME_IDS_FILE: ${{ runner.temp }}/hiraya-k8s-ebs-volume-ids.txt
         shell: bash
         run: .github/scripts/platform-destroy-verify.sh
