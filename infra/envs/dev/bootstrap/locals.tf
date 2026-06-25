@@ -1,6 +1,7 @@
 locals {
-  name_prefix          = "devops-${var.project_name}-${var.environment}"
-  runtime_boundary_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
+  name_prefix               = "devops-${var.project_name}-${var.environment}"
+  runtime_boundary_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
+  gitops_apply_boundary_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-gitops-oidc-apply-permissions-boundary"
 
   terraform_state_keys = {
     bootstrap         = "${local.name_prefix}/${var.environment}/bootstrap/terraform.tfstate"

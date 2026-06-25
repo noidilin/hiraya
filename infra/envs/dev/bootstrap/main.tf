@@ -87,8 +87,9 @@ resource "aws_iam_role_policy_attachment" "github_image_push" {
 }
 
 resource "aws_iam_role" "github_infra_plan" {
-  name               = "${local.name_prefix}-github-infra-plan"
-  assume_role_policy = data.aws_iam_policy_document.github_infra_plan_assume_role.json
+  name                 = "${local.name_prefix}-github-infra-plan"
+  permissions_boundary = local.gitops_apply_boundary_arn
+  assume_role_policy   = data.aws_iam_policy_document.github_infra_plan_assume_role.json
 
   tags = local.common_tags
 }
@@ -176,8 +177,9 @@ resource "aws_iam_role_policy_attachment" "github_infra_plan" {
 }
 
 resource "aws_iam_role" "github_cluster_bootstrap" {
-  name               = "${local.name_prefix}-github-cluster-bootstrap"
-  assume_role_policy = data.aws_iam_policy_document.github_cluster_bootstrap_assume_role.json
+  name                 = "${local.name_prefix}-github-cluster-bootstrap"
+  permissions_boundary = local.gitops_apply_boundary_arn
+  assume_role_policy   = data.aws_iam_policy_document.github_cluster_bootstrap_assume_role.json
 
   tags = local.common_tags
 }
@@ -272,8 +274,9 @@ resource "aws_iam_role_policy_attachment" "github_cluster_bootstrap" {
 }
 
 resource "aws_iam_role" "github_infra_apply" {
-  name               = "${local.name_prefix}-github-infra-apply"
-  assume_role_policy = data.aws_iam_policy_document.github_infra_apply_assume_role.json
+  name                 = "${local.name_prefix}-github-infra-apply"
+  permissions_boundary = local.gitops_apply_boundary_arn
+  assume_role_policy   = data.aws_iam_policy_document.github_infra_apply_assume_role.json
 
   tags = local.common_tags
 }
