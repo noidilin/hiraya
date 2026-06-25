@@ -54,6 +54,16 @@ test('dev GitOps root renders foundation child Applications with ordered automat
   }
 });
 
+test('dev Git-backed child Applications track main', () => {
+  const rendered = render('gitops/clusters/dev/root');
+  assert.doesNotMatch(rendered, /refactor\/gitops-refactor/, 'GitOps Applications must not track the deleted PR branch');
+  assert.doesNotMatch(
+    rendered,
+    /repoURL:[ \t]*https:\/\/github\.com\/noidilin\/hiraya\.git\n[ \t]*targetRevision:(?![ \t]*main\b)[^\n]+/,
+    'Git-backed child Applications should track main after the GitOps refactor PR is merged',
+  );
+});
+
 test('Cluster Bootstrap AppProject allowlist covers platform child Application source repos', () => {
   const rendered = render('gitops/clusters/dev/root');
   const allowlist = platformProjectSourceRepos();
