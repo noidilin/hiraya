@@ -94,6 +94,7 @@ test('pre-destroy script stops root reconciliation and prunes child apps in safe
   assert.match(script, /wait_for_vintage_storage_cleanup[\s\S]*delete_child_application platform-storage/, 'platform storage should be pruned only after Vintage PVC/PV/EBS cleanup');
   assert.match(script, /delete_child_application platform-edge[\s\S]*wait_for_alb_cleanup/, 'edge resources should be removed while AWS LBC is still running');
   assert.match(script, /wait_for_aws_load_balancer_controller_k8s_cleanup/, 'cleanup should wait for AWS LBC Kubernetes finalizers before controller teardown');
+  assert.match(script, /gatewayclasses\.gateway\.networking\.k8s\.io/, 'cleanup should wait for GatewayClass finalizers before controller teardown');
   assert.match(script, /EXTERNAL_DNS_TXT_OWNER_ID/, 'cleanup should detect ExternalDNS TXT ownership records, including prefixed TXT records');
   assert.match(script, /wait_for_external_dns_cleanup/, 'cleanup should wait for ExternalDNS-managed records to disappear');
   assert.match(script, /delete_child_application platform-aws-load-balancer-controller/, 'AWS Load Balancer Controller should be pruned only after ALB cleanup');

@@ -281,6 +281,10 @@ delete_managed_namespaces() {
 aws_load_balancer_controller_resources_gone() {
   local remaining=""
 
+  remaining+=$(kubectl get gatewayclasses.gateway.networking.k8s.io \
+    -o jsonpath='{range .items[?(@.spec.controllerName=="gateway.k8s.aws/alb")]}gatewayclass.gateway.networking.k8s.io/{.metadata.name}{"\n"}{end}' \
+    2>/dev/null || true)
+  remaining+=$'\n'
   remaining+=$(kubectl get gateways.gateway.networking.k8s.io -A -o name 2>/dev/null || true)
   remaining+=$'\n'
   remaining+=$(kubectl get loadbalancerconfigurations.gateway.k8s.aws -A -o name 2>/dev/null || true)
@@ -304,7 +308,7 @@ wait_for_alb_cleanup() {
 }
 
 wait_for_aws_load_balancer_controller_k8s_cleanup() {
-  wait_until "AWS Load Balancer Controller Gateway and TargetGroupBinding resources to be finalized" aws_load_balancer_controller_resources_gone
+  wait_until "AWS Load Balancer Controller GatewayClass, Gateway, and TargetGroupBinding resources to be finalized" aws_load_balancer_controller_resources_gone
 }
 
 wait_for_external_dns_cleanup() {
