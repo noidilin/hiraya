@@ -84,7 +84,6 @@
       "standardControlTitle": "Detect anomalous activity and control failures",
       "standardControlFamily": "Detect",
       "projectControlIds": [
-        "sec.irsa.fluent-bit",
         "ops.monitoring.read-access",
         "ops.incident.aiops-investigation"
       ],

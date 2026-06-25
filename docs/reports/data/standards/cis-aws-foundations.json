@@ -40,7 +40,6 @@
       "standardControlTitle": "Logging, monitoring, and audit evidence",
       "standardControlFamily": "Logging and monitoring",
       "projectControlIds": [
-        "sec.irsa.fluent-bit",
         "ops.monitoring.read-access",
         "sec.audit.permission-deployment-records"
       ],
