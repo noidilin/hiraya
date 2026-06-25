@@ -42,7 +42,6 @@ Use these source files as the source of truth:
 
 - `docs/reports/data/controls/*.json`
 - `docs/reports/schema/permission-controls.schema.json`
-- `.github/scripts/src/permission-controls.mts`
 
 Do not edit files and do not open pull requests. Your only allowed outputs are creating the rolling audit issue if it does not exist, or appending a new weekly audit section to the existing rolling issue.
 
