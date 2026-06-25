@@ -9,6 +9,7 @@ ROOT_ARGOCD_APPLICATION="${ROOT_ARGOCD_APPLICATION:-hiraya-root}"
 EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
 EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
 EXTERNAL_DNS_HOSTNAMES="${EXTERNAL_DNS_HOSTNAMES:-hiraya.noidilin.dev argocd.hiraya.noidilin.dev grafana.hiraya.noidilin.dev}"
+EXTERNAL_DNS_TXT_OWNER_ID="${EXTERNAL_DNS_TXT_OWNER_ID:-hiraya-dev-eks}"
 MANAGED_NAMESPACE_CLEANUP_LIST="${MANAGED_NAMESPACE_CLEANUP_LIST:-vintage monitoring edge external-dns external-secrets amazon-cloudwatch}"
 WAIT_ATTEMPTS="${K8S_EBS_CLEANUP_WAIT_ATTEMPTS:-60}"
 WAIT_DELAY_SECONDS="${K8S_EBS_CLEANUP_WAIT_DELAY_SECONDS:-10}"
@@ -162,18 +163,35 @@ external_dns_records_gone() {
     return 1
   fi
 
-  local hostname record_count
-  for hostname in $EXTERNAL_DNS_HOSTNAMES; do
+  local hostnames_json record_sets_file remaining_records
+  hostnames_json=$(for hostname in $EXTERNAL_DNS_HOSTNAMES; do
     [[ -n "$hostname" ]] || continue
-    record_count=$(aws route53 list-resource-record-sets \
-      --hosted-zone-id "$EXTERNAL_DNS_HOSTED_ZONE_ID" \
-      --query "length(ResourceRecordSets[?Name == '${hostname}.'])" \
-      --output text)
-    if [[ "$record_count" != "0" ]]; then
-      echo "ExternalDNS record for ${hostname} still exists in hosted zone ${EXTERNAL_DNS_HOSTED_ZONE_ID}."
-      return 1
-    fi
-  done
+    printf '%s\n' "$hostname"
+    printf '\\052.%s\n' "$hostname"
+  done | sort -u | jq -R . | jq -s .)
+
+  record_sets_file=$(mktemp)
+  aws route53 list-resource-record-sets \
+    --hosted-zone-id "$EXTERNAL_DNS_HOSTED_ZONE_ID" \
+    --output json >"$record_sets_file"
+
+  remaining_records=$(jq -r \
+    --arg owner "external-dns/owner=${EXTERNAL_DNS_TXT_OWNER_ID}" \
+    --argjson hostnames "$hostnames_json" \
+    '[.ResourceRecordSets[]
+      | select(
+          (((.Name | rtrimstr(".")) as $name | $hostnames | index($name)) and (.Type == "A" or .Type == "AAAA" or .Type == "CNAME"))
+          or ((.ResourceRecords // []) | any(.Value | contains($owner)))
+        )
+      | [.Name, .Type] | @tsv
+    ] | .[]' "$record_sets_file")
+  rm -f "$record_sets_file"
+
+  if [[ -n "$remaining_records" ]]; then
+    echo "ExternalDNS-managed Route 53 records still exist in hosted zone ${EXTERNAL_DNS_HOSTED_ZONE_ID}:"
+    sed 's/^/- /' <<<"$remaining_records"
+    return 1
+  fi
 
   return 0
 }
@@ -260,8 +278,33 @@ delete_managed_namespaces() {
   done
 }
 
+aws_load_balancer_controller_resources_gone() {
+  local remaining=""
+
+  remaining+=$(kubectl get gateways.gateway.networking.k8s.io -A -o name 2>/dev/null || true)
+  remaining+=$'\n'
+  remaining+=$(kubectl get loadbalancerconfigurations.gateway.k8s.aws -A -o name 2>/dev/null || true)
+  remaining+=$'\n'
+  remaining+=$(kubectl get targetgroupconfigurations.gateway.k8s.aws -A -o name 2>/dev/null || true)
+  remaining+=$'\n'
+  remaining+=$(kubectl get targetgroupbindings.elbv2.k8s.aws -A -o name 2>/dev/null || true)
+  remaining=$(awk 'NF' <<<"$remaining")
+
+  if [[ -n "$remaining" ]]; then
+    echo "AWS Load Balancer Controller Kubernetes resources still exist:"
+    sed 's/^/- /' <<<"$remaining"
+    return 1
+  fi
+
+  return 0
+}
+
 wait_for_alb_cleanup() {
   wait_until "shared public ALB ${EDGE_LOAD_BALANCER_NAME} to be deleted by AWS Load Balancer Controller" load_balancer_gone
+}
+
+wait_for_aws_load_balancer_controller_k8s_cleanup() {
+  wait_until "AWS Load Balancer Controller Gateway and TargetGroupBinding resources to be finalized" aws_load_balancer_controller_resources_gone
 }
 
 wait_for_external_dns_cleanup() {
@@ -314,6 +357,7 @@ delete_child_application platform-monitoring-config
 delete_child_application platform-monitoring
 delete_child_application platform-edge
 wait_for_alb_cleanup
+wait_for_aws_load_balancer_controller_k8s_cleanup
 wait_for_external_dns_cleanup
 
 # Non-edge platform add-ons after controller-managed cloud resources are gone.
