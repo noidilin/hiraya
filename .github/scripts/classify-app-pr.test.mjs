@@ -176,12 +176,12 @@ test('keeps setup-action changes in the app baseline without forcing image build
   assert.deepEqual(serviceNames(classification), []);
 });
 
-test('keeps report-only governance changes out of service image fanout', async () => {
+test('keeps report-only governance data changes out of service image fanout', async () => {
   const fixture = await createRepoFixture();
-  const reportScriptPath = path.join(fixture.root, '.github/scripts/src/permission-controls.mts');
-  await mkdir(path.dirname(reportScriptPath), { recursive: true });
-  await writeFile(reportScriptPath, 'export const changed = true;\n');
-  const head = await commitChange(fixture.root, 'permission report');
+  const reportDataPath = path.join(fixture.root, 'docs/reports/data/controls/identity-access.json');
+  await mkdir(path.dirname(reportDataPath), { recursive: true });
+  await writeFile(reportDataPath, '{"controls":[]}\n');
+  const head = await commitChange(fixture.root, 'permission report data');
 
   const classification = classify({ ...fixture, head });
 

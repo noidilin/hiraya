@@ -182,11 +182,11 @@ test('fans out root image build inputs, workflow, script, and catalog changes to
   }
 });
 
-test('does not fan out report-only governance script changes to service images', async () => {
+test('does not fan out report-only governance data changes to service images', async () => {
   const { root, catalogPath } = await createCatalogFixture();
 
   assert.deepEqual(
-    serviceNames(detect(catalogPath, root, ['.github/scripts/src/permission-controls.mts'])),
+    serviceNames(detect(catalogPath, root, ['docs/reports/data/controls/identity-access.json'])),
     [],
   );
 });

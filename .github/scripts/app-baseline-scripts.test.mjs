@@ -45,8 +45,6 @@ test('root workspace exposes the reusable baseline command surface', async () =>
   for (const scriptName of [
     'scripts:build',
     'scripts:test',
-    'reports:permissions',
-    'reports:permissions:validate',
     'catalog:validate',
     'services:changed',
     'app:catalog',
