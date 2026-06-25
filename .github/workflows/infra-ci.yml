@@ -86,7 +86,6 @@ jobs:
           helm template aws-load-balancer-controller aws-load-balancer-controller --repo https://aws.github.io/eks-charts --version 3.4.0 --namespace kube-system -f gitops/platform/aws-load-balancer-controller/values-dev.yaml >/tmp/hiraya-gitops-rendered/aws-load-balancer-controller.yaml
           helm template external-dns external-dns --repo https://kubernetes-sigs.github.io/external-dns/ --version 1.20.0 --namespace external-dns -f gitops/platform/external-dns/values-dev.yaml >/tmp/hiraya-gitops-rendered/external-dns.yaml
           helm template external-secrets external-secrets --repo https://charts.external-secrets.io --version 0.10.7 --namespace external-secrets -f gitops/platform/external-secrets/values-dev.yaml >/tmp/hiraya-gitops-rendered/external-secrets.yaml
-          helm template aws-for-fluent-bit aws-for-fluent-bit --repo https://aws.github.io/eks-charts --version 0.2.0 --namespace amazon-cloudwatch -f gitops/platform/logging/values-dev.yaml >/tmp/hiraya-gitops-rendered/aws-for-fluent-bit.yaml
           helm template kube-prometheus-stack kube-prometheus-stack --repo https://prometheus-community.github.io/helm-charts --version 56.21.0 --namespace monitoring -f gitops/platform/monitoring/values-dev.yaml >/tmp/hiraya-gitops-rendered/kube-prometheus-stack.yaml
 
       - name: install-kubeconform

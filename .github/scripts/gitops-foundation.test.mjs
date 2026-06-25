@@ -79,11 +79,10 @@ test('Cluster Platform grants Public Gateway Access namespaces, excluding argocd
   assert.equal(docs(rendered).some((doc) => kind(doc) === 'Namespace' && metadataName(doc) === 'argocd'), false, 'argocd namespace must remain Cluster Bootstrap-owned');
 });
 
-test('Edge, logging, monitoring, and Argo CD access render as separated Cluster Platform Applications', () => {
+test('Edge, monitoring, and Argo CD access render as separated Cluster Platform Applications', () => {
   const rendered = render('gitops/clusters/dev/root');
   const expectedApps = [
     ['platform-edge', '-14', 'path', 'gitops/platform/edge', true],
-    ['platform-logging', '-10', 'values', 'gitops/platform/logging/values-dev.yaml', true],
     ['platform-monitoring', '-10', 'path', 'gitops/platform/monitoring', false],
     ['platform-argocd-access', '-8', 'path', 'gitops/platform/argocd-access', true],
   ];
@@ -129,13 +128,10 @@ test('Argo CD access owns only the public Argo CD route', () => {
   assert.match(route, /name:\s*argocd-server/, 'Argo CD route should target the Argo CD server Service');
 });
 
-test('Logging and monitoring platform apps use Terraform-owned secrets and log group contracts', () => {
+test('Monitoring platform app uses Terraform-owned secrets', () => {
   const root = render('gitops/clusters/dev/root');
-  const loggingApp = byKindName(root, 'Application', 'platform-logging');
   const monitoringApp = byKindName(root, 'Application', 'platform-monitoring');
 
-  assert.match(loggingApp, /chart:\s*aws-for-fluent-bit/, 'logging should use the Fluent Bit Helm chart');
-  assert.match(loggingApp, /targetRevision:\s*0\.2\.0/, 'logging chart version should be pinned');
   assert.match(monitoringApp, /chart:\s*kube-prometheus-stack/, 'monitoring should use kube-prometheus-stack');
   assert.match(monitoringApp, /targetRevision:\s*56\.21\.0/, 'monitoring chart version should be pinned');
   assert.match(monitoringApp, /prune:\s*false/, 'monitoring should protect chart-owned CRDs/resources from unsafe automated Argo prune');

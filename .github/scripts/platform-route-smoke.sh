@@ -12,7 +12,6 @@ ARGO_APPLICATIONS=(
   platform-external-dns
   platform-external-secrets
   platform-edge
-  platform-logging
   platform-monitoring
   platform-argocd-access
   vintage
@@ -25,7 +24,6 @@ REQUIRED_NAMESPACES=(
   vintage
   external-dns
   external-secrets
-  amazon-cloudwatch
 )
 
 require_output() {

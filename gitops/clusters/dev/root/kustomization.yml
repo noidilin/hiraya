@@ -9,7 +9,9 @@ resources:
   - applications/platform-aws-load-balancer-controller.yml
   - applications/platform-external-dns.yml
   - applications/platform-edge.yml
-  - applications/platform-logging.yml
+  # Fluent Bit is kept in repo but disabled while AIOps is postponed.
+  # Prometheus/Grafana observability stays enabled through platform-monitoring.
+  # - applications/platform-logging.yml
   - applications/platform-monitoring.yml
   - applications/platform-argocd-access.yml
   - applications/vintage.yml
