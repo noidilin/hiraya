@@ -10,11 +10,11 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 
 --
--- Roles
+-- Roles intentionally omitted. Kubernetes owns the postgres runtime
+-- credential through the vintage-secrets ExternalSecret; restoring role
+-- passwords from this dump would desynchronise the database from the
+-- Secret used by application pods.
 --
-
-CREATE ROLE postgres;
-ALTER ROLE postgres WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYPASSRLS PASSWORD 'SCRAM-SHA-256$4096:+W0ct/Z/vVbY3B3Caf2Dew==$uBdV09yFUYBPSwVv0kSvVlTl5ScxjH4KG0r/xZRIuyQ=:/IySb7hEXNhRhNPvrB5ypsfq+gkvtYDzDWavumWmXsM=';
 
 --
 -- User Configurations

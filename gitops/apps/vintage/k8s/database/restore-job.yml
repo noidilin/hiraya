@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: vintage-db-restore
+  name: vintage-db-restore-v2
   namespace: vintage
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -18,16 +18,18 @@ spec:
             - sh
             - -c
             - |
+              set -eu
+
               echo "Waiting for Postgres..."
               until pg_isready -h vintage-postgres -U postgres; do
                 sleep 2
               done
 
               echo "Restoring dump..."
-              psql -h vintage-postgres -U postgres -f /dump/vintage_full.sql
+              psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -f /dump/vintage_full.sql
 
               echo "Creating auth_db schema..."
-              psql -h vintage-postgres -U postgres -d auth_db -c "
+              psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -d auth_db -c "
               CREATE TABLE IF NOT EXISTS users (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -40,7 +42,7 @@ spec:
               );"
 
               echo "Creating orders_db schema..."
-              psql -h vintage-postgres -U postgres -d orders_db -c "
+              psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -d orders_db -c "
               CREATE TABLE IF NOT EXISTS orders (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id VARCHAR(255) NOT NULL,

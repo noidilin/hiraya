@@ -83,7 +83,8 @@ test('Edge, monitoring, and Argo CD access render as separated Cluster Platform 
   const rendered = render('gitops/clusters/dev/root');
   const expectedApps = [
     ['platform-edge', '-14', 'path', 'gitops/platform/edge', true],
-    ['platform-monitoring', '-10', 'path', 'gitops/platform/monitoring', false],
+    ['platform-monitoring-config', '-11', 'path', 'gitops/platform/monitoring', true],
+    ['platform-monitoring', '-10', 'values', 'gitops/platform/monitoring/values-dev.yaml', false],
     ['platform-argocd-access', '-8', 'path', 'gitops/platform/argocd-access', true],
   ];
 
@@ -192,6 +193,17 @@ test('Vintage workload is a GitOps app backed by ESO secrets', () => {
   byKindName(rendered, 'ServiceMonitor', 'vintage-services');
   byKindName(rendered, 'ConfigMap', 'grafana-dashboards');
   byKindName(rendered, 'StatefulSet', 'vintage-postgres');
+});
+
+test('Vintage database restore preserves the ESO-owned Postgres password', () => {
+  const dump = readFileSync('gitops/apps/vintage/k8s/database/vintage_full.sql', 'utf8');
+  assert.doesNotMatch(dump, /^CREATE ROLE postgres;/m, 'restore dump must not recreate the runtime postgres role');
+  assert.doesNotMatch(dump, /^ALTER ROLE postgres\b/m, 'restore dump must not overwrite the ESO-managed postgres password');
+
+  const rendered = render('gitops/apps/vintage');
+  const restoreJob = byKindName(rendered, 'Job', 'vintage-db-restore-v2');
+  assert.match(restoreJob, /ON_ERROR_STOP=1/, 'restore job should fail if psql reports an error');
+  assert.match(restoreJob, /set -eu/, 'restore job shell should fail fast');
 });
 
 test('Gateway API and AWS Load Balancer Controller CRDs are vendored and no-prune protected', () => {
