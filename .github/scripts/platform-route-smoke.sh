@@ -4,19 +4,6 @@ set -euo pipefail
 AWS_REGION="${AWS_REGION:-ap-northeast-1}"
 PLATFORM_DIR="${PLATFORM_DIR:-infra/envs/dev/platform-core}"
 
-ARGO_APPLICATIONS=(
-  hiraya-root
-  platform-namespaces
-  platform-gateway-api-crds
-  platform-aws-load-balancer-controller
-  platform-external-dns
-  platform-external-secrets
-  platform-edge
-  platform-monitoring
-  platform-argocd-access
-  vintage
-)
-
 REQUIRED_NAMESPACES=(
   argocd
   edge
@@ -136,6 +123,23 @@ wait_for_http_route() {
   done
 }
 
+list_expected_argocd_applications() {
+  printf '%s\n' hiraya-root
+  kubectl kustomize gitops/clusters/dev/root \
+    | awk '
+      /^kind:[[:space:]]*Application[[:space:]]*$/ { in_app = 1; in_meta = 0; next }
+      /^---[[:space:]]*$/ { in_app = 0; in_meta = 0; next }
+      in_app && /^metadata:[[:space:]]*$/ { in_meta = 1; next }
+      in_app && in_meta && /^[^[:space:]]/ { in_meta = 0 }
+      in_app && in_meta && /^[[:space:]]+name:[[:space:]]*/ {
+        name = $0
+        sub(/^[[:space:]]+name:[[:space:]]*/, "", name)
+        gsub(/[\"'"'"']/, "", name)
+        print name
+      }
+    '
+}
+
 CLUSTER_NAME=$(require_output cluster_name)
 EDGE_GATEWAY_NAMESPACE=$(require_output edge_gateway_namespace)
 EDGE_GATEWAY_NAME=$(require_output edge_gateway_name)
@@ -155,9 +159,10 @@ kubectl get nodes -o wide
 kubectl wait node --all --for=condition=Ready --timeout=10m
 
 echo "Verifying Argo CD Applications through Kubernetes."
-for app_name in "${ARGO_APPLICATIONS[@]}"; do
+while IFS= read -r app_name; do
+  [[ -n "$app_name" ]] || continue
   wait_for_argocd_application "$app_name"
-done
+done < <(list_expected_argocd_applications)
 kubectl get applications.argoproj.io -n argocd
 
 echo "Verifying expected namespaces are visible."
