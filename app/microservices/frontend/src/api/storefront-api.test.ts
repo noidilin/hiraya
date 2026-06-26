@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clearAccessToken, setAccessToken } from "./client";
+import { login } from "./auth";
 import { getProduct, listCategories, listProducts } from "./products";
 import { createOrder, listMyOrders } from "./orders";
 
@@ -183,6 +184,41 @@ describe("Storefront API adapters", () => {
         items: [expect.objectContaining({ productId: productWire.id, quantity: 2, price: 188 })],
       }),
     ]);
+  });
+
+  it("logs in through the active auth endpoint without calling an unsupported refresh-token flow", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          user: {
+            id: "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+            firstName: "Demo",
+            lastName: "Customer",
+            email: "demo@hirayavintage.test",
+            role: "customer",
+            createdAt: "2026-02-14T10:22:31.000Z",
+            updatedAt: "2026-02-14T10:22:31.000Z",
+          },
+          token: "storefront-token",
+        },
+      }),
+    );
+
+    await expect(login({ email: "demo@hirayavintage.test", password: "StorefrontDemo123!" })).resolves.toEqual(
+      expect.objectContaining({ token: "storefront-token" }),
+    );
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ email: "demo@hirayavintage.test", password: "StorefrontDemo123!" }),
+      }),
+    );
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => String(url))).not.toContain("/api/auth/refresh");
+    expect(window.localStorage.getItem("accessToken")).toBe("storefront-token");
   });
 
   it("injects the bearer token through the centralized API client", async () => {
