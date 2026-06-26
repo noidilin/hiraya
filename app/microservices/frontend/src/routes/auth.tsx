@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, LogIn, UserPlus } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { type FormEvent, useMemo, useState } from "react";
@@ -46,9 +46,28 @@ function isAuthMode(value: string): value is AuthMode {
   return value === "login" || value === "signup";
 }
 
-export function AuthRoute() {
+function getRedirectTarget(): "/cart" | "/profile" | "/orders" {
+  if (typeof window === "undefined") {
+    return "/profile";
+  }
+
+  const redirectTo = new URLSearchParams(window.location.search).get("redirect");
+
+  if (redirectTo === "/cart" || redirectTo === "/profile" || redirectTo === "/orders") {
+    return redirectTo;
+  }
+
+  return "/profile";
+}
+
+type AuthRouteProps = {
+  initialMode?: AuthMode;
+};
+
+export function AuthRoute({ initialMode = "login" }: AuthRouteProps) {
+  const navigate = useNavigate();
   const { user, status, login, register, logout, error: storeError, clearError } = useAuth();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [values, setValues] = useState({
     email: "",
     password: "",
@@ -106,6 +125,7 @@ export function AuthRoute() {
           password: parsed.data.password,
         });
         setFormMessage("Signed in. Your cart is still waiting.");
+        await navigate({ to: getRedirectTarget() });
       } else {
         const parsed = signupSchema.safeParse(values);
 
@@ -127,6 +147,7 @@ export function AuthRoute() {
           lastName: parsed.data.lastName,
         });
         setFormMessage("Account created. Your archive is ready.");
+        await navigate({ to: getRedirectTarget() });
       }
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -153,7 +174,7 @@ export function AuthRoute() {
                 <Link to="/cart">Return to cart</Link>
               </Button>
               <Button asChild variant="outline" className="h-11 rounded-none px-4">
-                <Link to="/orders">View orders</Link>
+                <Link to="/profile">View profile</Link>
               </Button>
               <Button
                 type="button"

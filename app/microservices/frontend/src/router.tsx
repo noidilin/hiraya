@@ -2,6 +2,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
 } from '@tanstack/react-router';
 
 import { AppShell } from '@/components/layout/app-shell';
@@ -13,6 +14,8 @@ import { OrderConfirmedRoute } from '@/routes/order-confirmed';
 import { OrdersRoute } from '@/routes/orders';
 import { ProductDetailRoute } from '@/routes/product-detail';
 import { ProductsRoute } from '@/routes/products';
+import { ProfileRoute } from '@/routes/profile';
+import { getAccessToken } from '@/api';
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -24,10 +27,36 @@ const indexRoute = createRoute({
   component: HomeRoute,
 });
 
+function requireAuth(location: { href: string }) {
+  if (!getAccessToken()) {
+    throw redirect({
+      to: '/login',
+      search: { redirect: location.href },
+    });
+  }
+}
+
 const authRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/auth',
-  component: AuthRoute,
+  beforeLoad: ({ location }) => {
+    throw redirect({
+      to: '/login',
+      search: location.search,
+    });
+  },
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: () => <AuthRoute initialMode="login" />,
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  component: () => <AuthRoute initialMode="signup" />,
 });
 
 const manifestoRoute = createRoute({
@@ -60,15 +89,26 @@ const orderConfirmedRoute = createRoute({
   component: OrderConfirmedRoute,
 });
 
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  beforeLoad: ({ location }) => requireAuth(location),
+  component: ProfileRoute,
+});
+
 const ordersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/orders',
+  beforeLoad: ({ location }) => requireAuth(location),
   component: OrdersRoute,
 });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   authRoute,
+  loginRoute,
+  registerRoute,
+  profileRoute,
   manifestoRoute,
   productsRoute,
   productDetailRoute,

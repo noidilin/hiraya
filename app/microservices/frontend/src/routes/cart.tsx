@@ -262,7 +262,7 @@ export function CartRoute() {
                   <AlertTitle>Sign in to place your order.</AlertTitle>
                   <AlertDescription>Your cart will remain intact while you log in.</AlertDescription>
                   <Button asChild variant="outline" className="mt-4 h-10 rounded-none">
-                    <Link to="/auth">Go to account</Link>
+                    <Link to="/login" search={{ redirect: "/cart" }}>Go to account</Link>
                   </Button>
                 </Alert>
               ) : null}
