@@ -1,73 +1,58 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { listProducts, getProduct, PLACEHOLDER_PRODUCT_IMAGE, type Product } from "@/api";
+import { listCategories, listProducts, getProduct, PLACEHOLDER_PRODUCT_IMAGE, type Product } from "@/api";
 import {
-  fallbackProductCategories,
-  fallbackProducts,
-  featuredFallbackProducts,
-  getFallbackProduct,
-} from "@/data/product-fallbacks";
+  getHirayaFurugiCatalogProduct,
+  hirayaFurugiCatalogProducts,
+} from "@/data/hiraya-furugi-catalog";
 
 type ProductsQueryResult = {
   products: Product[];
-  isFallback: boolean;
+  categories: string[];
 };
 
 function normalizeProductName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function findFallbackMatch(product: Product): Product | undefined {
+function findCatalogMatch(product: Product): Product | undefined {
   return (
-    getFallbackProduct(product.id) ??
-    fallbackProducts.find((fallbackProduct) => normalizeProductName(fallbackProduct.name) === normalizeProductName(product.name))
+    getHirayaFurugiCatalogProduct(product.id) ??
+    hirayaFurugiCatalogProducts.find((catalogProduct) => normalizeProductName(catalogProduct.name) === normalizeProductName(product.name))
   );
 }
 
-export function withProductFallbacks(product: Product): Product {
-  const fallback = findFallbackMatch(product);
+export function withCatalogPresentation(product: Product): Product {
+  const catalogProduct = findCatalogMatch(product);
   const hasSparseImage = !product.imageUrl || product.imageUrl === PLACEHOLDER_PRODUCT_IMAGE;
 
   return {
-    ...(fallback ?? product),
+    ...(catalogProduct ?? product),
     ...product,
-    imageUrl: hasSparseImage && fallback ? fallback.imageUrl : product.imageUrl,
-    description: product.description || fallback?.description || "",
-    inventory: Number.isFinite(product.inventory) ? product.inventory : (fallback?.inventory ?? 0),
+    imageUrl: hasSparseImage && catalogProduct ? catalogProduct.imageUrl : product.imageUrl,
+    description: product.description || catalogProduct?.description || "",
+    inventory: Number.isFinite(product.inventory) ? product.inventory : (catalogProduct?.inventory ?? 0),
   };
 }
 
 export function useProductsQuery() {
   const query = useQuery({
     queryKey: ["products", "archive"],
-    placeholderData: {
-      products: fallbackProducts,
-      isFallback: true,
-    },
     queryFn: async (): Promise<ProductsQueryResult> => {
-      try {
-        const productList = await listProducts({ limit: 100 });
-        const products = productList.products.map(withProductFallbacks);
+      const [productList, categories] = await Promise.all([listProducts({ limit: 100 }), listCategories()]);
 
-        return {
-          products: products.length > 0 ? products : fallbackProducts,
-          isFallback: products.length === 0,
-        };
-      } catch {
-        return {
-          products: fallbackProducts,
-          isFallback: true,
-        };
-      }
+      return {
+        products: productList.products.map(withCatalogPresentation),
+        categories: categories.map((category) => category.name).sort(),
+      };
     },
     retry: false,
   });
 
   return {
     ...query,
-    products: query.data?.products ?? fallbackProducts,
-    categories: query.data?.products ? Array.from(new Set(query.data.products.map((product) => product.category))).sort() : fallbackProductCategories,
-    isFallback: query.isError || query.isPlaceholderData || query.data?.isFallback === true,
+    products: query.data?.products ?? [],
+    categories: query.data?.categories ?? [],
   };
 }
 
@@ -77,7 +62,7 @@ export function useFeaturedProductsQuery(limit = 4) {
 
   return {
     ...query,
-    products: (featuredProducts.length > 0 ? featuredProducts : featuredFallbackProducts).slice(0, limit),
+    products: (featuredProducts.length > 0 ? featuredProducts : []).slice(0, limit),
   };
 }
 
@@ -85,21 +70,13 @@ export function useProductQuery(productId: string | undefined) {
   const query = useQuery({
     enabled: Boolean(productId),
     queryKey: ["products", "detail", productId],
-    placeholderData: productId ? getFallbackProduct(productId) : undefined,
-    queryFn: async () => {
-      try {
-        return withProductFallbacks(await getProduct(productId ?? ""));
-      } catch {
-        return productId ? getFallbackProduct(productId) : undefined;
-      }
-    },
+    queryFn: async () => withCatalogPresentation(await getProduct(productId ?? "")),
     retry: false,
   });
-  const fallbackProduct = productId ? getFallbackProduct(productId) : undefined;
 
   return {
     ...query,
-    product: query.data ?? fallbackProduct,
-    isFallback: (query.isError || query.isPlaceholderData) && Boolean(fallbackProduct),
+    product: query.data,
   };
 }
+

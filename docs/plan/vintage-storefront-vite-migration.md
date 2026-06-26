@@ -79,7 +79,7 @@ The deployment changes are limited to the frontend container build, local runtim
 - The frontend Dockerfile and nginx config are currently missing while Docker Compose still references `app/microservices/frontend/Dockerfile` and the old `REACT_APP_API_URL` build arg.
 - Existing browser tests must be updated for the new UI while preserving legacy route names and enabling checkout.
 - The copied router currently exposes `/auth` and `/orders`, but not `/login`, `/register`, or `/profile`; unauthenticated `/orders` currently renders an inline prompt instead of redirecting to `/login`.
-- Product API hooks currently fall back to static product data on API failure; this must change so API failures are visible to users and tests.
+- Product API hooks now load products and category filters through the Storefront API client, and product API failures surface explicit unavailable states instead of silently rendering static catalog products.
 - The backend, shared contract fixtures, local seed SQL, and GitOps restore SQL still describe the old five-item catalog, while the copied app contains the Hiraya Furugi Catalog assets and fallback product set.
 - Existing backend product image URLs still point at legacy filenames such as `/product-images/1970s-prairie-midi-dress.jpg`; migrating the catalog requires backend image URLs, shared fixtures, and public assets to agree in the same PR.
 

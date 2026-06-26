@@ -111,11 +111,18 @@ export function ProductsRoute() {
         <p>
           {filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}
         </p>
-        {productsQuery.isFallback ? <p>Showing the house archive edit.</p> : null}
+        {productsQuery.isError ? <p role="alert">We could not load the product archive. Please try again soon.</p> : null}
       </div>
 
       <section className="mt-8" aria-live="polite">
-        {productsQuery.isLoading ? (
+        {productsQuery.isError ? (
+          <div className="border-y border-destructive/30 bg-destructive/5 py-16 text-center" role="alert">
+            <h2 className="font-heading text-3xl font-semibold">Product archive unavailable</h2>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+              The Storefront API did not return the product catalog. Refresh the page or try again later.
+            </p>
+          </div>
+        ) : productsQuery.isLoading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Loading products">
             {Array.from({ length: 8 }).map((_, index) => (
               <Skeleton key={index} className="h-96 rounded-none border border-border bg-secondary" />
