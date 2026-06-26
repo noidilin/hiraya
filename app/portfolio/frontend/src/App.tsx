@@ -37,6 +37,28 @@ const pipelineSteps = [
   { label: 'Answer', state: 'idle', detail: '/api/guide/chat' },
 ]
 
+const narrativeCards = [
+  {
+    title: 'Durable project introduction',
+    text: 'Hiraya Portfolio gives Portfolio Visitors a stable place to evaluate the project even when the disposable EKS environment is offline.',
+  },
+  {
+    title: 'EKS remains the delivery proof',
+    text: 'Vintage Storefront remains the EKS/GitOps demonstration workload while this Portfolio Stack stays durable outside cluster rebuilds.',
+  },
+  {
+    title: 'Guide answers from approved evidence',
+    text: 'Hiraya Guide uses Curated Project Knowledge for architecture, CI/CD, security gates, decisions, and the Target Team Permission Model.',
+  },
+]
+
+const responseStates = [
+  { status: 'answered' as const, text: 'Curated evidence found; show the answer with normalized title/source citations.' },
+  { status: 'refused' as const, text: 'Insufficient curated evidence; refuse instead of guessing project details.' },
+  { status: 'not_ready' as const, text: 'Knowledge ingestion is unavailable; explain the preparation state clearly.' },
+  { status: 'error' as const, text: 'Unexpected service failure; show a safe retry-oriented message.' },
+]
+
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -130,8 +152,10 @@ function App() {
                     Curated docs flow into a Bedrock Knowledge Base, then back through a guarded Guide API.
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    This screen stays operational instead of marketing-heavy: it shows the planned evidence path,
-                    API contract, session handling, and citation surface while backend wiring catches up.
+                    This narrative shell explains Hiraya as a DevOps portfolio: the durable Hiraya Portfolio hosts
+                    the project story for Portfolio Visitors, while Vintage Storefront remains the EKS/GitOps
+                    demonstration workload. Hiraya Guide answers only from Curated Project Knowledge and labels
+                    target-state topics such as the Target Team Permission Model honestly.
                   </p>
                 </div>
                 <div className="min-w-52 rounded-lg border bg-background p-3">
@@ -161,6 +185,12 @@ function App() {
                 </div>
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
+                  {narrativeCards.map((card) => (
+                    <InfoPanel key={card.title} icon={<BookOpen className="size-4" />} title={card.title} text={card.text} />
+                  ))}
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-3">
                   <InfoPanel icon={<BookOpen className="size-4" />} title="Evidence" text="Reviewed Markdown under docs/portfolio is the answer source of truth." />
                   <InfoPanel icon={<ShieldCheck className="size-4" />} title="Controls" text="No transcript persistence, no broad CORS, no raw chunks returned to browser." />
                   <InfoPanel icon={<CheckCircle2 className="size-4" />} title="Validation" text="UI expects answered, refused, not_ready, and error status values." />
@@ -177,6 +207,16 @@ function App() {
                 </dl>
                 <div className="mt-5 rounded-lg bg-accent px-3 py-2 text-xs leading-5 text-accent-foreground">
                   Guide responses should be complete, citation-normalized, and refused when curated evidence is insufficient.
+                </div>
+                <div className="mt-4 space-y-2">
+                  {responseStates.map((state) => (
+                    <div key={state.status} className="rounded-lg border bg-background px-3 py-2">
+                      <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {statusLabel(state.status)}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{state.text}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </section>
