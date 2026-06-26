@@ -22,6 +22,18 @@ The Vintage Storefront packages live under `app/microservices`, but the reposito
 | `pnpm run app:test:frontend` | Run the Storefront Vitest unit tests in jsdom so broken adapter and behavior tests fail the app baseline. |
 | `pnpm run app:test:browser` | Run the Storefront Playwright browser behavior baseline. |
 
+## Docker Compose frontend modes
+
+Default Compose is the production-like local path. From the repository root, `pnpm run docker:up` builds the Vintage Storefront image from the root workspace, serves the Vite `dist/` output through nginx on `http://localhost:3000`, falls back to `index.html` for SPA routes, and proxies same-origin `/api/` requests to the Compose `gateway` service. Local builds do not force `linux/amd64`, so Apple Silicon uses the native architecture unless a caller explicitly overrides Docker's platform.
+
+For Vite hot reload against the same backend stack, run:
+
+```sh
+pnpm run docker:up:frontend-dev
+```
+
+That command starts the profiled `frontend-dev` service on `http://localhost:3000`, bind-mounts the root workspace, installs through the root lockfile, and points the Vite `/api` proxy at `http://gateway:3001`. Use `pnpm run docker:down` to stop either mode; add `--volumes` to the underlying Compose command when you intentionally want to reset local database and dependency volumes.
+
 ## Backend contract baseline
 
 `pnpm run app:test:backend-contract` is the backend API contract baseline for the active Vintage Storefront services. It runs the gateway, auth, product, and orders contract suites in one Vitest invocation with the verbose reporter, so a regression names the failing suite in the output and exits non-zero for local use or PR-check workflow reuse.

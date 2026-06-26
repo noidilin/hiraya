@@ -184,13 +184,13 @@ services:
       - vintage-network
     restart: unless-stopped
 
-  # Frontend
+  # Frontend: production-like nginx static serving and same-origin API proxy
   frontend:
     build:
       context: ../..
       dockerfile: app/microservices/frontend/Dockerfile
       args:
-        REACT_APP_API_URL: /api
+        VITE_API_URL: /api
     container_name: vintage-frontend
     ports:
       - "3000:80"
@@ -202,12 +202,47 @@ services:
       - vintage-network
     restart: unless-stopped
 
+  # Frontend hot reload: start explicitly with `--profile dev up frontend-dev`
+  frontend-dev:
+    image: node:24-alpine
+    container_name: vintage-frontend-dev
+    profiles:
+      - dev
+    working_dir: /workspace
+    environment:
+      - VITE_API_URL=/api
+      - VITE_DEV_PROXY_TARGET=http://gateway:3001
+      - PNPM_STORE_DIR=/pnpm/store
+    command: >
+      sh -c "corepack enable &&
+      pnpm install --frozen-lockfile --filter frontend... &&
+      pnpm --filter frontend dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../..:/workspace
+      - frontend_root_node_modules:/workspace/node_modules
+      - frontend_package_node_modules:/workspace/app/microservices/frontend/node_modules
+      - pnpm_store:/pnpm/store
+    depends_on:
+      gateway:
+        condition: service_started
+        restart: true
+    networks:
+      - vintage-network
+
 volumes:
   postgres_data:
     driver: local
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  frontend_root_node_modules:
+    driver: local
+  frontend_package_node_modules:
+    driver: local
+  pnpm_store:
     driver: local
 
 networks:

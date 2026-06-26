@@ -1,16 +1,18 @@
-# Hiraya FE
+# Vintage Storefront
 
-React 19 frontend foundation using pnpm, TypeScript, Vite, TanStack Router,
-TanStack Query, shadcn/ui, Motion Primitives, Zod, Zustand, and nuqs.
+React 19/Vite implementation for the Vintage Storefront, packaged as the existing `frontend` workspace service. Run commands from the repository root so the single root pnpm lockfile remains the source of truth.
 
 ## Commands
 
 ```bash
-pnpm install
-pnpm dev
-pnpm lint
-pnpm build
+pnpm --filter frontend dev
+pnpm --filter frontend lint
+pnpm --filter frontend build
+pnpm run docker:up
+pnpm run docker:up:frontend-dev
 ```
+
+Default Compose serves the production build through nginx on `http://localhost:3000` with SPA fallback and `/api/` proxying to the gateway. The `frontend-dev` Compose profile runs Vite hot reload on the same port against the Compose gateway.
 
 ## UI System
 
