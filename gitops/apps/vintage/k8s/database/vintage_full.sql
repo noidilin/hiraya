@@ -310,8 +310,47 @@ d7ab35db-b100-47ec-9316-3a89a1df4ebf	Tops	Shirts and blouses	\N	2026-06-23 00:00
 
 
 --
+-- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.products (id, name, slug, description, short_description, sku, brand, category_id, price, compare_price, materials, care_instructions, inventory_quantity, is_featured, created_at, updated_at) FROM stdin;
+67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	Prairie Midi Dress	prairie-midi-dress	Faded cotton midi dress with a gathered waist, lace-trim neckline, and an easy drape for warm days.	Faded cotton prairie midi dress	HF-DRESS-001	Hiraya Furugi	274cfdcb-1d8a-4563-93f3-a62e72c9e6f6	128.00	168.00	\N	\N	4	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	Washed Linen Work Jacket	washed-linen-work-jacket	Unlined work jacket in softened linen canvas with utility pockets and a clean, boxy fall.	Softened linen work jacket	HF-JACKET-001	Hiraya Furugi	61e5f91b-4fb0-4116-8c6b-6dd947331daa	154.00	\N	\N	\N	3	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+760f89d0-c80f-4798-8c75-f26070eb35d8	Indigo Straight Denim	indigo-straight-denim	Straight-leg denim with softened fading, sturdy seams, and a worn-in hand without heavy distressing.	Softened straight-leg indigo denim	HF-DENIM-001	Hiraya Furugi	8db2bf2a-cbb6-4db2-9ff0-cb14ce94067b	116.00	\N	\N	\N	6	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+99026f04-ced9-42a5-b9e3-9440c4e38902	Cotton Lace Night Blouse	cotton-lace-night-blouse	Ivory cotton blouse with fine lace panels, shell buttons, and a relaxed shape for layered dressing.	Ivory cotton lace blouse	HF-BLOUSE-001	Hiraya Furugi	d7ab35db-b100-47ec-9316-3a89a1df4ebf	92.00	118.00	\N	\N	5	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+d68c49dd-ccfb-4965-8b70-c98d32f77d71	Sumi Silk Scarf	sumi-silk-scarf	Light silk scarf in a charcoal wash, finished with narrow hems and a subtle natural sheen.	Charcoal washed silk scarf	HF-SCARF-001	Hiraya Furugi	0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	64.00	\N	\N	\N	8	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+b87e70bb-13e1-4200-87ab-d1c7698e43c6	Wool Twill Evening Coat	wool-twill-evening-coat	Long black wool coat with a narrow lapel, satin-like lining, and a quiet formal line.	Black wool twill evening coat	HF-COAT-001	Hiraya Furugi	61e5f91b-4fb0-4116-8c6b-6dd947331daa	248.00	\N	\N	\N	2	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+4db3c0fe-b753-42d2-a102-e26c5a9f71f5	Patchwork Market Tote	patchwork-market-tote	Daily tote assembled from mixed cotton remnants with reinforced handles and a soft, slouching body.	Patchwork remnant market tote	HF-TOTE-001	Hiraya Furugi	0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	78.00	\N	\N	\N	7	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35	Linen Tab Collar Shirt	linen-tab-collar-shirt	Bone linen shirt with a small tab collar, generous cuffs, and a dry hand that softens with wear.	Bone linen tab collar shirt	HF-SHIRT-001	Hiraya Furugi	d7ab35db-b100-47ec-9316-3a89a1df4ebf	104.00	\N	\N	\N	5	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+\.
+
+--
+-- Data for Name: product_images; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.product_images (id, product_id, image_url, alt_text, is_primary, sort_order, created_at) FROM stdin;
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a001	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	/product-images/prairie-midi-dress.jpg	Prairie Midi Dress product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a002	e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	/product-images/washed-linen-work-jacket.jpg	Washed Linen Work Jacket product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a003	760f89d0-c80f-4798-8c75-f26070eb35d8	/product-images/indigo-straight-denim.jpg	Indigo Straight Denim product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a004	99026f04-ced9-42a5-b9e3-9440c4e38902	/product-images/cotton-lace-night-blouse.jpg	Cotton Lace Night Blouse product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a005	d68c49dd-ccfb-4965-8b70-c98d32f77d71	/product-images/sumi-silk-scarf.jpg	Sumi Silk Scarf product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a006	b87e70bb-13e1-4200-87ab-d1c7698e43c6	/product-images/wool-twill-evening-coat.jpg	Wool Twill Evening Coat product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a007	4db3c0fe-b753-42d2-a102-e26c5a9f71f5	/product-images/patchwork-market-tote.jpg	Patchwork Market Tote product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a008	f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35	/product-images/linen-tab-collar-shirt.jpg	Linen Tab Collar Shirt product image	t	1	2026-06-23 00:00:00
+\.
+
+
+--
 -- Data for Name: order_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
+
+--
+-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.orders (id, user_id, total_amount, status, shipping_address, payment_status, created_at, updated_at) FROM stdin;
+8d46347c-43db-4f01-b6c7-d5d3288f0ecb	f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6	410.00	delivered	{"line1":"Demo address","city":"Manila","country":"PH"}	paid	2026-06-23 00:00:00	2026-06-23 00:00:00
+\.
 
 COPY public.order_items (id, order_id, product_id, quantity, price, created_at) FROM stdin;
 b9460644-95f4-47ac-853d-9579ac793f0b	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	2	128.00	2026-06-23 00:00:00
@@ -785,8 +824,47 @@ d7ab35db-b100-47ec-9316-3a89a1df4ebf	Tops	Shirts and blouses	\N	2026-06-23 00:00
 
 
 --
+-- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.products (id, name, slug, description, short_description, sku, brand, category_id, price, compare_price, materials, care_instructions, inventory_quantity, is_featured, created_at, updated_at) FROM stdin;
+67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	Prairie Midi Dress	prairie-midi-dress	Faded cotton midi dress with a gathered waist, lace-trim neckline, and an easy drape for warm days.	Faded cotton prairie midi dress	HF-DRESS-001	Hiraya Furugi	274cfdcb-1d8a-4563-93f3-a62e72c9e6f6	128.00	168.00	\N	\N	4	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	Washed Linen Work Jacket	washed-linen-work-jacket	Unlined work jacket in softened linen canvas with utility pockets and a clean, boxy fall.	Softened linen work jacket	HF-JACKET-001	Hiraya Furugi	61e5f91b-4fb0-4116-8c6b-6dd947331daa	154.00	\N	\N	\N	3	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+760f89d0-c80f-4798-8c75-f26070eb35d8	Indigo Straight Denim	indigo-straight-denim	Straight-leg denim with softened fading, sturdy seams, and a worn-in hand without heavy distressing.	Softened straight-leg indigo denim	HF-DENIM-001	Hiraya Furugi	8db2bf2a-cbb6-4db2-9ff0-cb14ce94067b	116.00	\N	\N	\N	6	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+99026f04-ced9-42a5-b9e3-9440c4e38902	Cotton Lace Night Blouse	cotton-lace-night-blouse	Ivory cotton blouse with fine lace panels, shell buttons, and a relaxed shape for layered dressing.	Ivory cotton lace blouse	HF-BLOUSE-001	Hiraya Furugi	d7ab35db-b100-47ec-9316-3a89a1df4ebf	92.00	118.00	\N	\N	5	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+d68c49dd-ccfb-4965-8b70-c98d32f77d71	Sumi Silk Scarf	sumi-silk-scarf	Light silk scarf in a charcoal wash, finished with narrow hems and a subtle natural sheen.	Charcoal washed silk scarf	HF-SCARF-001	Hiraya Furugi	0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	64.00	\N	\N	\N	8	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+b87e70bb-13e1-4200-87ab-d1c7698e43c6	Wool Twill Evening Coat	wool-twill-evening-coat	Long black wool coat with a narrow lapel, satin-like lining, and a quiet formal line.	Black wool twill evening coat	HF-COAT-001	Hiraya Furugi	61e5f91b-4fb0-4116-8c6b-6dd947331daa	248.00	\N	\N	\N	2	t	2026-06-23 00:00:00	2026-06-23 00:00:00
+4db3c0fe-b753-42d2-a102-e26c5a9f71f5	Patchwork Market Tote	patchwork-market-tote	Daily tote assembled from mixed cotton remnants with reinforced handles and a soft, slouching body.	Patchwork remnant market tote	HF-TOTE-001	Hiraya Furugi	0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	78.00	\N	\N	\N	7	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35	Linen Tab Collar Shirt	linen-tab-collar-shirt	Bone linen shirt with a small tab collar, generous cuffs, and a dry hand that softens with wear.	Bone linen tab collar shirt	HF-SHIRT-001	Hiraya Furugi	d7ab35db-b100-47ec-9316-3a89a1df4ebf	104.00	\N	\N	\N	5	f	2026-06-23 00:00:00	2026-06-23 00:00:00
+\.
+
+--
+-- Data for Name: product_images; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.product_images (id, product_id, image_url, alt_text, is_primary, sort_order, created_at) FROM stdin;
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a001	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	/product-images/prairie-midi-dress.jpg	Prairie Midi Dress product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a002	e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	/product-images/washed-linen-work-jacket.jpg	Washed Linen Work Jacket product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a003	760f89d0-c80f-4798-8c75-f26070eb35d8	/product-images/indigo-straight-denim.jpg	Indigo Straight Denim product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a004	99026f04-ced9-42a5-b9e3-9440c4e38902	/product-images/cotton-lace-night-blouse.jpg	Cotton Lace Night Blouse product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a005	d68c49dd-ccfb-4965-8b70-c98d32f77d71	/product-images/sumi-silk-scarf.jpg	Sumi Silk Scarf product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a006	b87e70bb-13e1-4200-87ab-d1c7698e43c6	/product-images/wool-twill-evening-coat.jpg	Wool Twill Evening Coat product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a007	4db3c0fe-b753-42d2-a102-e26c5a9f71f5	/product-images/patchwork-market-tote.jpg	Patchwork Market Tote product image	t	1	2026-06-23 00:00:00
+7b8f6a3d-8e8a-4b20-8a29-79f53ed6a008	f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35	/product-images/linen-tab-collar-shirt.jpg	Linen Tab Collar Shirt product image	t	1	2026-06-23 00:00:00
+\.
+
+
+--
 -- Data for Name: order_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
+
+--
+-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.orders (id, user_id, total_amount, status, shipping_address, payment_status, created_at, updated_at) FROM stdin;
+8d46347c-43db-4f01-b6c7-d5d3288f0ecb	f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6	410.00	delivered	{"line1":"Demo address","city":"Manila","country":"PH"}	paid	2026-06-23 00:00:00	2026-06-23 00:00:00
+\.
 
 COPY public.order_items (id, order_id, product_id, quantity, price, created_at) FROM stdin;
 b9460644-95f4-47ac-853d-9579ac793f0b	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	2	128.00	2026-06-23 00:00:00
