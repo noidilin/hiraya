@@ -11,6 +11,7 @@ The Vintage Storefront packages live under `app/microservices`, but the reposito
 | `pnpm run app:static` | Run Storefront build, typecheck, and lint checks, then the backend build. Lint errors block while warnings remain allowed initially. |
 | `pnpm run app:gitops` | Render GitOps desired state with `kubectl kustomize gitops` and run targeted GitOps render assertions without Kubernetes cluster credentials. |
 | `pnpm run app:smoke:public` | Run the read-only public deploy smoke against `STOREFRONT_PUBLIC_URL` (default `https://hiraya.noidilin.dev`) by checking `/` for the Storefront shell and `/api/products` for a successful product envelope. |
+| `pnpm run app:smoke:compose` | Run the no-AWS full-stack Compose smoke. It resets Compose volumes, starts the real local stack, verifies shell, product envelope, image assets, demo login, seeded order history, and pending checkout, then tears the stack down. |
 | `pnpm run storefront:build` | Build the Vintage Storefront production bundle through the frontend package. |
 | `pnpm run storefront:typecheck` | Run the Vintage Storefront TypeScript checker without emitting files. |
 | `pnpm run storefront:lint` | Run the Vintage Storefront ESLint check. Errors fail the command; warnings are permitted for now. |
@@ -25,6 +26,14 @@ The Vintage Storefront packages live under `app/microservices`, but the reposito
 ## Docker Compose frontend modes
 
 Default Compose is the production-like local path. From the repository root, `pnpm run docker:up` builds the Vintage Storefront image from the root workspace, serves the Vite `dist/` output through nginx on `http://localhost:3000`, falls back to `index.html` for SPA routes, and proxies same-origin `/api/` requests to the Compose `gateway` service. Local builds do not force `linux/amd64`, so Apple Silicon uses the native architecture unless a caller explicitly overrides Docker's platform.
+
+For a real full-stack smoke from a clean local database state, run:
+
+```sh
+pnpm run app:smoke:compose
+```
+
+The command performs `docker compose -f app/microservices/docker-compose.yml down --volumes --remove-orphans`, starts the production-like Compose stack with `up -d --build`, checks `http://localhost:3000`, and tears down with volumes again. Failures are labelled by area: frontend serving, gateway/products/seed data, image assets, auth, orders/seed data, or checkout. Set `COMPOSE_SMOKE_KEEP_STACK=1` to leave containers running for debugging, or `COMPOSE_SMOKE_CHECK_ONLY=1` to run the HTTP checks against an already-running stack.
 
 For Vite hot reload against the same backend stack, run:
 

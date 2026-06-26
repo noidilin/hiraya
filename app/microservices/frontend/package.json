@@ -10,9 +10,9 @@
     "start": "vite --host 0.0.0.0 --port 3000",
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "tsc -b --pretty false && vite build",
-    "typecheck": "tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false --noEmit",
     "lint": "eslint .",
-    "test": "vitest run --dir src && node --test tests/*.test.mjs",
+    "test": "vitest run --dir src --environment jsdom && node --test tests/*.test.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 3000"
   },
   "dependencies": {

@@ -7,15 +7,15 @@ Related ADRs: [`0003`](../adr/0003-vintage-storefront-order-api-owner.md), [`000
 ## Deployment and routing contract
 
 - Browser calls are same-origin under `/api`.
-- Local CRA dev proxy: `frontend/src/setupProxy.js` forwards `/api` to `http://localhost:3001`.
+- Local Vite dev proxy: `VITE_DEV_PROXY_TARGET` defaults `/api` to `http://localhost:3001` outside Compose and points at `http://gateway:3001` in the profiled Compose hot-reload service.
 - Container nginx: `frontend/nginx.conf` forwards `/api/` to `http://gateway:3001`.
 - Gateway path rewrites:
   - `/api/auth/*` -> auth service, stripped to `/*`.
   - `/api/products/*` -> product-service, stripped to `/*`.
   - `/api/orders/*` -> orders service, stripped to `/*`.
-- The frontend also supports an override base URL through `REACT_APP_API_URL`; the default is `/api`.
+- The frontend also supports an override base URL through `VITE_API_URL`; the default is `/api`.
 
-When rewriting with a new stack, preserve the same public route shape (`/api/...`). If the new build tool changes env var naming, map it back to the same base URL behavior.
+The Vite replacement preserves the same public route shape (`/api/...`) while using Vite environment naming.
 
 ## Envelope contract
 
@@ -515,10 +515,10 @@ Failures:
 
 ## Existing source-of-truth files
 
-- Frontend API client: `app/microservices/frontend/src/services/api.ts`
-- Auth adapter: `app/microservices/frontend/src/services/authService.ts`
-- Product adapter: `app/microservices/frontend/src/services/productService.ts`
-- Order adapter: `app/microservices/frontend/src/services/orderService.ts`
+- Frontend API client: `app/microservices/frontend/src/api/client.ts`
+- Auth adapter: `app/microservices/frontend/src/api/auth.ts`
+- Product adapter: `app/microservices/frontend/src/api/products.ts`
+- Order adapter: `app/microservices/frontend/src/api/orders.ts`
 - Shared schemas/fixtures: `app/microservices/shared/src/index.mjs`
 - Contract tests:
   - `app/microservices/shared/test/auth-api-contract.test.mjs`
