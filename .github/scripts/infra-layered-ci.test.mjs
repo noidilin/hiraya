@@ -31,7 +31,7 @@ test('infra CI validates all layered Terraform roots without cluster credentials
   const workflow = await readFile(infraCiWorkflowPath, 'utf8');
   const validateStep = blockBetween(workflow, 'validate-terraform-root-stacks-without-backend-credentials', 'run-terraform-module-contract-tests');
 
-  for (const stack of ['infra/envs/dev/bootstrap', 'infra/envs/dev/platform-core', 'infra/envs/dev/cluster-bootstrap']) {
+  for (const stack of ['infra/envs/dev/bootstrap', 'infra/envs/dev/platform-core', 'infra/envs/dev/cluster-bootstrap', 'infra/portfolio']) {
     assert.match(validateStep, new RegExp(stack.replaceAll('/', '\\/')), `${stack} should be validated in static CI`);
   }
   assert.match(validateStep, /init -backend=false/, 'static validation must not initialize remote backends');

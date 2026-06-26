@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { handleRequest } from '../src/handler.js'
+import { handler, handleRequest } from '../src/handler.js'
 
 function parse(body: string): Record<string, unknown> {
   return JSON.parse(body) as Record<string, unknown>
@@ -9,6 +9,13 @@ function parse(body: string): Record<string, unknown> {
 describe('local Hiraya Guide API contract', () => {
   it('returns minimal public health', async () => {
     const response = await handleRequest({ method: 'GET', path: '/api/health' })
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(parse(response.body), { ok: true, service: 'hiraya-guide-api' })
+  })
+
+  it('adapts API Gateway HTTP API events to the public request handler', async () => {
+    const response = await handler({ requestContext: { http: { method: 'GET', path: '/api/health' } }, rawPath: '/api/health' })
 
     assert.equal(response.statusCode, 200)
     assert.deepEqual(parse(response.body), { ok: true, service: 'hiraya-guide-api' })

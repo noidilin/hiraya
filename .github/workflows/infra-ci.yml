@@ -51,7 +51,8 @@ jobs:
           for stack in \
             infra/envs/dev/bootstrap \
             infra/envs/dev/platform-core \
-            infra/envs/dev/cluster-bootstrap; do
+            infra/envs/dev/cluster-bootstrap \
+            infra/portfolio; do
             terraform -chdir="$stack" init -backend=false -input=false
             terraform -chdir="$stack" validate -no-color
           done
