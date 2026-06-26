@@ -21,6 +21,8 @@ test('Terraform backend writer is stack-generic for layered dev states', async (
   assert.match(script, /TF_STACK|stack=\"\$\{1:-/, 'writer should accept a stack name instead of being tied to one env var set');
   assert.match(script, /platform-core/, 'writer should document or support the Platform Core stack name');
   assert.match(script, /cluster-bootstrap/, 'writer should document or support the Cluster Bootstrap stack name');
+  assert.match(script, /portfolio/, 'writer should document or support the Portfolio Stack name');
+  assert.match(script, /infra\/portfolio\/backend\.hcl/, 'Portfolio backend config should be written to infra/portfolio/backend.hcl');
   assert.match(script, /TF_STATE_PREFIX/, 'writer should derive state keys from a shared prefix for layered stacks');
   assert.doesNotMatch(script, /PLATFORM_DIR/, 'backend writer must not be coupled to Platform Core only');
 });

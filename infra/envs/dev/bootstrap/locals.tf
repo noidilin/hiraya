@@ -7,6 +7,7 @@ locals {
     bootstrap         = "${local.name_prefix}/${var.environment}/bootstrap/terraform.tfstate"
     platform_core     = "${local.name_prefix}/${var.environment}/platform-core/terraform.tfstate"
     cluster_bootstrap = "${local.name_prefix}/${var.environment}/cluster-bootstrap/terraform.tfstate"
+    portfolio         = "${local.name_prefix}/${var.environment}/portfolio/terraform.tfstate"
   }
 
   terraform_state_lockfile_keys = {
@@ -43,6 +44,22 @@ locals {
     local.terraform_state_object_arns.platform_core,
   ]
 
+  portfolio_state_mutation_object_arns = [
+    local.terraform_state_object_arns.portfolio,
+    local.terraform_state_lockfile_object_arns.portfolio,
+  ]
+
+  portfolio_state_read_object_arns = [
+    local.terraform_state_object_arns.bootstrap,
+    local.terraform_state_object_arns.portfolio,
+  ]
+
+  portfolio_role_arn_pattern   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-portfolio-*"
+  portfolio_policy_arn_pattern = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-portfolio-*"
+  portfolio_lambda_arn_pattern = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-portfolio-*"
+  portfolio_s3_bucket_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-*"
+  portfolio_s3_object_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-*/*"
+
   platform_role_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-*"
   platform_policy_arn_pattern        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-*"
   platform_oidc_provider_arn_pattern = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${var.aws_region}.amazonaws.com/id/*"
@@ -59,6 +76,13 @@ locals {
     cluster-bootstrap = {
       bucket       = var.state_bucket_name
       key          = local.terraform_state_keys.cluster_bootstrap
+      region       = var.aws_region
+      use_lockfile = true
+      encrypt      = true
+    }
+    portfolio = {
+      bucket       = var.state_bucket_name
+      key          = local.terraform_state_keys.portfolio
       region       = var.aws_region
       use_lockfile = true
       encrypt      = true
