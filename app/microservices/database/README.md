@@ -1,6 +1,6 @@
-# Vintage E-Commerce Database Setup
+# Vintage Storefront Database Setup
 
-This folder contains local database setup assets for the Hiraya Vintage microservices demo.
+This folder contains local database setup assets for the Vintage Storefront services.
 
 ## Databases
 
@@ -13,26 +13,31 @@ The runnable services keep their existing service-aligned database names:
 
 Obsolete fallback/demo database names use the internal `vintage` identity, for example `vintage_db` or `vintage_auth`.
 
-## Starter Catalog
+## Hiraya Furugi Catalog
 
-The seed data represents a compact vintage fashion catalog:
+The seed data represents the Hiraya Furugi Catalog and matches shared Storefront contract fixtures:
 
-1. `1970s Prairie Midi Dress` → `1970s-prairie-midi-dress.jpg`
-2. `1980s Wool Blazer` → `1980s-wool-blazer.jpg`
-3. `1990s Leather Shoulder Bag` → `1990s-leather-shoulder-bag.jpg`
-4. `Art Deco Pendant Necklace` → `art-deco-pendant-necklace.jpg`
-5. `Suede Block Heel Boots` → `suede-block-heel-boots.jpg`
+1. `Prairie Midi Dress` → `prairie-midi-dress.jpg`
+2. `Washed Linen Work Jacket` → `washed-linen-work-jacket.jpg`
+3. `Indigo Straight Denim` → `indigo-straight-denim.jpg`
+4. `Cotton Lace Night Blouse` → `cotton-lace-night-blouse.jpg`
+5. `Sumi Silk Scarf` → `sumi-silk-scarf.jpg`
+6. `Wool Twill Evening Coat` → `wool-twill-evening-coat.jpg`
+7. `Patchwork Market Tote` → `patchwork-market-tote.jpg`
+8. `Linen Tab Collar Shirt` → `linen-tab-collar-shirt.jpg`
 
-Categories stay fashion-generic: Dresses, Accessories, Bags, Outerwear, and Shoes. Seeded products use `Hiraya Vintage` as their brand value.
+Categories are Dresses, Accessories, Outerwear, Denim, and Tops. Seeded products use `Hiraya Furugi` as their brand value. Product image URLs are stored in `product_images`; `/product-images/placeholder.jpg` is reserved for products without a primary image.
+
+The seeded demo customer is `demo@hirayavintage.test` with the Storefront API contract test password. The seed stores only the bcrypt hash and includes one delivered sample order for order-history QA.
 
 ## Setup
 
 Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup.
 
-For quick manual seeding against an existing products database:
+For quick manual reseeding against an existing products database:
 
 ```bash
 psql -d products_db -f quick-seed.sql
 ```
 
-For GitOps restore flows, the Kubernetes ConfigMap uses `gitops/apps/vintage/k8s/database/vintage_full.sql`.
+For GitOps restore flows, reset only Vintage app database state and restore with `gitops/apps/vintage/k8s/database/vintage_full.sql`. No Terraform, EKS platform, or GitOps routing reset is required for this catalog migration.

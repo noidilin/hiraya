@@ -21,6 +21,23 @@ const SORT_COLUMNS: Record<string, string> = {
   price: 'p.price',
 };
 
+const PRODUCT_SELECT_COLUMNS = `
+               p.id, p.name, p.description, p.price, p.compare_price,
+               p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
+               COALESCE(c.name, 'Uncategorized') as category,
+               COALESCE(pi.image_url, '/product-images/placeholder.jpg') as image_url
+`;
+
+const PRODUCT_IMAGE_JOIN = `
+        LEFT JOIN LATERAL (
+          SELECT image_url
+          FROM product_images pi
+          WHERE pi.product_id = p.id AND pi.is_primary = true
+          ORDER BY pi.sort_order, pi.created_at
+          LIMIT 1
+        ) pi ON true
+`;
+
 function getPagination(page: unknown, limit: unknown) {
   const parsedPage = Number(page);
   const parsedLimit = Number(limit);
@@ -80,19 +97,10 @@ export function createProductRoutes(dependencies: ProductRouteDependencies = {})
 
       const countQuery = `SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id ${whereClause}`;
       const productsQuery = `
-        SELECT p.id, p.name, p.description, p.price, p.compare_price, 
-               p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
-               COALESCE(c.name, 'Uncategorized') as category,
-               CASE 
-                 WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
-                 WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
-                 WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
-                 WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
-                 WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
-                 ELSE '/product-images/placeholder.jpg'
-               END as image_url
+        SELECT ${PRODUCT_SELECT_COLUMNS}
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
+        ${PRODUCT_IMAGE_JOIN}
         ${whereClause}
         ORDER BY ${sortColumn}
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
@@ -155,19 +163,10 @@ export function createProductRoutes(dependencies: ProductRouteDependencies = {})
     try {
       const { id } = req.params;
       const result = await dbQuery(`
-        SELECT p.id, p.name, p.description, p.price, p.compare_price, 
-               p.brand, p.inventory_quantity, p.is_featured, p.created_at, p.updated_at,
-               COALESCE(c.name, 'Uncategorized') as category,
-               CASE 
-                 WHEN p.name ILIKE '%prairie%' OR p.name ILIKE '%dress%' THEN '/product-images/1970s-prairie-midi-dress.jpg'
-                 WHEN p.name ILIKE '%blazer%' OR p.name ILIKE '%wool%' THEN '/product-images/1980s-wool-blazer.jpg'
-                 WHEN p.name ILIKE '%shoulder bag%' OR p.name ILIKE '%bag%' THEN '/product-images/1990s-leather-shoulder-bag.jpg'
-                 WHEN p.name ILIKE '%art deco%' OR p.name ILIKE '%necklace%' THEN '/product-images/art-deco-pendant-necklace.jpg'
-                 WHEN p.name ILIKE '%boots%' OR p.name ILIKE '%heel%' THEN '/product-images/suede-block-heel-boots.jpg'
-                 ELSE '/product-images/placeholder.jpg'
-               END as image_url
+        SELECT ${PRODUCT_SELECT_COLUMNS}
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
+        ${PRODUCT_IMAGE_JOIN}
         WHERE p.id = $1
       `, [id]);
 

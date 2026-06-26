@@ -12,6 +12,7 @@ Use these stable filenames:
 - `wool-twill-evening-coat.jpg`
 - `patchwork-market-tote.jpg`
 - `linen-tab-collar-shirt.jpg`
+- `placeholder.jpg`
 - `home-hero-archive-rack.jpg`
 - `manifesto-mending-table.jpg`
 - `editorial-layering-study.jpg`

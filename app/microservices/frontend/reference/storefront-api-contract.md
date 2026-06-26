@@ -202,17 +202,17 @@ Success response:
     "products": [
       {
         "id": "67be2d5e-ecfb-4bf9-b751-8474f9d7bcac",
-        "name": "1970s Prairie Midi Dress",
-        "description": "A romantic prairie midi dress with lace-trim details and a softly faded floral print",
+        "name": "Prairie Midi Dress",
+        "description": "Faded cotton midi dress with a gathered waist, lace-trim neckline, and an easy drape for warm days.",
         "price": "128.00",
         "compare_price": "168.00",
-        "brand": "Hiraya Vintage",
-        "inventory_quantity": 8,
+        "brand": "Hiraya Furugi",
+        "inventory_quantity": 4,
         "is_featured": true,
         "created_at": "2026-02-07T13:04:03.836Z",
         "updated_at": "2026-02-07T13:04:03.836Z",
         "category": "Dresses",
-        "image_url": "/product-images/1970s-prairie-midi-dress.jpg"
+        "image_url": "/product-images/prairie-midi-dress.jpg"
       }
     ],
     "pagination": {
@@ -241,17 +241,17 @@ Success data: `ProductWire`.
   "success": true,
   "data": {
     "id": "67be2d5e-ecfb-4bf9-b751-8474f9d7bcac",
-    "name": "1970s Prairie Midi Dress",
-    "description": "A romantic prairie midi dress with lace-trim details and a softly faded floral print",
+    "name": "Prairie Midi Dress",
+    "description": "Faded cotton midi dress with a gathered waist, lace-trim neckline, and an easy drape for warm days.",
     "price": "128.00",
     "compare_price": "168.00",
-    "brand": "Hiraya Vintage",
-    "inventory_quantity": 8,
+    "brand": "Hiraya Furugi",
+    "inventory_quantity": 4,
     "is_featured": true,
     "created_at": "2026-02-07T13:04:03.836Z",
     "updated_at": "2026-02-07T13:04:03.836Z",
     "category": "Dresses",
-    "image_url": "/product-images/1970s-prairie-midi-dress.jpg"
+    "image_url": "/product-images/prairie-midi-dress.jpg"
   }
 }
 ```

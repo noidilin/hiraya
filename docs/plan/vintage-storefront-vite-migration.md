@@ -80,8 +80,8 @@ The deployment changes are limited to the frontend container build, local runtim
 - Existing browser tests must be updated for the new UI while preserving legacy route names and enabling checkout.
 - The copied router currently exposes `/auth` and `/orders`, but not `/login`, `/register`, or `/profile`; unauthenticated `/orders` currently renders an inline prompt instead of redirecting to `/login`.
 - Product API hooks now load products and category filters through the Storefront API client, and product API failures surface explicit unavailable states instead of silently rendering static catalog products.
-- The backend, shared contract fixtures, local seed SQL, and GitOps restore SQL still describe the old five-item catalog, while the copied app contains the Hiraya Furugi Catalog assets and fallback product set.
-- Existing backend product image URLs still point at legacy filenames such as `/product-images/1970s-prairie-midi-dress.jpg`; migrating the catalog requires backend image URLs, shared fixtures, and public assets to agree in the same PR.
+- Phase 3A catalog data migration is implemented: shared contract fixtures, local seed SQL, product image rows, and GitOps restore SQL describe the Hiraya Furugi Catalog with stable product IDs and normalized `Hiraya Furugi` brand values.
+- Product service image URLs are read from primary `product_images` rows and fall back only to `/product-images/placeholder.jpg`; the previous hardcoded legacy filename matching has been removed from active product-service queries.
 
 ## Phase 0 — Confirm replacement baseline
 
