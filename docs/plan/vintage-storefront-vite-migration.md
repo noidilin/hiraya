@@ -73,11 +73,9 @@ The deployment changes are limited to the frontend container build, local runtim
 ## Current findings
 
 - The replacement files have been copied into `app/microservices/frontend`; the remaining work is to adapt them to the monorepo, actual API contract, container runtime, catalog data, and test baseline.
-- The frontend package is still named `hiraya-fe`; it must be restored to `name: "frontend"` so root scripts and service detection continue to work.
-- Existing root scripts expect `frontend` to provide `start`, `build`, `typecheck`, `lint`, and `test`; the copied package currently lacks `start`, `typecheck`, and `test`.
-- A nested `app/microservices/frontend/pnpm-lock.yaml` exists, but the repository root is the only pnpm workspace and lockfile source of truth.
-- Existing Playwright config starts the frontend on port `3000`; Vite must keep that port for browser tests, Docker Compose parity, and local gateway proxy testing.
-- The Vite dev server currently lacks a `/api` proxy to the existing backend/gateway during local development.
+- Phase 1 package re-anchoring is implemented: the frontend package is named `frontend`, exposes the root workspace script contract, uses the root lockfile, and no longer keeps a nested `pnpm-lock.yaml`.
+- Existing Playwright config starts the frontend on port `3000`; Vite now keeps that port for `start`, `dev`, and `preview` scripts.
+- Vite now defaults local dev `/api` traffic through a proxy to `http://localhost:3001`; later Compose work should adapt the container dev profile to target the `gateway` service name.
 - The frontend Dockerfile and nginx config are currently missing while Docker Compose still references `app/microservices/frontend/Dockerfile` and the old `REACT_APP_API_URL` build arg.
 - Existing browser tests must be updated for the new UI while preserving legacy route names and enabling checkout.
 - The copied router currently exposes `/auth` and `/orders`, but not `/login`, `/register`, or `/profile`; unauthenticated `/orders` currently renders an inline prompt instead of redirecting to `/login`.
