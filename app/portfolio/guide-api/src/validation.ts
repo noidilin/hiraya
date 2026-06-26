@@ -2,6 +2,7 @@ import type { GuideChatRequest, HttpRequest } from './contract.js'
 
 const maxMessageLength = 1_000
 const maxSessionIdLength = 256
+const sessionIdPattern = /^[A-Za-z0-9._:=+-]+$/
 
 export function parseChatRequest(request: HttpRequest): { ok: true; value: GuideChatRequest } | { ok: false; message: string } {
   const contentType = headerValue(request.headers, 'content-type')
@@ -34,8 +35,8 @@ export function parseChatRequest(request: HttpRequest): { ok: true; value: Guide
   }
 
   if (sessionId !== undefined) {
-    if (typeof sessionId !== 'string' || sessionId.trim().length === 0 || sessionId.length > maxSessionIdLength) {
-      return { ok: false, message: `sessionId must be a non-empty string up to ${maxSessionIdLength} characters.` }
+    if (typeof sessionId !== 'string' || sessionId.trim().length === 0 || sessionId.length > maxSessionIdLength || !sessionIdPattern.test(sessionId)) {
+      return { ok: false, message: `sessionId must be a non-empty URL-safe string up to ${maxSessionIdLength} characters.` }
     }
   }
 
