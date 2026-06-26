@@ -159,6 +159,7 @@ resource "aws_iam_policy" "github_infra_plan" {
           "route53:List*",
           "s3:GetBucketLocation",
           "secretsmanager:DescribeSecret",
+          "secretsmanager:GetResourcePolicy",
           "secretsmanager:GetSecretValue",
           "secretsmanager:ListSecretVersionIds",
           "secretsmanager:ListSecrets"
@@ -353,6 +354,7 @@ resource "aws_iam_policy" "github_infra_apply" {
           "route53:List*",
           "s3:GetBucketLocation",
           "secretsmanager:DescribeSecret",
+          "secretsmanager:GetResourcePolicy",
           "secretsmanager:GetSecretValue",
           "secretsmanager:ListSecretVersionIds",
           "secretsmanager:ListSecrets"
