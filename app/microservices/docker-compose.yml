@@ -79,6 +79,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      auth:
+        condition: service_started
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      orders:
+        condition: service_started
+      user-service:
+        condition: service_started
     networks:
       - vintage-network
     restart: unless-stopped
