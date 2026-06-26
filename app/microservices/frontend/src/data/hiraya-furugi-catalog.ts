@@ -2,9 +2,9 @@ import type { Product } from "@/api";
 
 import { productImageAssets } from "./asset-manifest";
 
-const FALLBACK_TIMESTAMP = "2026-06-23T00:00:00.000Z";
+const CATALOG_TIMESTAMP = "2026-06-23T00:00:00.000Z";
 
-export const fallbackProducts: Product[] = [
+export const hirayaFurugiCatalogProducts: Product[] = [
   {
     id: "67be2d5e-ecfb-4bf9-b751-8474f9d7bcac",
     name: "Prairie Midi Dress",
@@ -14,11 +14,11 @@ export const fallbackProducts: Product[] = [
     originalPrice: 168,
     imageUrl: productImageAssets["prairie-midi-dress"].url,
     category: "Dresses",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 4,
     isNew: true,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "e858df02-4a5b-4f8e-a1f4-2b6c28150d0b",
@@ -28,11 +28,11 @@ export const fallbackProducts: Product[] = [
     price: 154,
     imageUrl: productImageAssets["washed-linen-work-jacket"].url,
     category: "Outerwear",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 3,
     isNew: true,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "760f89d0-c80f-4798-8c75-f26070eb35d8",
@@ -42,10 +42,10 @@ export const fallbackProducts: Product[] = [
     price: 116,
     imageUrl: productImageAssets["indigo-straight-denim"].url,
     category: "Denim",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 6,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "99026f04-ced9-42a5-b9e3-9440c4e38902",
@@ -56,11 +56,11 @@ export const fallbackProducts: Product[] = [
     originalPrice: 118,
     imageUrl: productImageAssets["cotton-lace-night-blouse"].url,
     category: "Tops",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 5,
     isNew: true,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "d68c49dd-ccfb-4965-8b70-c98d32f77d71",
@@ -70,10 +70,10 @@ export const fallbackProducts: Product[] = [
     price: 64,
     imageUrl: productImageAssets["sumi-silk-scarf"].url,
     category: "Accessories",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 8,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "b87e70bb-13e1-4200-87ab-d1c7698e43c6",
@@ -83,11 +83,11 @@ export const fallbackProducts: Product[] = [
     price: 248,
     imageUrl: productImageAssets["wool-twill-evening-coat"].url,
     category: "Outerwear",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 2,
     isNew: true,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "4db3c0fe-b753-42d2-a102-e26c5a9f71f5",
@@ -97,10 +97,10 @@ export const fallbackProducts: Product[] = [
     price: 78,
     imageUrl: productImageAssets["patchwork-market-tote"].url,
     category: "Accessories",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 7,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
   {
     id: "f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35",
@@ -110,19 +110,19 @@ export const fallbackProducts: Product[] = [
     price: 104,
     imageUrl: productImageAssets["linen-tab-collar-shirt"].url,
     category: "Tops",
-    brand: "Hiraya Archive",
+    brand: "Hiraya Furugi",
     inventory: 5,
-    createdAt: FALLBACK_TIMESTAMP,
-    updatedAt: FALLBACK_TIMESTAMP,
+    createdAt: CATALOG_TIMESTAMP,
+    updatedAt: CATALOG_TIMESTAMP,
   },
 ] satisfies Product[];
 
-export const featuredFallbackProducts = fallbackProducts.filter((product) => product.isNew);
+export const featuredHirayaFurugiCatalogProducts = hirayaFurugiCatalogProducts.filter((product) => product.isNew);
 
-export const fallbackProductCategories = Array.from(
-  new Set(fallbackProducts.map((product) => product.category)),
+export const hirayaFurugiCatalogCategories = Array.from(
+  new Set(hirayaFurugiCatalogProducts.map((product) => product.category)),
 ).sort();
 
-export function getFallbackProduct(productId: string): Product | undefined {
-  return fallbackProducts.find((product) => product.id === productId);
+export function getHirayaFurugiCatalogProduct(productId: string): Product | undefined {
+  return hirayaFurugiCatalogProducts.find((product) => product.id === productId);
 }

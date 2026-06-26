@@ -81,7 +81,12 @@ export function HomeRoute() {
           </Button>
         </div>
 
-        {featuredQuery.isLoading ? (
+        {featuredQuery.isError ? (
+          <div className="border-y border-destructive/30 bg-destructive/5 py-12 text-center" role="alert">
+            <h3 className="font-heading text-2xl font-semibold">Featured products unavailable</h3>
+            <p className="mt-3 text-sm text-muted-foreground">The Storefront API did not return product data.</p>
+          </div>
+        ) : featuredQuery.isLoading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Loading featured products">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-80 rounded-none border border-border bg-secondary" />

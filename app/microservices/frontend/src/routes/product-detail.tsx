@@ -5,12 +5,12 @@ import { AddToCartButton } from "@/components/commerce/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fallbackProducts } from "@/data/product-fallbacks";
+import { hirayaFurugiCatalogProducts } from "@/data/hiraya-furugi-catalog";
 import { useProductQuery } from "@/hooks/use-products";
 import { formatMoney } from "@/lib/money";
 
 function getRelatedGalleryImages(productId: string | undefined, mainImage: string | undefined) {
-  const relatedProducts = fallbackProducts.filter((product) => product.id !== productId).slice(0, 2);
+  const relatedProducts = hirayaFurugiCatalogProducts.filter((product) => product.id !== productId).slice(0, 2);
   return [mainImage, ...relatedProducts.map((product) => product.imageUrl)].filter(Boolean) as string[];
 }
 
@@ -29,6 +29,18 @@ export function ProductDetailRoute() {
           <Skeleton className="h-32 w-full rounded-none bg-secondary" />
         </div>
       </div>
+    );
+  }
+
+  if (productQuery.isError) {
+    return (
+      <section className="mx-auto max-w-3xl px-5 py-20 text-center sm:px-8" role="alert">
+        <h1 className="font-heading text-5xl font-semibold leading-tight">Product unavailable</h1>
+        <p className="mt-4 text-muted-foreground">The Storefront API did not return this archive entry. Please try again soon.</p>
+        <Button asChild className="mt-8">
+          <Link to="/products">Return to archive</Link>
+        </Button>
+      </section>
     );
   }
 
@@ -137,15 +149,6 @@ export function ProductDetailRoute() {
               <Link to="/products">Keep browsing</Link>
             </Button>
           </div>
-
-          {productQuery.isFallback ? (
-            <Badge
-              variant="outline"
-              className="mt-4 rounded-none bg-background px-2 py-0 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-            >
-              House archive record
-            </Badge>
-          ) : null}
         </div>
       </section>
     </div>
