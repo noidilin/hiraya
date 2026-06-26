@@ -83,6 +83,7 @@ The deployment changes are limited to the frontend container build, local runtim
 - Phase 3A catalog data migration is implemented: shared contract fixtures, local seed SQL, product image rows, and GitOps restore SQL describe the Hiraya Furugi Catalog with stable product IDs and normalized `Hiraya Furugi` brand values.
 - Product service image URLs are read from primary `product_images` rows and fall back only to `/product-images/placeholder.jpg`; the previous hardcoded legacy filename matching has been removed from active product-service queries.
 - Phase 3A seeded demo order-history path is implemented: the active orders service defaults omitted legacy `userId` requests to the seeded demo customer ID, shared order fixtures use that same user ID and Hiraya Furugi product IDs, and protected `/orders` browser coverage exercises the order-history adapter through `/api/orders/my-orders`.
+- Product-detail cart flow is implemented: detail pages default quantity to one, cap quantity controls by product inventory, pass selected quantity into the persisted cart store, and browser coverage verifies inventory capping plus reload persistence.
 
 ## Phase 0 — Confirm replacement baseline
 
