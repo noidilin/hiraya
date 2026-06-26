@@ -211,7 +211,6 @@ resource "aws_lambda_function" "guide_api" {
 
   environment {
     variables = {
-      GUIDE_ORIGIN_SECRET      = random_password.origin_secret.result
       GUIDE_ORIGIN_SECRET_ARN  = aws_secretsmanager_secret.origin_secret.arn
       CITATION_MANIFEST_BUCKET = aws_s3_bucket.knowledge.bucket
       CITATION_MANIFEST_KEY    = "manifests/citations.json"
@@ -345,9 +344,11 @@ resource "aws_cloudfront_distribution" "portfolio" {
   }
 
   ordered_cache_behavior {
-    path_pattern             = "/api/*"
-    target_origin_id         = local.api_origin_id
-    viewer_protocol_policy   = "https-only"
+    path_pattern           = "/api/*"
+    target_origin_id       = local.api_origin_id
+    viewer_protocol_policy = "https-only"
+    # CloudFront requires the full method set to forward POST. API Gateway defines
+    # only GET /api/health and POST /api/guide/chat, with no CORS or OPTIONS route.
     allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods           = ["GET", "HEAD"]
     cache_policy_id          = data.aws_cloudfront_cache_policy.disabled.id

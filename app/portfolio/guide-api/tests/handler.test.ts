@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { handler, handleRequest } from '../src/handler.js'
+import { resetOriginSecretCacheForTest } from '../src/origin-secret.js'
 
 function parse(body: string): Record<string, unknown> {
   return JSON.parse(body) as Record<string, unknown>
@@ -22,12 +23,55 @@ describe('local Hiraya Guide API contract', () => {
   })
 
   it('validates chat JSON requests before answering', async () => {
-    const response = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: '' }) })
-    const payload = parse(response.body)
+    const wrongMethod = await handleRequest({ method: 'GET', path: '/api/guide/chat' })
+    const missingMessage = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: '' }) })
+    const nonJson = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'text/plain' }, body: 'hello' })
+    const oversized = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'x'.repeat(1001) }) })
+    const invalidSession = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'Hi', sessionId: 'bad session id with spaces' }) })
 
-    assert.equal(response.statusCode, 400)
-    assert.equal(payload.status, 'error')
-    assert.match(String(payload.answer), /message is required/i)
+    assert.equal(wrongMethod.statusCode, 405)
+    assert.match(String(parse(wrongMethod.body).answer), /POST/i)
+    assert.equal(missingMessage.statusCode, 400)
+    assert.equal(parse(missingMessage.body).status, 'error')
+    assert.match(String(parse(missingMessage.body).answer), /message is required/i)
+    assert.equal(nonJson.statusCode, 400)
+    assert.match(String(parse(nonJson.body).answer), /application\/json/i)
+    assert.equal(oversized.statusCode, 400)
+    assert.match(String(parse(oversized.body).answer), /1000 characters/i)
+    assert.equal(invalidSession.statusCode, 400)
+    assert.match(String(parse(invalidSession.body).answer), /sessionId/i)
+  })
+
+  it('requires the CloudFront origin secret when configured', async () => {
+    process.env.GUIDE_ORIGIN_SECRET = 'expected-secret'
+    try {
+      const forbidden = await handleRequest({ method: 'GET', path: '/api/health' })
+      const allowed = await handleRequest({ method: 'GET', path: '/api/health', headers: { 'x-hiraya-origin-secret': 'expected-secret' } })
+
+      assert.equal(forbidden.statusCode, 403)
+      assert.equal(allowed.statusCode, 200)
+    } finally {
+      delete process.env.GUIDE_ORIGIN_SECRET
+      resetOriginSecretCacheForTest()
+    }
+  })
+
+  it('logs only minimal operational metadata', async () => {
+    const lines: string[] = []
+    const originalInfo = console.info
+    console.info = (message?: unknown) => {
+      lines.push(String(message))
+    }
+
+    try {
+      await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json', cookie: 'private-cookie' }, body: JSON.stringify({ message: 'super secret prompt' }) })
+    } finally {
+      console.info = originalInfo
+    }
+
+    assert.equal(lines.length, 1)
+    assert.deepEqual(Object.keys(parse(lines[0])).sort(), ['citationCount', 'latencyMs', 'route', 'status'])
+    assert.doesNotMatch(lines[0], /super secret prompt|private-cookie|content-type/i)
   })
 
   it('answers supported local questions with normalized citations and a session id', async () => {

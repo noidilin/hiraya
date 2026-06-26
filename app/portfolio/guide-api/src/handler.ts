@@ -1,6 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { localAnsweredCitation, normalizeCitations } from './citations.js'
 import type { GuideChatRequest, GuideChatResponse, HttpRequest, HttpResponse } from './contract.js'
+import { expectedOriginSecret } from './origin-secret.js'
+import { headerValue, parseChatRequest } from './validation.js'
 
 type ApiGatewayV2Event = {
   requestContext?: { http?: { method?: string; path?: string } }
@@ -17,7 +19,6 @@ export async function handler(event: ApiGatewayV2Event): Promise<HttpResponse> {
     body: event.body,
   })
 }
-import { headerValue, parseChatRequest } from './validation.js'
 
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8' }
 
@@ -27,7 +28,7 @@ export async function handleRequest(request: HttpRequest): Promise<HttpResponse>
   let citationCount = 0
 
   try {
-    if (!isAllowedByOriginSecret(request)) {
+    if (!(await isAllowedByOriginSecret(request))) {
       status = 'forbidden'
       return json(403, { status: 'error', answer: 'Forbidden.', citations: [] })
     }
@@ -102,10 +103,17 @@ async function answerGuideQuestion(request: GuideChatRequest): Promise<GuideChat
   }
 }
 
-function isAllowedByOriginSecret(request: HttpRequest): boolean {
-  const expectedSecret = process.env.GUIDE_ORIGIN_SECRET
+async function isAllowedByOriginSecret(request: HttpRequest): Promise<boolean> {
+  const expectedSecret = await expectedOriginSecret()
   if (!expectedSecret) return true
-  return headerValue(request.headers, 'x-hiraya-origin-secret') === expectedSecret
+  return secretsMatch(headerValue(request.headers, 'x-hiraya-origin-secret'), expectedSecret)
+}
+
+function secretsMatch(actual: string | undefined, expected: string): boolean {
+  if (!actual) return false
+  const actualBytes = Buffer.from(actual)
+  const expectedBytes = Buffer.from(expected)
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
 }
 
 function json(statusCode: number, payload: unknown): HttpResponse {
