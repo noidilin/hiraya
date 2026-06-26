@@ -1,0 +1,328 @@
+name: portfolio-pr-baseline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/portfolio/**'
+      - 'docs/portfolio/**'
+      - 'infra/portfolio/**'
+      - 'infra/envs/dev/bootstrap/backend.tf'
+      - 'infra/envs/dev/bootstrap/backend.hcl.example'
+      - 'infra/envs/dev/bootstrap/portfolio_oidc.tf'
+      - 'infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl'
+      - '.github/actions/setup-node-pnpm/action.yml'
+      - '.github/scripts/**portfolio**'
+      - '.github/scripts/write-terraform-backend.sh'
+      - '.github/workflows/portfolio-pr-baseline.yml'
+      - '.github/workflows/portfolio-deploy.yml'
+      - '.github/workflows/portfolio-infra-deploy.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-portfolio-pr-baseline-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ap-northeast-1
+  TF_STATE_BUCKET: devops-hiraya-dev-tf-state
+  PORTFOLIO_DIR: infra/portfolio
+
+jobs:
+  classify-portfolio-pr:
+    name: classify-portfolio-pr
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.classify.outputs.app_changed }}
+      knowledge_changed: ${{ steps.classify.outputs.knowledge_changed }}
+      infra_changed: ${{ steps.classify.outputs.infra_changed }}
+      baseline_needed: ${{ steps.classify.outputs.baseline_needed }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: classify-portfolio-paths
+        id: classify
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed_paths=$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA")
+          printf '%s\n' "$changed_paths"
+
+          app_changed=false
+          knowledge_changed=false
+          infra_changed=false
+          while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            case "$path" in
+              app/portfolio/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.github/actions/setup-node-pnpm/action.yml|.github/workflows/portfolio-pr-baseline.yml|.github/workflows/portfolio-deploy.yml|.github/scripts/*portfolio*)
+                app_changed=true
+                ;;
+            esac
+            case "$path" in
+              docs/portfolio/*|.github/workflows/portfolio-pr-baseline.yml|.github/workflows/portfolio-deploy.yml|.github/scripts/*portfolio*)
+                knowledge_changed=true
+                ;;
+            esac
+            case "$path" in
+              infra/portfolio/*|infra/envs/dev/bootstrap/backend.tf|infra/envs/dev/bootstrap/backend.hcl.example|infra/envs/dev/bootstrap/portfolio_oidc.tf|infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl|.github/scripts/write-terraform-backend.sh|.github/workflows/portfolio-pr-baseline.yml|.github/workflows/portfolio-infra-deploy.yml)
+                infra_changed=true
+                ;;
+            esac
+          done <<< "$changed_paths"
+
+          baseline_needed=false
+          if [[ "$app_changed" == "true" || "$knowledge_changed" == "true" || "$infra_changed" == "true" ]]; then
+            baseline_needed=true
+          fi
+
+          {
+            echo "app_changed=$app_changed"
+            echo "knowledge_changed=$knowledge_changed"
+            echo "infra_changed=$infra_changed"
+            echo "baseline_needed=$baseline_needed"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Portfolio PR path classification"
+            echo
+            echo "| Path class | Changed |"
+            echo "| --- | --- |"
+            echo "| Portfolio app | \`$app_changed\` |"
+            echo "| Curated Project Knowledge | \`$knowledge_changed\` |"
+            echo "| Portfolio infrastructure | \`$infra_changed\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  portfolio-app-baseline:
+    name: portfolio-app-baseline
+    needs: classify-portfolio-pr
+    if: ${{ needs.classify-portfolio-pr.outputs.app_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: install-root-workspace
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: run-portfolio-app-baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run portfolio:frontend:test
+          pnpm run portfolio:frontend:build
+          pnpm run portfolio:frontend:lint
+          pnpm run portfolio:guide-api:test
+          pnpm run portfolio:guide-api:build
+
+  portfolio-knowledge-baseline:
+    name: portfolio-knowledge-baseline
+    needs: classify-portfolio-pr
+    if: ${{ needs.classify-portfolio-pr.outputs.knowledge_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: install-root-workspace
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: validate-curated-project-knowledge
+        shell: bash
+        run: pnpm run portfolio:knowledge:validate
+
+  portfolio-terraform-validate:
+    name: portfolio-terraform-validate
+    needs: classify-portfolio-pr
+    if: ${{ needs.classify-portfolio-pr.outputs.infra_changed == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_EC2_METADATA_DISABLED: "true"
+      TF_VAR_skip_aws_credentials_validation: "true"
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: validate-portfolio-terraform-without-backend-credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform fmt -check -recursive infra/portfolio
+          terraform -chdir="${PORTFOLIO_DIR}" init -backend=false -input=false
+          terraform -chdir="${PORTFOLIO_DIR}" validate -no-color
+
+  trusted-portfolio-plan:
+    name: trusted-portfolio-plan
+    needs:
+      - classify-portfolio-pr
+      - portfolio-terraform-validate
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && needs.classify-portfolio-pr.outputs.infra_changed == 'true' && needs.portfolio-terraform-validate.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
+    env:
+      PORTFOLIO_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-plan
+      PLAN_ARTIFACT_NAME: terraform-pr-plan-dev-portfolio-${{ github.event.pull_request.number }}-${{ github.sha }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: install-dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: build-guide-api-zip-for-plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run portfolio:guide-api:build
+          mkdir -p "${PORTFOLIO_DIR}/build"
+          (cd app/portfolio/guide-api/dist/src && zip -qr "${GITHUB_WORKSPACE}/${PORTFOLIO_DIR}/build/guide-api.zip" .)
+
+      - name: configure-aws-credentials-with-portfolio-plan-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_PLAN_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-pr-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: initialize-portfolio-terraform
+        shell: bash
+        run: terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: run-fast-portfolio-plan
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          terraform -chdir="${PORTFOLIO_DIR}" plan \
+            -input=false \
+            -no-color \
+            -refresh=false \
+            -lock=false \
+            -detailed-exitcode \
+            | tee "${PORTFOLIO_DIR}/pr-plan.txt"
+          plan_exit=${PIPESTATUS[0]}
+          set -e
+          if [[ "$plan_exit" -eq 1 ]]; then
+            exit 1
+          fi
+          echo "exitcode=${plan_exit}" >> "$GITHUB_OUTPUT"
+
+      - name: upload-full-plan-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
+          path: ${{ env.PORTFOLIO_DIR }}/pr-plan.txt
+          retention-days: 7
+
+      - name: publish-sticky-plan-comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: .github/scripts/publish-terraform-plan-comment.sh "${PORTFOLIO_DIR}/pr-plan.txt" "${PLAN_ARTIFACT_NAME}"
+
+  portfolio-pr-baseline:
+    name: portfolio-pr-baseline
+    needs:
+      - classify-portfolio-pr
+      - portfolio-app-baseline
+      - portfolio-knowledge-baseline
+      - portfolio-terraform-validate
+      - trusted-portfolio-plan
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: summarize-portfolio-pr-baseline
+        shell: bash
+        env:
+          CLASSIFY_RESULT: ${{ needs.classify-portfolio-pr.result }}
+          APP_RESULT: ${{ needs.portfolio-app-baseline.result }}
+          KNOWLEDGE_RESULT: ${{ needs.portfolio-knowledge-baseline.result }}
+          TERRAFORM_RESULT: ${{ needs.portfolio-terraform-validate.result }}
+          PLAN_RESULT: ${{ needs.trusted-portfolio-plan.result }}
+          APP_CHANGED: ${{ needs.classify-portfolio-pr.outputs.app_changed }}
+          KNOWLEDGE_CHANGED: ${{ needs.classify-portfolio-pr.outputs.knowledge_changed }}
+          INFRA_CHANGED: ${{ needs.classify-portfolio-pr.outputs.infra_changed }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Portfolio PR baseline gate"
+            echo
+            echo "| Check | Result | Relevant |"
+            echo "| --- | --- | --- |"
+            echo "| classify | \`${CLASSIFY_RESULT}\` | \`true\` |"
+            echo "| app | \`${APP_RESULT}\` | \`${APP_CHANGED:-false}\` |"
+            echo "| knowledge | \`${KNOWLEDGE_RESULT}\` | \`${KNOWLEDGE_CHANGED:-false}\` |"
+            echo "| terraform validate | \`${TERRAFORM_RESULT}\` | \`${INFRA_CHANGED:-false}\` |"
+            echo "| trusted plan | \`${PLAN_RESULT}\` | \`${INFRA_CHANGED:-false}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$CLASSIFY_RESULT" != "success" ]]; then
+            echo "Portfolio PR path classification failed." >&2
+            exit 1
+          fi
+          if [[ "${APP_CHANGED:-false}" == "true" && "$APP_RESULT" != "success" ]]; then
+            echo "Portfolio app baseline failed or did not run." >&2
+            exit 1
+          fi
+          if [[ "${KNOWLEDGE_CHANGED:-false}" == "true" && "$KNOWLEDGE_RESULT" != "success" ]]; then
+            echo "Portfolio knowledge baseline failed or did not run." >&2
+            exit 1
+          fi
+          if [[ "${INFRA_CHANGED:-false}" == "true" && "$TERRAFORM_RESULT" != "success" ]]; then
+            echo "Portfolio Terraform validation failed or did not run." >&2
+            exit 1
+          fi
+          if [[ "$PLAN_RESULT" == "failure" || "$PLAN_RESULT" == "cancelled" ]]; then
+            echo "Trusted Portfolio Terraform plan failed." >&2
+            exit 1
+          fi
