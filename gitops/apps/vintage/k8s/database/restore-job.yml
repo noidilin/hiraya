@@ -28,7 +28,7 @@ spec:
               echo "Restoring dump..."
               psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -f /dump/vintage_full.sql
 
-              echo "Creating auth_db schema..."
+              echo "Creating and seeding auth_db schema..."
               psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -d auth_db -c "
               CREATE TABLE IF NOT EXISTS users (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,9 +39,17 @@ spec:
                 role VARCHAR(50) DEFAULT 'customer',
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
-              );"
+              );
+              INSERT INTO users (id, email, password_hash, first_name, last_name, role, created_at, updated_at) VALUES
+                ('f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6', 'demo@hirayavintage.test', '\$2a\$10\$Vtk/SwGgIxJMtCLix.Gm8uKzVdeZIEE/DxWCbXUcJXt.3bYxGHW.y', 'Demo', 'User', 'customer', '2026-06-23 00:00:00', '2026-06-23 00:00:00')
+              ON CONFLICT (email) DO UPDATE SET
+                password_hash = EXCLUDED.password_hash,
+                first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name,
+                role = EXCLUDED.role,
+                updated_at = EXCLUDED.updated_at;"
 
-              echo "Creating orders_db schema..."
+              echo "Creating and seeding orders_db schema..."
               psql -v ON_ERROR_STOP=1 -h vintage-postgres -U postgres -d orders_db -c "
               CREATE TABLE IF NOT EXISTS orders (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,7 +68,24 @@ spec:
                 quantity INTEGER NOT NULL,
                 price DECIMAL(10,2) NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
-              );"
+              );
+              INSERT INTO orders (id, user_id, total_amount, status, shipping_address, payment_status, created_at, updated_at) VALUES
+                ('8d46347c-43db-4f01-b6c7-d5d3288f0ecb', 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6', 410.00, 'delivered', '{\"line1\":\"Demo address\",\"city\":\"Manila\",\"country\":\"PH\"}'::jsonb, 'paid', '2026-06-23 00:00:00', '2026-06-23 00:00:00')
+              ON CONFLICT (id) DO UPDATE SET
+                user_id = EXCLUDED.user_id,
+                total_amount = EXCLUDED.total_amount,
+                status = EXCLUDED.status,
+                shipping_address = EXCLUDED.shipping_address,
+                payment_status = EXCLUDED.payment_status,
+                updated_at = EXCLUDED.updated_at;
+              INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES
+                ('b9460644-95f4-47ac-853d-9579ac793f0b', '8d46347c-43db-4f01-b6c7-d5d3288f0ecb', '67be2d5e-ecfb-4bf9-b751-8474f9d7bcac', 2, 128.00, '2026-06-23 00:00:00'),
+                ('3fa1ac0a-4d34-4e0c-8a5d-7f83f3633c8d', '8d46347c-43db-4f01-b6c7-d5d3288f0ecb', 'e858df02-4a5b-4f8e-a1f4-2b6c28150d0b', 1, 154.00, '2026-06-23 00:00:00')
+              ON CONFLICT (id) DO UPDATE SET
+                order_id = EXCLUDED.order_id,
+                product_id = EXCLUDED.product_id,
+                quantity = EXCLUDED.quantity,
+                price = EXCLUDED.price;"
 
               echo "Restore completed."
           env:
