@@ -1,0 +1,172 @@
+name: portfolio-infra-deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-portfolio-infra-dev
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-1
+  PORTFOLIO_DIR: infra/portfolio
+  PORTFOLIO_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-plan
+  PORTFOLIO_APPLY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-apply
+
+jobs:
+  preflight-plan:
+    name: pre-approval-portfolio-plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: install-dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: build-guide-api-zip-for-plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run portfolio:guide-api:build
+          mkdir -p "${PORTFOLIO_DIR}/build"
+          (cd app/portfolio/guide-api/dist/src && zip -qr "${GITHUB_WORKSPACE}/${PORTFOLIO_DIR}/build/guide-api.zip" .)
+
+      - name: configure-aws-credentials-with-plan-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_PLAN_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: initialize-and-validate-portfolio-terraform
+        shell: bash
+        run: |
+          terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          terraform -chdir="${PORTFOLIO_DIR}" validate -no-color
+
+      - name: create-preflight-plan-evidence
+        shell: bash
+        run: terraform -chdir="${PORTFOLIO_DIR}" plan -input=false -no-color | tee "${PORTFOLIO_DIR}/preflight-plan.txt"
+
+      - name: upload-preflight-plan-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: terraform-preflight-plan-dev-portfolio-${{ github.sha }}
+          path: ${{ env.PORTFOLIO_DIR }}/preflight-plan.txt
+          retention-days: 14
+
+      - name: summarize-preflight-plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          plan_file="${PORTFOLIO_DIR}/preflight-plan.txt"
+          summary=$(grep -E '^(Plan:|No changes\.)' "$plan_file" | tail -1 || true)
+          if [[ -z "$summary" ]]; then
+            summary="Summary unavailable; inspect the uploaded plan artifact."
+          fi
+          {
+            echo "## Portfolio Stack pre-approval plan"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack | \`${PORTFOLIO_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Summary | \`${summary}\` |"
+            echo "| Full plan | Artifact \`terraform-preflight-plan-dev-portfolio-${GITHUB_SHA}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: apply-portfolio-stack
+    needs: preflight-plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: install-dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: build-guide-api-zip-for-apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run portfolio:guide-api:test
+          mkdir -p "${PORTFOLIO_DIR}/build"
+          (cd app/portfolio/guide-api/dist/src && zip -qr "${GITHUB_WORKSPACE}/${PORTFOLIO_DIR}/build/guide-api.zip" .)
+
+      - name: configure-aws-credentials-with-apply-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_APPLY_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: initialize-portfolio-terraform
+        shell: bash
+        run: terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+
+      - name: create-approved-binary-plan
+        shell: bash
+        run: terraform -chdir="${PORTFOLIO_DIR}" plan -input=false -out=tfplan.binary
+
+      - name: apply-approved-portfolio-plan
+        shell: bash
+        run: terraform -chdir="${PORTFOLIO_DIR}" apply -input=false -auto-approve tfplan.binary
+
+      - name: summarize-portfolio-apply
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Portfolio Stack deploy"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Stack | \`${PORTFOLIO_DIR}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Environment | \`dev\` |"
+            echo "| Result | \`${{ job.status }}\` |"
+            echo
+            echo "Applied the durable Portfolio Stack after dev environment approval. Secrets are not printed."
+          } >> "$GITHUB_STEP_SUMMARY"

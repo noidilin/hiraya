@@ -1,6 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { localAnsweredCitation, normalizeCitations } from './citations.js'
 import type { GuideChatRequest, GuideChatResponse, HttpRequest, HttpResponse } from './contract.js'
+
+type ApiGatewayV2Event = {
+  requestContext?: { http?: { method?: string; path?: string } }
+  rawPath?: string
+  headers?: Record<string, string | undefined>
+  body?: string | null
+}
+
+export async function handler(event: ApiGatewayV2Event): Promise<HttpResponse> {
+  return handleRequest({
+    method: event.requestContext?.http?.method ?? 'GET',
+    path: event.rawPath ?? event.requestContext?.http?.path ?? '/',
+    headers: event.headers,
+    body: event.body,
+  })
+}
 import { headerValue, parseChatRequest } from './validation.js'
 
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8' }

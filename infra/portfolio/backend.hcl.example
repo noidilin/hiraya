@@ -1,0 +1,5 @@
+bucket       = "devops-hiraya-dev-tf-state"
+key          = "devops-hiraya-dev/dev/portfolio/terraform.tfstate"
+region       = "ap-northeast-1"
+use_lockfile = true
+encrypt      = true
