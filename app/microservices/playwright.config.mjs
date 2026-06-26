@@ -7,6 +7,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: true,
+  workers: process.env.CI ? undefined : 2,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
