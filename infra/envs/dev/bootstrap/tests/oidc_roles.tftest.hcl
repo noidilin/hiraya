@@ -186,7 +186,7 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
-    condition     = aws_iam_role.github_infra_plan.permissions_boundary == null && aws_iam_role.github_infra_apply.permissions_boundary == null
+    condition     = aws_iam_role.github_infra_plan.permissions_boundary != local.runtime_boundary_arn && aws_iam_role.github_infra_apply.permissions_boundary != local.runtime_boundary_arn
     error_message = "The infra plan/apply roles must not attach the runtime permissions boundary because it explicitly denies IAM reads required by Terraform refresh."
   }
 
@@ -244,6 +244,85 @@ run "creates_scoped_infra_oidc_roles" {
   assert {
     condition     = output.cluster_bootstrap_backend_config.key == "devops-hiraya-dev/dev/cluster-bootstrap/terraform.tfstate"
     error_message = "Project Bootstrap must expose the Cluster Bootstrap backend key."
+  }
+
+  assert {
+    condition     = output.portfolio_backend_config.key == "devops-hiraya-dev/dev/portfolio/terraform.tfstate"
+    error_message = "Project Bootstrap must expose the Portfolio Stack backend key."
+  }
+
+  assert {
+    condition     = jsondecode(aws_iam_role.github_portfolio_plan.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == ["repo:example/hiraya:pull_request", "repo:example/hiraya:ref:refs/heads/main"]
+    error_message = "The portfolio plan role must trust PR and main plan subjects only."
+  }
+
+  assert {
+    condition     = jsondecode(aws_iam_role.github_portfolio_apply.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example/hiraya:environment:dev"
+    error_message = "The portfolio apply role must trust only the dev GitHub Environment subject."
+  }
+
+  assert {
+    condition     = jsondecode(aws_iam_role.github_portfolio_app_deploy.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example/hiraya:ref:refs/heads/main"
+    error_message = "The portfolio app deploy role must be main-branch-only."
+  }
+
+  assert {
+    condition     = jsondecode(aws_iam_role.github_portfolio_knowledge_sync.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example/hiraya:ref:refs/heads/main"
+    error_message = "The portfolio knowledge sync role must be main-branch-only."
+  }
+
+  assert {
+    condition = contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowPortfolioStateMutation"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/portfolio/terraform.tfstate"
+    )
+    error_message = "The portfolio apply role must mutate the Portfolio Stack state object."
+  }
+
+  assert {
+    condition = !contains(
+      flatten([
+        for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        if statement.Sid == "AllowPortfolioStateMutation"
+      ]),
+      "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform-core/terraform.tfstate"
+    )
+    error_message = "The portfolio apply role must not mutate the Platform Core state object."
+  }
+
+  assert {
+    condition = !anytrue(flatten([
+      for policy in [
+        aws_iam_policy.github_portfolio_plan.policy,
+        aws_iam_policy.github_portfolio_apply.policy,
+        aws_iam_policy.github_portfolio_app_deploy.policy,
+        aws_iam_policy.github_portfolio_knowledge_sync.policy,
+        ] : [
+        for statement in jsondecode(policy).Statement : [
+          for action in try(tolist(statement.Action), [statement.Action]) : startswith(action, "eks:")
+        ]
+      ]
+    ]))
+    error_message = "Portfolio roles must not receive EKS permissions from disposable platform workflows."
+  }
+
+  assert {
+    condition = length([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_app_deploy.policy).Statement : statement
+      if anytrue([for action in try(tolist(statement.Action), [statement.Action]) : startswith(action, "bedrock:")])
+    ]) == 0
+    error_message = "The portfolio app deploy role must not receive Bedrock knowledge sync permissions."
+  }
+
+  assert {
+    condition = length([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_knowledge_sync.policy).Statement : statement
+      if anytrue([for action in try(tolist(statement.Action), [statement.Action]) : startswith(action, "cloudfront:")])
+    ]) == 0
+    error_message = "The portfolio knowledge sync role must not receive CloudFront app deploy permissions."
   }
 
   assert {

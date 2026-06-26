@@ -33,6 +33,26 @@ output "github_cluster_bootstrap_role_arn" {
   value       = aws_iam_role.github_cluster_bootstrap.arn
 }
 
+output "github_portfolio_plan_role_arn" {
+  description = "GitHub Actions OIDC role ARN for trusted Hiraya Portfolio Terraform plans."
+  value       = aws_iam_role.github_portfolio_plan.arn
+}
+
+output "github_portfolio_apply_role_arn" {
+  description = "GitHub Actions OIDC role ARN for approved Hiraya Portfolio Terraform applies."
+  value       = aws_iam_role.github_portfolio_apply.arn
+}
+
+output "github_portfolio_app_deploy_role_arn" {
+  description = "GitHub Actions OIDC role ARN for Hiraya Portfolio app deployment."
+  value       = aws_iam_role.github_portfolio_app_deploy.arn
+}
+
+output "github_portfolio_knowledge_sync_role_arn" {
+  description = "GitHub Actions OIDC role ARN for Hiraya Portfolio curated knowledge sync."
+  value       = aws_iam_role.github_portfolio_knowledge_sync.arn
+}
+
 output "vintage_secret_name" {
   description = "Stable AWS Secrets Manager name for durable Vintage Storefront dev runtime secrets."
   value       = aws_secretsmanager_secret.vintage.name
@@ -56,6 +76,11 @@ output "platform_core_backend_config" {
 output "cluster_bootstrap_backend_config" {
   description = "Backend config values for ../cluster-bootstrap/backend.hcl."
   value       = local.backend_configs["cluster-bootstrap"]
+}
+
+output "portfolio_backend_config" {
+  description = "Backend config values for ../../../portfolio/backend.hcl."
+  value       = local.backend_configs["portfolio"]
 }
 
 output "backend_config" {
