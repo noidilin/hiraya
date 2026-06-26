@@ -35,6 +35,7 @@
     "build:backend": "pnpm --filter vintage-backend build",
     "docker:build": "docker compose -f app/microservices/docker-compose.yml build",
     "docker:up": "docker compose -f app/microservices/docker-compose.yml up -d",
+    "docker:up:frontend-dev": "docker compose -f app/microservices/docker-compose.yml --profile dev up frontend-dev",
     "docker:down": "docker compose -f app/microservices/docker-compose.yml down"
   },
   "devDependencies": {
