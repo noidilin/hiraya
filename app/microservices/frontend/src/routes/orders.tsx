@@ -65,7 +65,7 @@ export function OrdersRoute() {
           <AlertTitle>Sign in to view your archive record.</AlertTitle>
           <AlertDescription>Your order history is attached to the account used at checkout.</AlertDescription>
           <Button asChild className="mt-5 h-11 rounded-none px-5">
-            <Link to="/auth">Go to account</Link>
+            <Link to="/login" search={{ redirect: "/orders" }}>Go to account</Link>
           </Button>
         </Alert>
       ) : null}

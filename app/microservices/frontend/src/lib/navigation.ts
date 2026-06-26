@@ -9,5 +9,5 @@ export const primaryNavigation = [
 export const utilityNavigation = [
   { label: 'Orders', to: '/orders', icon: ReceiptText },
   { label: 'Cart', to: '/cart', icon: ShoppingBag },
-  { label: 'Account', to: '/auth', icon: UserRound },
+  { label: 'Account', to: '/profile', icon: UserRound },
 ] as const;
