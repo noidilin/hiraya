@@ -172,6 +172,7 @@ jobs:
     needs: apply
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       contents: read
       id-token: write
@@ -234,6 +235,7 @@ jobs:
     needs: apply-cluster-bootstrap
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       contents: read
       id-token: write
