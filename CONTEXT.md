@@ -71,3 +71,7 @@ _Avoid_: Kira, chatbot, bot, generic assistant
 **Curated Project Knowledge**:
 The approved project explanations Hiraya Guide may use when answering Portfolio Visitor questions.
 _Avoid_: repo dump, raw repository snapshot, live operational data
+
+**Target Team Permission Model**:
+The intended team-role access design Hiraya Guide may explain as target-state, without claiming it is fully implemented.
+_Avoid_: current IAM state, implemented permissions, team RBAC
