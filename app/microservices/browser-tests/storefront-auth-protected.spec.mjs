@@ -22,12 +22,14 @@ const fulfillJson = async (route, schema, fixture) => {
   });
 };
 
+const isStorefrontApiRequest = (url) => url.pathname.startsWith('/api/');
+
 const rejectUnmockedStorefrontApi = async (route) => {
   throw new Error(`Unexpected unmocked Storefront API request: ${route.request().url()}`);
 };
 
 const routeLoginApi = async (page, submittedCredentials) => {
-  await page.route('**/api/**', rejectUnmockedStorefrontApi);
+  await page.route(isStorefrontApiRequest, rejectUnmockedStorefrontApi);
 
   await page.route(
     (url) => url.pathname === storefrontContractPaths.authLogin,
@@ -43,7 +45,7 @@ const routeLoginApi = async (page, submittedCredentials) => {
 };
 
 const routeAuthenticatedShellApi = async (context) => {
-  await context.route('**/api/**', rejectUnmockedStorefrontApi);
+  await context.route(isStorefrontApiRequest, rejectUnmockedStorefrontApi);
 
   await context.route(
     (url) => url.pathname === storefrontContractPaths.authMe,
@@ -72,23 +74,20 @@ const expectProfileShell = async (page) => {
   const user = storefrontContractFixtures.authenticatedUserWire;
 
   await expect(page).toHaveURL('/profile');
-  await expect(page.getByRole('heading', { name: /my profile/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: `${user.firstName} ${user.lastName}` })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /account summary/i })).toBeVisible();
+  await expect(page.getByText(`${user.firstName} ${user.lastName}`)).toBeVisible();
   await expect(page.getByText(user.email).first()).toBeVisible();
-  await expect(page.getByText(/personal information/i)).toBeVisible();
+  await expect(page.getByText(/view orders/i)).toBeVisible();
 };
 
 const expectOrdersShell = async (page) => {
   const order = storefrontContractFixtures.orderHistoryEnvelope.data.orders[0];
 
   await expect(page).toHaveURL('/orders');
-  await expect(page.getByRole('heading', { name: /my orders/i })).toBeVisible();
-  await expect(page.getByText('1 Order')).toBeVisible();
-  await expect(page.getByText(`Order #${order.id.slice(-8)}`)).toBeVisible();
-  await expect(page.getByText(/delivered/i).first()).toBeVisible();
-  await expect(page.getByText('$402.00')).toBeVisible();
-
-  await page.getByRole('button', { name: /2 items \$402\.00/i }).click();
+  await expect(page.getByRole('heading', { name: /your archive record/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: order.id })).toBeVisible();
+  await expect(page.getByText(/archived/i).first()).toBeVisible();
+  await expect(page.getByText('$410.00')).toBeVisible();
   await expect(page.getByText(order.items[0].product.name)).toBeVisible();
 };
 
@@ -100,8 +99,8 @@ test('Vintage Storefront UI login saves authenticated state reused by protected 
 
   await page.goto('/profile');
 
-  await expect(page).toHaveURL('/login');
-  await page.getByRole('textbox', { name: /email address/i }).fill(user.email);
+  await expect(page).toHaveURL(/\/login\?redirect=%2Fprofile$/);
+  await page.getByRole('textbox', { name: /^email$/i }).fill(user.email);
   await page.getByLabel(/password/i).fill(loginPassword);
   await page.getByRole('button', { name: /^sign in$/i }).click();
 

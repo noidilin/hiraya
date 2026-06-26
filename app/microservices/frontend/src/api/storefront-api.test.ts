@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clearAccessToken, setAccessToken } from "./client";
 import { getProduct, listCategories, listProducts } from "./products";
+import { listMyOrders } from "./orders";
 
 const productWire = {
   id: "haori-indigo-001",
@@ -90,6 +91,52 @@ describe("Storefront API adapters", () => {
       { id: "outerwear", name: "Outerwear", productCount: 7 },
     ]);
     expect(fetch).toHaveBeenCalledWith("/api/products/categories", expect.any(Object));
+  });
+
+  it("loads seeded order history through the active orders endpoint", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          orders: [
+            {
+              id: "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
+              userId: "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+              totalAmount: "256.00",
+              status: "delivered",
+              paymentStatus: "paid",
+              createdAt: "2026-02-14T10:22:31.000Z",
+              updatedAt: "2026-02-16T15:12:04.000Z",
+              items: [
+                {
+                  id: "b9460644-95f4-47ac-853d-9579ac793f0b",
+                  orderId: "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
+                  productId: productWire.id,
+                  quantity: 2,
+                  price: productWire.price,
+                  product: productWire,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const orders = await listMyOrders("f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6");
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/orders/my-orders?userId=f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+      expect.any(Object),
+    );
+    expect(orders).toEqual([
+      expect.objectContaining({
+        id: "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
+        totalAmount: 256,
+        paymentStatus: "paid",
+        items: [expect.objectContaining({ productId: productWire.id, quantity: 2, price: 188 })],
+      }),
+    ]);
   });
 
   it("injects the bearer token through the centralized API client", async () => {

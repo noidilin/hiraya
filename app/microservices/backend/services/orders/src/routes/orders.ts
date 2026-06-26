@@ -16,6 +16,7 @@ export interface OrderRouteDependencies {
 }
 
 const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3003';
+const SEEDED_DEMO_USER_ID = 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6';
 
 async function defaultGetProduct(productId: string): Promise<Product | null> {
   const productResponse = await axios.get(`${PRODUCTS_SERVICE_URL}/${productId}`, {
@@ -108,8 +109,8 @@ export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): ex
 
   router.post('/', async (req, res) => {
     try {
-      // Demo mode - use a fixed user ID or get from request
-      const { items, shippingAddress, userId = 'demo-user-id' } = req.body as CreateOrderRequest & { userId?: string };
+      // Demo mode - use the seeded demo customer when a legacy client omits userId.
+      const { items, shippingAddress, userId = SEEDED_DEMO_USER_ID } = req.body as CreateOrderRequest & { userId?: string };
 
       if (!Array.isArray(items) || items.length === 0) {
         return failure(res, 400, 'Order requires at least one item');
@@ -178,8 +179,8 @@ export function createOrderRoutes(dependencies: OrderRouteDependencies = {}): ex
 
   router.get('/my-orders', async (req, res) => {
     try {
-      // Demo mode - use a fixed user ID or get from query
-      const userId = req.query.userId as string || 'demo-user-id';
+      // Demo mode - use the seeded demo customer when a legacy client omits userId.
+      const userId = req.query.userId as string || SEEDED_DEMO_USER_ID;
 
       const result = await dbQuery(`
         SELECT o.*,
