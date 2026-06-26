@@ -4,24 +4,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../backend/services/orders/src/index.ts';
 
 const product = Object.freeze({
-  id: '2e3b09bb-09cf-45c9-b7aa-fde2eaee3fd7',
-  name: '1970s Prairie Midi Dress',
-  description: 'Cotton prairie dress with lace trim and a tiered skirt',
-  price: '145.00',
-  compare_price: '188.00',
-  brand: 'Hiraya Vintage',
+  id: '67be2d5e-ecfb-4bf9-b751-8474f9d7bcac',
+  name: 'Prairie Midi Dress',
+  description: 'Faded cotton midi dress with a gathered waist, lace-trim neckline, and an easy drape for warm days.',
+  price: '128.00',
+  compare_price: '168.00',
+  brand: 'Hiraya Furugi',
   inventory_quantity: 4,
   is_featured: true,
-  created_at: '2026-02-03T10:30:00.000Z',
-  updated_at: '2026-02-10T16:45:00.000Z',
+  created_at: '2026-06-23T00:00:00.000Z',
+  updated_at: '2026-06-23T00:00:00.000Z',
   category: 'Dresses',
-  image_url: '/product-images/1970s-prairie-midi-dress.jpg',
+  image_url: '/product-images/prairie-midi-dress.jpg',
 });
 
 const orderRow = Object.freeze({
   id: '8d46347c-43db-4f01-b6c7-d5d3288f0ecb',
   user_id: '31bbbc78-8b8f-4d6e-9c40-026681e7d5d1',
-  total_amount: '290.00',
+  total_amount: '256.00',
   status: 'pending',
   shipping_address: { street: '123 Demo St', city: 'Manila', state: 'Metro Manila', zipCode: '1000', country: 'PH' },
   payment_status: 'pending',

@@ -227,6 +227,7 @@ CREATE TABLE public.orders (
     total_amount numeric(10,2) NOT NULL,
     status character varying(50) DEFAULT 'pending'::character varying,
     shipping_address text,
+    payment_status character varying(50) DEFAULT 'pending'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -300,11 +301,11 @@ ALTER TABLE public.users OWNER TO postgres;
 --
 
 COPY public.categories (id, name, description, image_url, created_at, updated_at) FROM stdin;
-10000000-0000-0000-0000-000000000001	Dresses	Elegant dresses for special occasions	\N	2026-02-07 13:03:01.387673	2026-02-07 13:03:01.387673
-10000000-0000-0000-0000-000000000002	Accessories	Vintage accessories and finishing touches	\N	2026-02-07 13:03:01.387673	2026-02-07 13:03:01.387673
-10000000-0000-0000-0000-000000000003	Bags	Vintage handbags and shoulder bags	\N	2026-02-07 13:03:01.387673	2026-02-07 13:03:01.387673
-10000000-0000-0000-0000-000000000004	Outerwear	Coats and jackets	\N	2026-02-07 13:03:01.387673	2026-02-07 13:03:01.387673
-10000000-0000-0000-0000-000000000005	Shoes	Vintage footwear and boots	\N	2026-02-07 13:03:01.387673	2026-02-07 13:03:01.387673
+274cfdcb-1d8a-4563-93f3-a62e72c9e6f6	Dresses	Vintage dresses	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	Accessories	Scarves, bags, and finishing pieces	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+61e5f91b-4fb0-4116-8c6b-6dd947331daa	Outerwear	Coats and jackets	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+8db2bf2a-cbb6-4db2-9ff0-cb14ce94067b	Denim	Vintage denim	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+d7ab35db-b100-47ec-9316-3a89a1df4ebf	Tops	Shirts and blouses	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
 \.
 
 
@@ -313,35 +314,8 @@ COPY public.categories (id, name, description, image_url, created_at, updated_at
 --
 
 COPY public.order_items (id, order_id, product_id, quantity, price, created_at) FROM stdin;
-\.
-
-
---
--- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.orders (id, user_id, total_amount, status, shipping_address, created_at, updated_at) FROM stdin;
-\.
-
-
---
--- Data for Name: product_images; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.product_images (id, product_id, image_url, alt_text, is_primary, sort_order, created_at) FROM stdin;
-\.
-
-
---
--- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.products (id, name, slug, description, short_description, sku, brand, category_id, price, compare_price, materials, care_instructions, inventory_quantity, is_featured, created_at, updated_at) FROM stdin;
-d463e74a-84cb-42b4-82e1-da0564548fb7	1970s Prairie Midi Dress	1970s-prairie-midi-dress	A romantic prairie midi dress with lace-trim details and a softly faded floral print	1970s-inspired prairie dress	HV-DRESS-001	Hiraya Vintage	10000000-0000-0000-0000-000000000001	128.00	168.00	\N	\N	8	t	2026-02-07 13:03:01.388084	2026-02-07 13:03:01.388084
-8f712af6-9469-4bff-abe1-6746e8077bfe	1980s Wool Blazer	1980s-wool-blazer	Structured wool blazer with strong shoulders and a softly worn vintage finish	Tailored 1980s wool blazer	HV-BLAZER-001	Hiraya Vintage	10000000-0000-0000-0000-000000000004	146.00	190.00	\N	\N	6	t	2026-02-07 13:03:01.388084	2026-02-07 13:03:01.388084
-36f64ff4-dbe5-455f-b35a-bf1e2bfa7771	1990s Leather Shoulder Bag	1990s-leather-shoulder-bag	Compact leather shoulder bag with a clean 1990s silhouette	Minimal 1990s leather shoulder bag	HV-BAG-001	Hiraya Vintage	10000000-0000-0000-0000-000000000003	118.00	150.00	\N	\N	10	t	2026-02-07 13:03:01.388084	2026-02-07 13:03:01.388084
-4d73607a-83c6-4cc4-b8df-23f93d53e47f	Art Deco Pendant Necklace	art-deco-pendant-necklace	Geometric pendant necklace inspired by Art Deco lines and heirloom styling	Art Deco-inspired pendant necklace	HV-NECKLACE-001	Hiraya Vintage	10000000-0000-0000-0000-000000000002	92.00	120.00	\N	\N	12	t	2026-02-07 13:03:01.388084	2026-02-07 13:03:01.388084
-b0df682a-09be-4151-a96e-dd9636daf762	Suede Block Heel Boots	suede-block-heel-boots	Soft suede ankle boots with a walkable block heel and retro profile	Retro suede block heel boots	HV-BOOTS-001	Hiraya Vintage	10000000-0000-0000-0000-000000000005	135.00	175.00	\N	\N	7	t	2026-02-07 13:03:01.388084	2026-02-07 13:03:01.388084
+b9460644-95f4-47ac-853d-9579ac793f0b	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	2	128.00	2026-06-23 00:00:00
+3fa1ac0a-4d34-4e0c-8a5d-7f83f3633c8d	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	1	154.00	2026-06-23 00:00:00
 \.
 
 
@@ -350,8 +324,7 @@ b0df682a-09be-4151-a96e-dd9636daf762	Suede Block Heel Boots	suede-block-heel-boo
 --
 
 COPY public.users (id, email, password_hash, first_name, last_name, role, created_at, updated_at) FROM stdin;
-f3d73cfa-b59e-4a9a-a5fa-848c433e631c	admin@hirayavintage.test	$2a$10$placeholder_hash	Admin	User	admin	2026-02-07 13:03:01.387149	2026-02-07 13:03:01.387149
-e39ddf24-30a5-4ee3-86f4-8ba89a103040	customer@hirayavintage.test	$2a$10$placeholder_hash	John	Doe	customer	2026-02-07 13:03:01.387149	2026-02-07 13:03:01.387149
+f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6	demo@hirayavintage.test	$2a$10$Vtk/SwGgIxJMtCLix.Gm8uKzVdeZIEE/DxWCbXUcJXt.3bYxGHW.y	Demo	User	customer	2026-06-23 00:00:00	2026-06-23 00:00:00
 \.
 
 
@@ -729,6 +702,7 @@ CREATE TABLE public.orders (
     total_amount numeric(10,2) NOT NULL,
     status character varying(50) DEFAULT 'pending'::character varying,
     shipping_address text,
+    payment_status character varying(50) DEFAULT 'pending'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -802,11 +776,11 @@ ALTER TABLE public.users OWNER TO postgres;
 --
 
 COPY public.categories (id, name, description, image_url, created_at, updated_at) FROM stdin;
-10000000-0000-0000-0000-000000000001	Dresses	Elegant dresses for special occasions	\N	2026-02-07 13:04:03.83623	2026-02-07 13:04:03.83623
-10000000-0000-0000-0000-000000000002	Accessories	Vintage accessories and finishing touches	\N	2026-02-07 13:04:03.83623	2026-02-07 13:04:03.83623
-10000000-0000-0000-0000-000000000003	Bags	Vintage handbags and shoulder bags	\N	2026-02-07 13:04:03.83623	2026-02-07 13:04:03.83623
-10000000-0000-0000-0000-000000000004	Outerwear	Coats and jackets	\N	2026-02-07 13:04:03.83623	2026-02-07 13:04:03.83623
-10000000-0000-0000-0000-000000000005	Shoes	Vintage footwear and boots	\N	2026-02-07 13:04:03.83623	2026-02-07 13:04:03.83623
+274cfdcb-1d8a-4563-93f3-a62e72c9e6f6	Dresses	Vintage dresses	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+0f22f7b3-f87a-4603-9e7f-93dc0b42ec65	Accessories	Scarves, bags, and finishing pieces	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+61e5f91b-4fb0-4116-8c6b-6dd947331daa	Outerwear	Coats and jackets	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+8db2bf2a-cbb6-4db2-9ff0-cb14ce94067b	Denim	Vintage denim	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
+d7ab35db-b100-47ec-9316-3a89a1df4ebf	Tops	Shirts and blouses	\N	2026-06-23 00:00:00	2026-06-23 00:00:00
 \.
 
 
@@ -815,35 +789,8 @@ COPY public.categories (id, name, description, image_url, created_at, updated_at
 --
 
 COPY public.order_items (id, order_id, product_id, quantity, price, created_at) FROM stdin;
-\.
-
-
---
--- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.orders (id, user_id, total_amount, status, shipping_address, created_at, updated_at) FROM stdin;
-\.
-
-
---
--- Data for Name: product_images; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.product_images (id, product_id, image_url, alt_text, is_primary, sort_order, created_at) FROM stdin;
-\.
-
-
---
--- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.products (id, name, slug, description, short_description, sku, brand, category_id, price, compare_price, materials, care_instructions, inventory_quantity, is_featured, created_at, updated_at) FROM stdin;
-67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	1970s Prairie Midi Dress	1970s-prairie-midi-dress	A romantic prairie midi dress with lace-trim details and a softly faded floral print	1970s-inspired prairie dress	HV-DRESS-001	Hiraya Vintage	10000000-0000-0000-0000-000000000001	128.00	168.00	\N	\N	8	t	2026-02-07 13:04:03.836716	2026-02-07 13:04:03.836716
-7554ae99-7c37-4ba7-b348-6a5a35ec5cc5	1980s Wool Blazer	1980s-wool-blazer	Structured wool blazer with strong shoulders and a softly worn vintage finish	Tailored 1980s wool blazer	HV-BLAZER-001	Hiraya Vintage	10000000-0000-0000-0000-000000000004	146.00	190.00	\N	\N	6	t	2026-02-07 13:04:03.836716	2026-02-07 13:04:03.836716
-9be82459-8ef3-45cb-ad70-7adbe3df843f	1990s Leather Shoulder Bag	1990s-leather-shoulder-bag	Compact leather shoulder bag with a clean 1990s silhouette	Minimal 1990s leather shoulder bag	HV-BAG-001	Hiraya Vintage	10000000-0000-0000-0000-000000000003	118.00	150.00	\N	\N	10	t	2026-02-07 13:04:03.836716	2026-02-07 13:04:03.836716
-25e17b84-2c9a-4e8c-bc78-0ab6af7d3fb0	Art Deco Pendant Necklace	art-deco-pendant-necklace	Geometric pendant necklace inspired by Art Deco lines and heirloom styling	Art Deco-inspired pendant necklace	HV-NECKLACE-001	Hiraya Vintage	10000000-0000-0000-0000-000000000002	92.00	120.00	\N	\N	12	t	2026-02-07 13:04:03.836716	2026-02-07 13:04:03.836716
-9e873053-7127-458e-80d7-4dbce3018e6e	Suede Block Heel Boots	suede-block-heel-boots	Soft suede ankle boots with a walkable block heel and retro profile	Retro suede block heel boots	HV-BOOTS-001	Hiraya Vintage	10000000-0000-0000-0000-000000000005	135.00	175.00	\N	\N	7	t	2026-02-07 13:04:03.836716	2026-02-07 13:04:03.836716
+b9460644-95f4-47ac-853d-9579ac793f0b	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	67be2d5e-ecfb-4bf9-b751-8474f9d7bcac	2	128.00	2026-06-23 00:00:00
+3fa1ac0a-4d34-4e0c-8a5d-7f83f3633c8d	8d46347c-43db-4f01-b6c7-d5d3288f0ecb	e858df02-4a5b-4f8e-a1f4-2b6c28150d0b	1	154.00	2026-06-23 00:00:00
 \.
 
 
@@ -852,8 +799,7 @@ COPY public.products (id, name, slug, description, short_description, sku, brand
 --
 
 COPY public.users (id, email, password_hash, first_name, last_name, role, created_at, updated_at) FROM stdin;
-bfd7090c-8428-4134-b17a-485bc520efc4	admin@hirayavintage.test	$2a$10$placeholder_hash	Admin	User	admin	2026-02-07 13:04:03.835464	2026-02-07 13:04:03.835464
-500c014d-299d-48b9-b107-20bc3518b806	customer@hirayavintage.test	$2a$10$placeholder_hash	John	Doe	customer	2026-02-07 13:04:03.835464	2026-02-07 13:04:03.835464
+f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6	demo@hirayavintage.test	$2a$10$Vtk/SwGgIxJMtCLix.Gm8uKzVdeZIEE/DxWCbXUcJXt.3bYxGHW.y	Demo	User	customer	2026-06-23 00:00:00	2026-06-23 00:00:00
 \.
 
 

@@ -32,8 +32,8 @@ const categories = Object.freeze([
     id: '274cfdcb-1d8a-4563-93f3-a62e72c9e6f6',
     name: 'Dresses',
     description: 'Vintage dresses',
-    image_url: '/product-images/1970s-prairie-midi-dress.jpg',
-    product_count: '3',
+    image_url: '/product-images/prairie-midi-dress.jpg',
+    product_count: '1',
   },
 ]);
 
@@ -129,6 +129,20 @@ describe('active product service Storefront contract', () => {
     expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE p.id = $1'), [product.id]);
     expect(productDetailEnvelopeSchema.safeParse(response.body).success).toBe(true);
     expect(response.body).toEqual({ success: true, data: product });
+  });
+
+  it('reads product image URLs from primary product image data with an explicit placeholder fallback', async () => {
+    const product = productWireFixtureSet[0];
+    const { app, query } = createTestApp({ query: vi.fn().mockResolvedValueOnce({ rows: [product] }) });
+
+    await request(app).get(`/${product.id}`).expect(200);
+
+    const [productSql] = query.mock.calls[0];
+    expect(productSql).toContain('product_images');
+    expect(productSql).toContain('pi.is_primary = true');
+    expect(productSql).toContain("COALESCE(pi.image_url, '/product-images/placeholder.jpg') as image_url");
+    expect(productSql).not.toContain('CASE');
+    expect(productSql).not.toContain('ILIKE');
   });
 
   it('returns the minimal Storefront failure envelope when product detail is not found', async () => {

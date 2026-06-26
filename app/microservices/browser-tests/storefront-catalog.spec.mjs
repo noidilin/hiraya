@@ -56,19 +56,19 @@ test.describe('Vintage Storefront catalog', () => {
 
     const searchBox = page.getByPlaceholder('Search vintage pieces...');
 
-    await searchBox.fill('leather');
+    await searchBox.fill('scarf');
     await searchBox.press('Enter');
 
     await expect(page.getByText('1 Vintage Find Found')).toBeVisible();
-    await expect(page.getByRole('heading', { name: '1990s Leather Shoulder Bag' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: '1970s Prairie Midi Dress' })).toBeHidden();
+    await expect(page.getByRole('heading', { name: 'Sumi Silk Scarf' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Prairie Midi Dress' })).toBeHidden();
 
     await searchBox.fill('dresses');
     await searchBox.press('Enter');
 
     await expect(page.getByText('1 Vintage Find Found')).toBeVisible();
-    await expect(page.getByRole('heading', { name: '1970s Prairie Midi Dress' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: '1990s Leather Shoulder Bag' })).toBeHidden();
+    await expect(page.getByRole('heading', { name: 'Prairie Midi Dress' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sumi Silk Scarf' })).toBeHidden();
 
     await page.getByRole('button', { name: /clear/i }).click();
 
@@ -89,22 +89,28 @@ test.describe('Vintage Storefront catalog', () => {
     await page.getByRole('option', { name: /price: low to high/i }).click();
 
     await expect(productHeadings).toHaveText([
-      'Art Deco Pendant Necklace',
-      '1990s Leather Shoulder Bag',
-      '1970s Prairie Midi Dress',
-      'Suede Block Heel Boots',
-      '1980s Wool Blazer',
+      'Sumi Silk Scarf',
+      'Patchwork Market Tote',
+      'Cotton Lace Night Blouse',
+      'Linen Tab Collar Shirt',
+      'Indigo Straight Denim',
+      'Prairie Midi Dress',
+      'Washed Linen Work Jacket',
+      'Wool Twill Evening Coat',
     ]);
 
     await page.getByRole('combobox', { name: /sort products/i }).click();
     await page.getByRole('option', { name: /name: a-z/i }).click();
 
     await expect(productHeadings).toHaveText([
-      '1970s Prairie Midi Dress',
-      '1980s Wool Blazer',
-      '1990s Leather Shoulder Bag',
-      'Art Deco Pendant Necklace',
-      'Suede Block Heel Boots',
+      'Cotton Lace Night Blouse',
+      'Indigo Straight Denim',
+      'Linen Tab Collar Shirt',
+      'Patchwork Market Tote',
+      'Prairie Midi Dress',
+      'Sumi Silk Scarf',
+      'Washed Linen Work Jacket',
+      'Wool Twill Evening Coat',
     ]);
   });
 });
