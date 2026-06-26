@@ -45,8 +45,10 @@ function runSmoke(baseUrl) {
   });
 }
 
-test('public smoke passes for Storefront shell and product envelope', async () => {
+test('public smoke passes read-only checks for Storefront shell and product envelope', async () => {
+  const requests = [];
   const server = await listen((request, response) => {
+    requests.push({ method: request.method, url: request.url });
     if (request.url === '/') {
       response.setHeader('content-type', 'text/html');
       response.end('<!doctype html><title>Hiraya Vintage</title><div id="root"></div>');
@@ -64,6 +66,10 @@ test('public smoke passes for Storefront shell and product envelope', async () =
     const result = await runSmoke(server.baseUrl);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Public Storefront deploy smoke passed/);
+    assert.deepEqual(requests, [
+      { method: 'GET', url: '/' },
+      { method: 'GET', url: '/api/products' },
+    ]);
   } finally {
     await server.close();
   }
