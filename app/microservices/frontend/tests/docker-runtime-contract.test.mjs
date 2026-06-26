@@ -49,6 +49,17 @@ test('Compose exposes production-like and hot-reload frontend modes on the estab
   assert.doesNotMatch(compose, /platform:\s+linux\/amd64/);
 });
 
+test('frontend-dev service-specific startup includes the gateway upstream backend stack', () => {
+  const gateway = serviceBlock('gateway');
+  const frontendDev = serviceBlock('frontend-dev');
+
+  assert.match(gateway, /depends_on:/);
+  for (const service of ['postgres', 'auth', 'product-service', 'order-service', 'orders', 'user-service']) {
+    assert.match(gateway, new RegExp(`${service}:\\n\\s+condition:\\s+service_`), `gateway should depend on ${service}`);
+  }
+  assert.match(frontendDev, /gateway:\n\s+condition:\s+service_started/);
+});
+
 test('Vite dev proxy can target the Compose gateway service', () => {
   assert.match(viteConfig, /process\.env\.VITE_DEV_PROXY_TARGET\s+\?\?\s+'http:\/\/localhost:3001'/);
   assert.match(viteConfig, /target:\s+apiProxyTarget/);
