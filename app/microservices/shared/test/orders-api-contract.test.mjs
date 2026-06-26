@@ -18,9 +18,11 @@ const product = Object.freeze({
   image_url: '/product-images/prairie-midi-dress.jpg',
 });
 
+const demoUserId = 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6';
+
 const orderRow = Object.freeze({
   id: '8d46347c-43db-4f01-b6c7-d5d3288f0ecb',
-  user_id: '31bbbc78-8b8f-4d6e-9c40-026681e7d5d1',
+  user_id: demoUserId,
   total_amount: '256.00',
   status: 'pending',
   shipping_address: { street: '123 Demo St', city: 'Manila', state: 'Metro Manila', zipCode: '1000', country: 'PH' },
@@ -92,16 +94,42 @@ describe('active orders service Storefront contract', () => {
     });
   });
 
+  it('creates orders for the seeded demo customer when a legacy client omits userId', async () => {
+    const { app, query } = createTestApp({
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [orderRow] })
+        .mockResolvedValueOnce({ rows: [{ id: itemRow.id }] }),
+    });
+
+    await request(app)
+      .post('/')
+      .send({
+        items: [{ productId: product.id, quantity: 2 }],
+        shippingAddress: orderRow.shipping_address,
+      })
+      .expect(201);
+
+    expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [
+      demoUserId,
+      '256.00',
+      'pending',
+      JSON.stringify(orderRow.shipping_address),
+      'pending',
+    ]);
+  });
+
   it('lists a user order history in the minimal Storefront success envelope', async () => {
-    const { app, getProduct } = createTestApp({
+    const { app, query, getProduct } = createTestApp({
       query: vi.fn().mockResolvedValueOnce({ rows: [{ ...orderRow, items: [itemRow] }] }),
     });
 
     const response = await request(app)
       .get('/my-orders')
-      .query({ userId: orderRow.user_id })
+      .query({ userId: demoUserId })
       .expect(200);
 
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE o.user_id = $1'), [demoUserId]);
     expect(getProduct).toHaveBeenCalledWith(product.id);
     expect(response.body).toEqual({
       success: true,

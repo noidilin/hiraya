@@ -398,7 +398,7 @@ List order history.
 Current frontend calls this after client-side auth says a user exists. It sends the bearer token because the shared API client adds it, but the active orders backend uses:
 
 - query `userId` if provided, else
-- fallback string `demo-user-id`.
+- the seeded demo customer ID `f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6`.
 
 Success: `200 ApiEnvelope<{ orders: OrderWire[] }>`
 
@@ -411,7 +411,7 @@ Success: `200 ApiEnvelope<{ orders: OrderWire[] }>`
         "id": "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
         "userId": "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
         "status": "delivered",
-        "totalAmount": "402.00",
+        "totalAmount": "410.00",
         "paymentStatus": "paid",
         "createdAt": "2026-02-14T10:22:31.000Z",
         "updatedAt": "2026-02-16T15:12:04.000Z",
@@ -457,7 +457,7 @@ Request:
 }
 ```
 
-`userId` is optional in current backend and defaults to `demo-user-id`.
+`userId` is optional in the current backend and defaults to the seeded demo customer ID `f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6`.
 
 Success: `201 ApiEnvelope<OrderWire>`.
 

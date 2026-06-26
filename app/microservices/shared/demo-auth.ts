@@ -2,7 +2,7 @@
 export const demoAuth = (req: any, res: any, next: any) => {
   // Set a demo user for all requests
   req.user = {
-    id: 'demo-user-id',
+    id: 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6',
     email: 'demo@hirayavintage.test',
     firstName: 'Demo',
     lastName: 'User',
