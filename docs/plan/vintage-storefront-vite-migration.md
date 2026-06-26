@@ -88,6 +88,7 @@ The deployment changes are limited to the frontend container build, local runtim
 - Phase 6 no-AWS baseline coverage now includes frontend unit assertions for no refresh-token auth dependency, cart localStorage persistence, and inventory capping, plus browser coverage for the product API failure state so static catalog content does not mask a broken Storefront API.
 - Phase 4A local full-stack smoke is implemented as `pnpm run app:smoke:compose`: it resets Compose volumes, starts the production-like stack, verifies the frontend shell, product envelope, frontend-served product image URLs, demo login, seeded order history, and pending checkout order creation, then tears the stack and volumes down. The Compose `orders` service now points `PRODUCTS_SERVICE_URL` at `http://product-service:3003` so order history and checkout product lookups work inside the Compose network.
 - Phase 7 CI/CD and GitOps compatibility coverage is implemented: repository tests now assert the replacement keeps the single existing `frontend` service catalog entry, changed-service detection maps frontend paths to `hiraya-frontend`, GitOps render keeps the existing Deployment/Service/HTTPRoute shape, and the public deploy smoke remains GET-only/read-only.
+- Documentation follow-up is implemented: Storefront API docs now capture Vite env naming, same-origin `/api`, Hiraya Furugi fixtures/categories, pending checkout, and unsupported endpoints; database docs capture seed/restore data, demo login/order, image filenames, and reset behavior; root/microservice docs capture production-like Compose, Vite hot reload, and Compose smoke; deployed dev reset/rollback coupling is documented in `docs/runbooks/services/vintage-storefront-db-reset.md`.
 
 ## Phase 0 — Confirm replacement baseline
 
@@ -387,11 +388,11 @@ No Terraform destroy/recreate should be needed for this replacement or rollback.
 
 ## Documentation follow-up
 
-Update supporting docs in the replacement PR:
+Supporting docs updated in the replacement work:
 
-- `app/microservices/frontend/reference/storefront-api-contract.md` for Vite env naming, migrated catalog fixtures, category usage, pending-order checkout, and unsupported endpoint boundaries.
-- `app/microservices/database/README.md` for the Hiraya Furugi Catalog, seeded demo login, seeded order, image asset filenames, and local reset/reseed behavior.
-- `app/microservices/README.md` and root `README.md` for production-like Compose, Vite hot-reload Compose profile, and `app:smoke:compose`.
-- Any rollout/runbook note needed to reset only Vintage app database state in deployed dev.
+- `app/microservices/frontend/reference/storefront-api-contract.md` documents Vite env naming, migrated catalog fixtures, category usage, pending-order checkout, and unsupported endpoint boundaries.
+- `app/microservices/database/README.md` documents the Hiraya Furugi Catalog, seeded demo login, seeded order, image asset filenames, and local reset/reseed behavior.
+- `app/microservices/README.md` and root `README.md` document production-like Compose, Vite hot-reload Compose profile, and `app:smoke:compose`.
+- `docs/runbooks/services/vintage-storefront-db-reset.md` documents resetting only Vintage app database state in deployed dev and keeping rollback app images/code aligned with matching seed/restore data.
 
 Consider recording an ADR for the in-place frontend replacement if the team wants future readers to understand why the work did not introduce a parallel frontend service, canary HTTPRoute, or Terraform/EKS changes.

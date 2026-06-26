@@ -2,7 +2,7 @@
 
 Status: reference for frontend rewrite agents  
 Scope: existing `app/microservices/frontend` Storefront app and active backend services behind the gateway.  
-Related ADRs: [`0003`](../adr/0003-vintage-storefront-order-api-owner.md), [`0004`](../adr/0004-vintage-storefront-api-response-envelope.md)
+Related ADRs: [`0003`](../../../../docs/adr/0003-vintage-storefront-order-api-owner.md), [`0004`](../../../../docs/adr/0004-vintage-storefront-api-response-envelope.md)
 
 ## Deployment and routing contract
 
@@ -51,6 +51,7 @@ Important current limitations:
 - Active auth responses return `token`, not `refreshToken`.
 - The active auth service does **not** implement `POST /api/auth/refresh`. Do not rely on refresh-token flows unless the backend contract is deliberately extended.
 - The active orders service does not validate the bearer token; checkout sends `userId`, and `/api/orders/my-orders` uses `?userId=` or a demo fallback. Keep checkout and order pages client-side gated, but do not assume server-side per-token authorization until the backend is changed.
+- Checkout creates **pending** orders only. The UI and docs should not imply payment collection.
 
 ## Consumed endpoint inventory
 
@@ -59,15 +60,15 @@ Important current limitations:
 | `/api/products` | GET | Home, Products, product service | implemented | Main catalog/featured source. |
 | `/api/products/:id` | GET | ProductDetail | implemented | Product detail source. |
 | `/api/auth/login` | POST | Login/AuthContext | implemented | Returns signed JWT in `data.token`. |
-| `/api/products/categories` | GET | Products category filter | implemented | Category filter options come from the API. |
+| `/api/products/categories` | GET | Products category filter | implemented | Category filter options come from the API instead of being derived only from the loaded product list. |
 | `/api/auth/register` | POST | Register | implemented | Registers customer and stores returned token immediately. |
 | `/api/auth/me` | GET | AuthProvider startup | implemented | Requires valid bearer token. |
 | `/api/auth/logout` | POST | AuthContext logout | implemented | No server-side session revocation. |
 | `/api/orders/my-orders` | GET | Orders page | implemented | Uses demo/userId query fallback. |
 | `/api/orders` | POST | Cart checkout | implemented | Creates pending orders from `userId`, line items, and optional shipping address. |
 | `/api/orders/:id/status` | PATCH | orderService only | implemented | Admin-like mutation; no current visible UI consumer. |
-| `/api/auth/refresh` | POST | api client interceptor + authService method | **not implemented** | Legacy/client-only expectation; exclude unless backend adds it. |
-| `/api/orders/:id` | GET | orderService method only | **not implemented** | Shared fixtures mention detail, but active orders service lacks this route. |
+| `/api/auth/refresh` | POST | none | **not implemented** | Unsupported boundary; the Vite Storefront must not call or test against refresh-token flows unless the backend adds this route. |
+| `/api/orders/:id` | GET | none | **not implemented** | Unsupported boundary; order confirmation/history use `POST /api/orders` and `GET /api/orders/my-orders` only. |
 
 ## Data shapes
 
@@ -190,7 +191,7 @@ Query params supported by backend:
 | `minPrice` | number/string | none | Backend forwards to SQL numeric comparison. |
 | `maxPrice` | number/string | none | Backend forwards to SQL numeric comparison. |
 
-Current UI mostly calls this endpoint without params and then filters/sorts client-side.
+Current UI mostly calls this endpoint without params, loads categories through `GET /api/products/categories`, and then applies search/sort client-side over the loaded Hiraya Furugi Catalog.
 
 Success response:
 
@@ -262,7 +263,7 @@ Failures:
 
 ### `GET /api/products/categories`
 
-Not consumed by the current frontend, but implemented.
+Consumed by the Products category filter. The active UI loads categories from this API so filter options reflect backend seed/restore data.
 
 Success data:
 
@@ -503,13 +504,25 @@ Failures:
 - `404 { "success": false, "error": "Order not found" }`
 - `500 { "success": false, "error": "Failed to update order status" }`
 
+## Hiraya Furugi fixture and seed alignment
+
+The Storefront catalog fixtures, local Compose seed data, and dev GitOps restore dump must stay aligned with the Hiraya Furugi Catalog:
+
+- Source fixtures: `app/microservices/shared/src/index.mjs`.
+- Local first-start seed: `app/microservices/database/init/20-init-schema.sql`.
+- Manual product reseed helper: `app/microservices/database/quick-seed.sql`.
+- Dev restore dumps: `app/microservices/database/vintage_full.sql` and `gitops/apps/vintage/k8s/database/vintage_full.sql`.
+- Product image assets: `app/microservices/frontend/public/product-images`.
+
+Product `brand` values are normalized to `Hiraya Furugi`. Primary product image URLs are stored in `product_images` rows and should resolve to `/product-images/<filename>.jpg` from the frontend container. `/product-images/placeholder.jpg` is the explicit fallback only when no primary image exists. The old five-item catalog and legacy image aliases are not part of the current seed/restore contract after a database reset.
+
 ## Frontend rewrite adapter guidance
 
 1. Keep all API calls behind a small adapter layer; do not scatter `fetch` calls through UI components.
 2. Preserve envelope unwrapping and centralized bearer-token injection.
 3. Normalize backend snake_case product fields at the boundary.
 4. Treat money as strings on the wire and numbers in UI calculations.
-5. Treat `/auth/refresh` and `GET /orders/:id` as non-contract until backend routes exist.
+5. Treat `/api/auth/refresh` and `GET /api/orders/:id` as non-contract until backend routes exist.
 6. Keep cart state client-side; current cart does not consume an API.
 7. Static product images are served by the frontend public assets under `/product-images/...`.
 

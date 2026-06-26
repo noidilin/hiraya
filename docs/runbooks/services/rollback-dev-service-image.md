@@ -14,6 +14,8 @@ Use `.github/workflows/service-image-dev-rollback.yml` when one dev service must
 
 The rollback workflow updates GitOps manifests for one selected service and lets Argo CD reconcile the cluster. It does not rebuild images or mutate infrastructure.
 
+For the Vintage Storefront Vite/Hiraya Furugi Catalog migration, image rollback may also require a matching database reseed. App images/code and demo seed/restore data must stay aligned; use [`vintage-storefront-db-reset.md`](vintage-storefront-db-reset.md) when rolling across a catalog/fixture boundary.
+
 ## Normal path
 
 Prefer `.github/workflows/image-ci.yml` for normal releases. It builds images, pushes to ECR, updates GitOps manifests, and lets Argo CD reconcile the cluster.
@@ -82,4 +84,4 @@ Expected: the selected Deployment runs the target ECR image tag and the app rout
 
 ## Recovery
 
-If the rollback makes the service worse, run the workflow again with a different known-good ECR tag or use the normal image pipeline to release a forward fix.
+If the rollback makes the service worse, run the workflow again with a different known-good ECR tag or use the normal image pipeline to release a forward fix. If symptoms are catalog, image, login, checkout, or order-history mismatches after a Vintage Storefront rollback, reset and reseed the Vintage app database with the restore data that matches the selected image tag.
