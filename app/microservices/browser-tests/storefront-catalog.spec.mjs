@@ -128,4 +128,27 @@ test.describe('Vintage Storefront catalog', () => {
       'Wool Twill Evening Coat',
     ]);
   });
+
+  test('shows a product API failure state instead of static fallback catalog products', async ({ page }) => {
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
+      throw new Error(`Unexpected unmocked Storefront API request: ${route.request().url()}`);
+    });
+    await page.route((url) => url.pathname === storefrontContractPaths.productList, async (route) => {
+      await route.fulfill({
+        status: 503,
+        headers: jsonHeaders,
+        json: { success: false, error: 'Products unavailable' },
+      });
+    });
+    await page.route((url) => url.pathname === `${storefrontContractPaths.productList}/categories`, async (route) => {
+      await route.fulfill({ status: 200, headers: jsonHeaders, json: categoryEnvelope });
+    });
+
+    await page.goto('/products');
+
+    await expect(page.getByRole('heading', { name: /product archive unavailable/i })).toBeVisible();
+    await expect(page.getByText(/storefront api did not return the product catalog/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: productNames[0] })).toBeHidden();
+  });
 });
