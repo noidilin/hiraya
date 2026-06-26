@@ -13,12 +13,24 @@ The frontend lives in `app/portfolio/frontend` and is intentionally lean while t
 - Browser-scoped Bedrock session handling via the API response `sessionId`.
 - Relative API call to `POST /api/guide/chat` for future CloudFront `/api/*` routing.
 
+## Guide API
+
+The local Guide API lives in `app/portfolio/guide-api` and provides the planned same-origin contract before Bedrock and Portfolio Stack infrastructure exist:
+
+- `GET /api/health` returns `{ "ok": true, "service": "hiraya-guide-api" }`.
+- `POST /api/guide/chat` accepts `{ "message": string, "sessionId"?: string }`.
+- Chat responses return `answered`, `refused`, `not_ready`, or `error` with normalized citation objects.
+- The local dev server defaults to port `3001`, matching the frontend Vite `/api` proxy target.
+
 Useful commands from the repository root:
 
 ```sh
 pnpm run portfolio:frontend:build
 pnpm run portfolio:frontend:lint
 pnpm run portfolio:frontend:test
+pnpm run portfolio:guide-api:build
+pnpm run portfolio:guide-api:test
+pnpm run portfolio:guide-api:dev
 pnpm run portfolio:static
 ```
 

@@ -12,21 +12,10 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from '@/components/ui/prompt-input'
+import { createGuideClient, fallbackText, statusLabel, type GuideCitation, type GuideStatus } from '@/lib/guide-api'
 import { cn } from '@/lib/utils'
 
-type GuideStatus = 'answered' | 'refused' | 'not_ready' | 'error'
-
-type GuideCitation = {
-  title: string
-  source: string
-}
-
-type GuideChatResponse = {
-  status: GuideStatus
-  answer: string
-  sessionId?: string
-  citations?: GuideCitation[]
-}
+const guideClient = createGuideClient()
 
 type ChatMessage = {
   id: string
@@ -84,18 +73,8 @@ function App() {
     setIsSending(true)
 
     try {
-      const response = await fetch('/api/guide/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmedMessage, sessionId }),
-      })
-
-      const payload = (await response.json()) as Partial<GuideChatResponse>
+      const payload = await guideClient.sendMessage({ message: trimmedMessage, sessionId })
       const status = payload.status
-
-      if (!response.ok || !status) {
-        throw new Error('Guide API returned an unexpected response')
-      }
 
       if (payload.sessionId) setSessionId(payload.sessionId)
 
@@ -378,7 +357,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       >
         {message.status ? (
           <p className="mb-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-            {message.status.replace('_', ' ')}
+            {statusLabel(message.status)}
           </p>
         ) : null}
         <p className="whitespace-pre-wrap">{message.content}</p>
@@ -405,13 +384,6 @@ function LoadingBubble() {
       </div>
     </div>
   )
-}
-
-function fallbackText(status: GuideStatus) {
-  if (status === 'refused') return 'I could not find enough curated project evidence to answer that.'
-  if (status === 'not_ready') return 'The knowledge base is still being prepared. Please try again after ingestion.'
-  if (status === 'error') return 'The guide hit an unexpected error.'
-  return 'Answered from curated project knowledge.'
 }
 
 export default App

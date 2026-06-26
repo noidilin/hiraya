@@ -4,6 +4,7 @@ packages:
   - app/microservices/backend/services/*
   - app/microservices/shared
   - app/portfolio/frontend
+  - app/portfolio/guide-api
 
 # pnpm 11 verifies the committed lockfile against supply-chain policy.
 # This exact transitive version was already selected during the Node 24 lock refresh.
