@@ -1,7 +1,7 @@
 # Vintage Storefront React/Vite Replacement Plan
 
 Status: implementation
-Last updated: 2026-06-24
+Last updated: 2026-06-26
 
 ## Design decision
 
@@ -10,6 +10,8 @@ This work is an in-place **full frontend replacement**, not an incremental migra
 The replacement must keep the existing service and deployment contract so it can move through the current CI/CD and GitOps path without Terraform, EKS, service catalog, or public routing changes. Compatibility is preserved at the edges: package identity, container behavior, same-origin `/api` access, public route names, and browser/API contract tests.
 
 Runtime behavior must be driven by the actual Storefront APIs. Mock data and fixtures are allowed in tests, and curated fallback content may be used for images or empty/error presentation, but production code should not silently replace failed API calls with a static storefront as the primary data source.
+
+The replacement also migrates the demo product data to the **Hiraya Furugi Catalog**. That makes this more than a static frontend swap: shared contract fixtures, local database seed data, GitOps restore data, and product image URL handling must move together so local Compose, browser tests, and the deployed dev database all expose the same catalog.
 
 ## Resolved decisions
 
@@ -21,35 +23,67 @@ Runtime behavior must be driven by the actual Storefront APIs. Mock data and fix
 - Enable authenticated checkout through the existing `POST /api/orders` endpoint.
 - Keep `Vintage Storefront` as the domain context and use `Hiraya Furugi` as the customer-facing brand.
 - Treat the frontend/browser/API contract tests as the replacement acceptance gate.
+- Migrate the demo product data to the Hiraya Furugi Catalog instead of preserving the old five-item catalog.
+- Make product image URLs data-owned through the existing `product_images` table instead of hardcoded product-service name matching.
+- Reset and reseed the deployed dev database for the catalog migration instead of carrying old demo rows forward with an idempotent migration.
+- Use the copied app's `fallbackProducts` list as the starting source for the migrated Hiraya Furugi Catalog, then rename it to catalog content because runtime API failures should not use fallback products.
+- Surface product API failures in the browser instead of silently falling back to static products.
+- Support two Docker Compose frontend modes: production-like nginx for deploy parity and a Vite dev profile/service for hot reload.
+- Implement `/profile` as an authenticated read-only account summary backed by `/api/auth/me`; do not add profile editing in this replacement slice.
+- After successful `/register`, sign the customer in immediately using the returned token instead of forcing a second login step.
+- When checkout sends a logged-out customer to auth, successful login/register returns to `/cart` with cart state preserved.
+- Document server-side order ownership authorization as a known backend limitation; do not expand this replacement slice to derive `userId` from bearer tokens server-side.
+- Serve only the migrated Hiraya Furugi product/editorial image filenames plus a real placeholder image; do not keep legacy filename aliases after the catalog reset.
+- Add product-detail quantity selection with inventory capping before adding to cart.
+- Normalize the migrated product API `brand` value to `Hiraya Furugi`.
+- Seed a valid demo customer account and one sample order for Docker Compose checkout/order-history QA.
+- Add a real Docker Compose smoke check against the local gateway and database as a separate local/pre-merge command first, not as an immediate required `app-baseline` CI step.
+- Treat checkout as pending order creation only; do not imply payment collection in UI copy or acceptance criteria.
+- For deployed dev reseed, reset only the Vintage app database/PVC/restore path; do not destroy or recreate Terraform/EKS platform layers for this frontend/catalog replacement.
+- Patch the existing `vintage_full.sql` dump-style restore files for this migration instead of restructuring restore SQL generation.
+- Add the Vite hot-reload frontend as a profiled service in the existing `app/microservices/docker-compose.yml`, not a separate Compose file.
+- Keep product/editorial image assets as static frontend-container files under `public/product-images` for this replacement; do not move them to S3/CloudFront now.
+- Use native architecture for local Docker Compose on Apple Silicon; keep Dockerfiles compatible with the linux/amd64 CI/ECR target instead of forcing amd64 for everyday local development.
+- Rename `product-fallbacks.ts` to a catalog-oriented module, such as `hiraya-furugi-catalog.ts`, so static catalog content is not confused with runtime API fallback behavior.
+- Keep automated post-deploy public smoke read-only; login/checkout mutation coverage belongs in local Compose smoke and manual dev QA.
+- Drive category filter options from `GET /api/products/categories` instead of deriving them only from the loaded product list.
+- Keep product search/sort client-side over the loaded demo catalog for this replacement slice; do not extend backend sort-direction behavior now.
 
 ## Deployment impact
 
-No Terraform or EKS platform shape change is expected. The replacement must keep the existing Kubernetes `Deployment`, `Service`, `HTTPRoute`, ECR repository, service catalog entry, and image-promotion flow:
+No Terraform or EKS platform shape change is expected. The deployed dev catalog migration should reset only Vintage app database state, not Project Bootstrap, Platform Core, Cluster Platform, or Cluster Bootstrap. The replacement must keep the existing Kubernetes `Deployment`, `Service`, `HTTPRoute`, ECR repository, service catalog entry, and image-promotion flow:
 
 - service name: `frontend`
 - package name: `frontend`
 - workspace path: `app/microservices/frontend`
 - ECR repository: `hiraya-frontend`
-- manifest path: `gitops/k8s/frontend/deployment.yml`
+- manifest path: `gitops/apps/vintage/k8s/frontend/deployment.yml`
 - public hostname: `hiraya.noidilin.dev`
 - same-origin API base: `/api`
 
-The deployment changes are limited to the frontend container build and local runtime assumptions:
+The deployment changes are limited to the frontend container build, local runtime assumptions, and demo catalog seed/restore data:
 
 - CRA output `build/` becomes Vite output `dist/`.
 - CRA env arg `REACT_APP_API_URL` becomes `VITE_API_URL`.
 - Local dev needs a Vite `/api` proxy to the gateway/backend.
 - The container still serves static files through nginx and proxies `/api/` to `http://gateway:3001`.
+- Docker Compose remains the canonical local full-stack runtime through `pnpm run docker:up` from the repository root.
+- Product seed data must be updated in both local Compose initialization and GitOps dev restore assets, without changing Terraform or Kubernetes routing shape.
 
 ## Current findings
 
-- The replacement files have been copied into `app/microservices/frontend`; the remaining work is to adapt them to the monorepo, actual API contract, container runtime, and test baseline.
-- The main repo root is the only pnpm workspace; the replacement package must use `name: "frontend"` so root scripts and service detection continue to work.
-- Existing root scripts expect `frontend` to provide `start`, `build`, `typecheck`, `lint`, and `test`.
-- Existing Playwright config starts the frontend on port `3000`; Vite must keep that port for browser tests and local parity.
-- The Vite dev server must proxy `/api` to the existing backend/gateway during local development.
+- The replacement files have been copied into `app/microservices/frontend`; the remaining work is to adapt them to the monorepo, actual API contract, container runtime, catalog data, and test baseline.
+- The frontend package is still named `hiraya-fe`; it must be restored to `name: "frontend"` so root scripts and service detection continue to work.
+- Existing root scripts expect `frontend` to provide `start`, `build`, `typecheck`, `lint`, and `test`; the copied package currently lacks `start`, `typecheck`, and `test`.
+- A nested `app/microservices/frontend/pnpm-lock.yaml` exists, but the repository root is the only pnpm workspace and lockfile source of truth.
+- Existing Playwright config starts the frontend on port `3000`; Vite must keep that port for browser tests, Docker Compose parity, and local gateway proxy testing.
+- The Vite dev server currently lacks a `/api` proxy to the existing backend/gateway during local development.
+- The frontend Dockerfile and nginx config are currently missing while Docker Compose still references `app/microservices/frontend/Dockerfile` and the old `REACT_APP_API_URL` build arg.
 - Existing browser tests must be updated for the new UI while preserving legacy route names and enabling checkout.
-- Existing backend product image URLs still point at legacy filenames such as `/product-images/1970s-prairie-midi-dress.jpg`; the replacement public assets must preserve those files or backend mapping and fixtures must change in the same PR.
+- The copied router currently exposes `/auth` and `/orders`, but not `/login`, `/register`, or `/profile`; unauthenticated `/orders` currently renders an inline prompt instead of redirecting to `/login`.
+- Product API hooks currently fall back to static product data on API failure; this must change so API failures are visible to users and tests.
+- The backend, shared contract fixtures, local seed SQL, and GitOps restore SQL still describe the old five-item catalog, while the copied app contains the Hiraya Furugi Catalog assets and fallback product set.
+- Existing backend product image URLs still point at legacy filenames such as `/product-images/1970s-prairie-midi-dress.jpg`; migrating the catalog requires backend image URLs, shared fixtures, and public assets to agree in the same PR.
 
 ## Phase 0 — Confirm replacement baseline
 
@@ -94,16 +128,19 @@ Acceptance:
 1. Adapt the TanStack Router tree to expose legacy routes:
    - `/login` renders the login mode.
    - `/register` renders the signup mode.
-   - `/profile` renders an authenticated account/profile view.
+   - `/profile` renders an authenticated read-only account summary.
    - `/orders` remains authenticated order history.
 2. Update navigation links to use legacy account routes.
 3. Redirect `/auth` to `/login` so rewrite-source links do not 404, but do not make `/auth` the new public contract.
 4. Reintroduce protected-route behavior for `/profile` and `/orders`: unauthenticated users go to `/login` while cart state is preserved.
+5. Keep `/profile` scoped to data already available from `/api/auth/me`: name, email, role, links to cart/orders, and sign out.
 
 Acceptance:
 
-- Direct loads of `/`, `/products`, `/products/:id`, `/cart`, `/login`, `/register`, `/profile`, `/orders`, and `/order-confirmed` are intentional and tested.
+- Direct loads of `/`, `/products`, `/products/:id`, `/cart`, `/login`, `/register`, `/profile`, `/orders`, `/order-confirmed`, and `/manifesto` are intentional and tested.
 - Existing external links to legacy account routes do not break.
+- `/profile` does not depend on unsupported profile update endpoints.
+- Auth redirects preserve the intended return path, especially checkout returning to `/cart` after login/register.
 
 ## Phase 3 — Wire the replacement UI to the actual Storefront API
 
@@ -114,20 +151,79 @@ Acceptance:
 4. Implement adapters for the existing backend envelope and wire shapes:
    - `GET /api/products`
    - `GET /api/products/:id`
-   - `GET /api/products/categories`
-   - login/register endpoints used by the current auth service
+   - `GET /api/products/categories` for category filter options
+   - login/register endpoints used by the current auth service, with register storing the returned token and authenticated user
    - `POST /api/orders`
    - `GET /api/orders/my-orders?userId=<id>`
 5. Keep adapter normalization in `src/api/*` and domain/UI calculations outside raw route components.
-6. Do not introduce dependencies on unsupported endpoints such as `/api/auth/refresh` or `GET /api/orders/:id`.
-7. Do not let product fallback data mask API regressions in tests; tests should be able to assert real API calls and failure behavior.
-8. Preserve legacy product image filenames in `public/product-images/` or update backend image mapping and contract fixtures in the same PR.
+6. Keep product search/sort calculations client-side over the loaded demo catalog; backend query behavior can be expanded later if needed.
+7. Do not introduce dependencies on unsupported endpoints such as `/api/auth/refresh` or `GET /api/orders/:id`.
+8. Do not let product fallback data mask API regressions in tests or production behavior; failed product API calls should surface an error/degraded state instead of rendering fallback products as if the API succeeded.
+9. Update product image handling in the same PR as the catalog migration: API image URLs come from `product_images`, shared fixtures use migrated filenames, and the frontend container serves those migrated files plus `placeholder.jpg`.
 
 Acceptance:
 
 - Browser calls remain same-origin under `/api` in local, container, and EKS deployments.
-- Frontend API/unit tests prove envelope success/failure handling, auth token injection, token clearing, product normalization, order creation, and order history adapters.
+- Frontend API/unit tests prove envelope success/failure handling, auth token injection, token clearing, product/category normalization, order creation, and order history adapters.
 - Browser tests can intercept/mock the documented Storefront endpoints and assert request payloads.
+- Browser tests include at least one product API failure scenario proving the UI does not silently render fallback products.
+
+## Phase 3A — Migrate the demo catalog data
+
+1. Treat the copied `app/microservices/frontend/src/data/product-fallbacks.ts` content as the starting source of truth for the target Hiraya Furugi Catalog rows, then rename the module to catalog-oriented language such as `hiraya-furugi-catalog.ts`:
+   - product IDs
+   - names
+   - descriptions
+   - prices and compare prices
+   - categories
+   - brand values normalized to `Hiraya Furugi`
+   - inventory counts
+   - image URLs through `asset-manifest.ts`
+2. Keep product/editorial images static in the frontend container for this replacement:
+   - store assets under `app/microservices/frontend/public/product-images`.
+   - do not add S3, CloudFront, Terraform, or asset-sync scope in this slice.
+   - include all filenames referenced by the migrated catalog and editorial content.
+   - include a real `placeholder.jpg` for missing primary product images.
+3. Make product image URLs data-owned:
+   - update product-service list/detail queries to read the primary image from `product_images`.
+   - keep `/product-images/placeholder.jpg` as the explicit fallback only when no primary image exists.
+   - do not keep old legacy product image filenames as aliases once the catalog is reset/reseeded.
+   - remove the current hardcoded product name-to-image `CASE` mapping from active queries.
+4. Update local Compose seed data:
+   - `app/microservices/database/init/20-init-schema.sql`
+   - `app/microservices/database/quick-seed.sql`
+5. Patch the existing dump-style deployed dev restore data in place:
+   - `gitops/apps/vintage/k8s/database/vintage_full.sql`
+   - matching source copy under `app/microservices/database/vintage_full.sql`
+   - keep this as a targeted patch, not a restore-system restructure, unless the dump format blocks a reliable reset/reseed.
+6. Update shared contract fixtures and schemas under `app/microservices/shared` so Playwright and backend contract tests use the migrated catalog derived from the renamed Hiraya Furugi catalog module.
+7. Keep product IDs stable across seed SQL, shared fixtures, browser tests, and fallback data.
+8. Seed a valid demo customer account for local and dev QA:
+   - use `demo@hirayavintage.test` as the customer email.
+   - use the existing documented test password from the Storefront API contract.
+   - store only a bcrypt hash in SQL seed data.
+   - do not seed a usable admin login unless a supported admin feature is added.
+9. Seed one sample order for the demo customer:
+   - reference migrated Hiraya Furugi product IDs.
+   - keep order/user IDs stable across SQL seed data and shared contract fixtures.
+   - keep checkout-created orders separate from the seeded order; checkout should still create a new row.
+   - align local and GitOps `orders.user_id` schema with the active orders service's string-based `userId` behavior while still seeding UUID-shaped customer IDs.
+10. For deployed dev, reset and reseed only the Vintage app database rather than preserving old demo rows:
+   - document the PVC/database reset step in the rollout notes.
+   - ensure the GitOps restore asset contains the migrated catalog before the reset.
+   - do not destroy/recreate Project Bootstrap, Platform Core, Cluster Platform, or Cluster Bootstrap for this app/data replacement.
+   - do not add a long-lived catalog migration job unless the reset path proves insufficient.
+
+Acceptance:
+
+- `GET /api/products` returns the Hiraya Furugi Catalog through the gateway in Docker Compose.
+- `GET /api/products/:id` works for every product ID used by shared fixtures and browser tests.
+- Product image URLs returned by the API come from `product_images`, not hardcoded backend name matching, and resolve to migrated image files served by the frontend container.
+- `/product-images/placeholder.jpg` exists and is used only for missing primary images.
+- Legacy product image filenames are not required after the reset/reseed because no seeded API rows reference them.
+- Local Compose, shared contract fixtures, and patched GitOps dump-style restore data describe the same product names, IDs, categories, prices, inventory, normalized `Hiraya Furugi` brand value, and image URLs as the renamed Hiraya Furugi catalog module.
+- Docker Compose exposes a known demo customer login and one existing order for checkout and order-history QA.
+- No Terraform or EKS platform shape change is needed; the Vintage app database reset/reseed step is documented.
 
 ## Phase 4 — Update container and local runtime
 
@@ -136,29 +232,61 @@ Acceptance:
    - build with `VITE_API_URL=/api`.
    - copy `/workspace/app/microservices/frontend/dist` into the nginx html root.
 2. Restore/update `nginx.conf` with SPA fallback and `/api/` proxy to `http://gateway:3001`.
-3. Update Docker Compose frontend build args from `REACT_APP_API_URL` to `VITE_API_URL`.
-4. Keep container output linux/amd64-compatible for CI/ECR while accounting for local Apple Silicon builds.
+3. Update the default Docker Compose `frontend` service as the production-like local path:
+   - build arg `REACT_APP_API_URL` becomes `VITE_API_URL`.
+   - service remains available at `http://localhost:3000`.
+   - service validates nginx static serving, SPA fallback, and gateway proxy behavior.
+4. Add a Compose dev profile/service for frontend iteration in the existing `app/microservices/docker-compose.yml`:
+   - add a profiled `frontend-dev` service rather than a separate Compose file.
+   - run Vite on `0.0.0.0:3000` with bind-mounted frontend source.
+   - proxy `/api` to the Compose `gateway` service, not a host-only backend.
+   - keep the root workspace install/lockfile model; do not introduce a nested package-manager workflow.
+5. Keep container output linux/amd64-compatible for CI/ECR while allowing normal local Compose builds to use native Apple Silicon architecture unless explicitly overridden.
 
 Acceptance:
 
 - `docker compose -f app/microservices/docker-compose.yml build frontend` succeeds for the expected CI target platform.
-- The container serves the Vite SPA and proxies `/api/` to the gateway service.
+- `pnpm run docker:up` starts the production-like full stack at `http://localhost:3000`.
+- The production-like frontend container serves the Vite SPA and proxies `/api/` to the gateway service.
+- A documented Compose dev command/profile starts the same backend stack with Vite hot reload for frontend development.
 
-## Phase 5 — Enable checkout safely
+## Phase 4A — Add local Compose full-stack smoke
 
-1. Keep client-side cart state in Zustand/localStorage.
-2. Keep checkout client-side gated by authenticated user state.
-3. Submit orders through existing `POST /api/orders` with:
-   - `userId`
-   - `items: { productId, quantity }[]`
-   - `shippingAddress`
-4. Keep order confirmation driven by the created order response or local last-order state.
-5. Do not claim server-side per-token order authorization yet; the current orders service still accepts `userId` and does not validate the bearer token.
+1. Add a no-AWS Compose smoke command, for example `pnpm run app:smoke:compose`.
+2. The smoke should start from a clean or documented database state and verify through the gateway/front door:
+   - `/` serves the frontend shell.
+   - `/api/products` returns a non-empty Hiraya Furugi Catalog success envelope.
+   - product image URLs from the API resolve from the frontend container.
+   - demo login succeeds for the seeded demo customer.
+   - `/api/orders/my-orders?userId=<seeded-demo-user-id>` returns the seeded order.
+   - checkout can create a new order against real services.
+3. The smoke must tear down containers/volumes according to the documented local reset path.
 
 Acceptance:
 
-- Logged-out checkout preserves cart and sends the user to sign in.
-- Logged-in checkout posts the expected payload and reaches `/order-confirmed`.
+- A developer can run one documented command from the repository root to prove the Compose stack works end-to-end without AWS credentials.
+- Smoke failures identify whether the break is frontend serving, gateway routing, auth, products, orders, seed data, or image assets.
+
+## Phase 5 — Enable cart and checkout safely
+
+1. Keep client-side cart state in Zustand/localStorage.
+2. Add product-detail quantity selection before add-to-cart:
+   - default quantity is `1`.
+   - quantity cannot go below `1` or above current product inventory.
+   - adding to cart respects existing cart quantity and inventory caps.
+3. Keep checkout client-side gated by authenticated user state.
+4. Submit pending orders through existing `POST /api/orders` with:
+   - `userId`
+   - `items: { productId, quantity }[]`
+   - `shippingAddress`
+5. Keep order confirmation driven by the created pending order response or local last-order state; avoid payment-collected language because the backend has no payment endpoint.
+6. Do not claim server-side per-token order authorization yet; the current orders service still accepts `userId` and does not validate the bearer token. Document this explicitly as a known backend limitation for a later security slice.
+
+Acceptance:
+
+- Product detail quantity selection is capped by inventory and adds the selected quantity to the cart.
+- Logged-out checkout preserves cart and sends the user to sign in, then successful auth returns to `/cart`.
+- Logged-in checkout posts the expected pending-order payload and reaches `/order-confirmed` without implying payment collection.
 - Order history uses `/api/orders/my-orders?userId=<id>` through the adapter layer.
 
 ## Phase 6 — Restore the no-AWS app baseline
@@ -170,7 +298,7 @@ Acceptance:
    - no refresh-token flow.
    - product wire normalization.
    - order creation/list adapters.
-   - cart persistence and inventory capping.
+   - cart persistence, product-detail quantity selection, and inventory capping.
    - auth route mode behavior for `/login` and `/register`.
 3. Update Playwright browser tests to match the new UI while preserving legacy route expectations.
 4. Add checkout browser coverage with mocked Storefront APIs:
@@ -186,7 +314,8 @@ Acceptance:
 
 - `pnpm run app:test:frontend` passes.
 - `pnpm run app:test:browser` passes locally.
-- `pnpm run app:baseline` passes without AWS credentials.
+- `pnpm run app:smoke:compose` passes locally against real Docker Compose services as a separate local/pre-merge check.
+- `pnpm run app:baseline` passes without AWS credentials and does not initially include the Compose smoke.
 
 ## Phase 7 — Validate CI/CD and GitOps compatibility
 
@@ -203,7 +332,7 @@ Acceptance:
 Acceptance:
 
 - `.github/utils/services.json` does not need a new service entry.
-- `gitops/k8s/frontend/deployment.yml` remains structurally unchanged except image tag changes made by the existing promotion flow.
+- `gitops/apps/vintage/k8s/frontend/deployment.yml` remains structurally unchanged except image tag changes made by the existing promotion flow.
 - PR build-only image gate can build `hiraya-frontend` from the root context.
 
 ## Phase 8 — Merge and deploy
@@ -213,7 +342,7 @@ Acceptance:
 3. On merge to `main`, let `image-ci` build and push the `hiraya-frontend` image.
 4. Let the existing manifest promotion workflow update the GitOps image tag.
 5. Let Argo CD sync the existing frontend Deployment.
-6. Run public deploy smoke against `/` and `/api/products`.
+6. Run read-only public deploy smoke against `/` and `/api/products`; do not make the automated deployed smoke create orders.
 7. Manually QA:
    - `/`
    - `/products`
@@ -224,32 +353,41 @@ Acceptance:
    - `/profile`
    - `/orders`
    - `/order-confirmed`
+   - `/manifesto`
 
 Acceptance:
 
 - Public shell loads at `https://hiraya.noidilin.dev`.
-- `/api/products` still returns a non-empty success envelope.
-- Checkout works in dev against the deployed backend, or any backend limitation is documented as a known issue.
+- `/api/products` returns a non-empty Hiraya Furugi Catalog success envelope.
+- Manual dev QA confirms checkout works against the deployed backend, or any backend limitation is documented as a known issue.
 
 ## Rollback plan
 
-Because the replacement keeps the existing frontend service identity, rollback is application-level:
+Because the replacement also changes demo catalog data, rollback must keep app code and database seed state together:
 
-1. Revert the replacement PR and let image CI build the previous app again, or
-2. Use the existing service image rollback workflow to promote the last known good `hiraya-frontend` image tag.
+1. Revert the replacement PR and let image CI build the previous app/backend images again, or use the existing service image rollback workflow for the affected images.
+2. Reset/reseed the Vintage app database back to the seed/restore data that matches the rolled-back app/API contract.
+3. Verify `/`, `/api/products`, product images, login, cart, and `/orders` after the reseed.
 
-No Terraform destroy/recreate should be needed for this replacement.
+No Terraform destroy/recreate should be needed for this replacement or rollback.
 
 ## Risks
 
 - Route compatibility: the rewrite source used `/auth`, but the replacement must preserve `/login`, `/register`, and `/profile`.
 - Test churn: old browser tests assert old headings and checkout-disabled copy; these must become contract-focused rather than copy-heavy where possible.
-- Product image mismatch: backend returns legacy filenames while the rewrite source generated a new asset set.
-- Static fallback masking: fallback products can hide broken API wiring unless tests assert the actual API calls and error behavior.
-- Order authorization: checkout is client-gated, but the orders backend does not yet enforce bearer-token ownership.
+- Product image/data drift: backend seed data, `product_images`, shared fixtures, and frontend assets must stay aligned after the catalog migration.
+- Static fallback masking: fallback products can hide broken API wiring unless product hooks and tests surface actual API failures.
+- Order authorization: checkout is client-gated, but the orders backend does not yet enforce bearer-token ownership. This is intentionally documented as a known backend limitation rather than fixed in this replacement slice.
 - Build output mismatch: Docker must copy Vite `dist/`, not CRA `build/`.
 - Chunk size: Vite may warn about a large JS chunk; defer code-splitting unless it affects deploy smoke or user experience.
 
 ## Documentation follow-up
+
+Update supporting docs in the replacement PR:
+
+- `app/microservices/frontend/reference/storefront-api-contract.md` for Vite env naming, migrated catalog fixtures, category usage, pending-order checkout, and unsupported endpoint boundaries.
+- `app/microservices/database/README.md` for the Hiraya Furugi Catalog, seeded demo login, seeded order, image asset filenames, and local reset/reseed behavior.
+- `app/microservices/README.md` and root `README.md` for production-like Compose, Vite hot-reload Compose profile, and `app:smoke:compose`.
+- Any rollout/runbook note needed to reset only Vintage app database state in deployed dev.
 
 Consider recording an ADR for the in-place frontend replacement if the team wants future readers to understand why the work did not introduce a parallel frontend service, canary HTTPRoute, or Terraform/EKS changes.
