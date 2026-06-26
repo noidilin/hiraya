@@ -1,10 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Check, Ruler } from "lucide-react";
+import { ArrowLeft, Check, Minus, Plus, Ruler } from "lucide-react";
 
 import { AddToCartButton } from "@/components/commerce/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 import { hirayaFurugiCatalogProducts } from "@/data/hiraya-furugi-catalog";
 import { useProductQuery } from "@/hooks/use-products";
 import { formatMoney } from "@/lib/money";
@@ -14,10 +15,19 @@ function getRelatedGalleryImages(productId: string | undefined, mainImage: strin
   return [mainImage, ...relatedProducts.map((product) => product.imageUrl)].filter(Boolean) as string[];
 }
 
+function clampDetailQuantity(quantity: number, inventory: number): number {
+  if (!Number.isFinite(quantity)) {
+    return 1;
+  }
+
+  return Math.min(Math.max(1, Math.floor(quantity)), Math.max(1, inventory));
+}
+
 export function ProductDetailRoute() {
   const { productId } = useParams({ strict: false }) as { productId?: string };
   const productQuery = useProductQuery(productId);
   const product = productQuery.product;
+  const [quantitySelection, setQuantitySelection] = useState<{ productId?: string; quantity: number }>({ quantity: 1 });
 
   if (productQuery.isLoading) {
     return (
@@ -56,6 +66,14 @@ export function ProductDetailRoute() {
     );
   }
 
+  const quantity = quantitySelection.productId === product.id ? quantitySelection.quantity : 1;
+  const setSelectedQuantity = (nextQuantity: number) => {
+    setQuantitySelection({ productId: product.id, quantity: nextQuantity });
+  };
+  const inventoryLimit = Math.max(0, product.inventory);
+  const selectedQuantity = inventoryLimit > 0 ? clampDetailQuantity(quantity, inventoryLimit) : 1;
+  const isMinimumQuantity = selectedQuantity <= 1;
+  const isMaximumQuantity = inventoryLimit <= 0 || selectedQuantity >= inventoryLimit;
   const galleryImages = getRelatedGalleryImages(product.id, product.imageUrl);
   const conditionNotes = [
     `${product.inventory} available in the archive`,
@@ -143,9 +161,50 @@ export function ProductDetailRoute() {
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <AddToCartButton product={product} size="lg" className="h-11 sm:flex-1" />
-            <Button asChild variant="outline" size="lg" className="h-11 sm:flex-1">
+          <div className="mt-8 grid gap-3 sm:grid-cols-[11rem_1fr]">
+            <div className="flex h-11 items-center border border-border">
+              <button
+                type="button"
+                className="grid size-11 place-items-center text-muted-foreground transition hover:text-foreground disabled:opacity-40"
+                aria-label={`Decrease ${product.name} quantity`}
+                disabled={isMinimumQuantity || inventoryLimit <= 0}
+                onClick={() => setSelectedQuantity(clampDetailQuantity(selectedQuantity - 1, inventoryLimit))}
+              >
+                <Minus className="size-4" aria-hidden="true" />
+              </button>
+              <label className="sr-only" htmlFor={`detail-quantity-${product.id}`}>
+                {product.name} quantity
+              </label>
+              <input
+                id={`detail-quantity-${product.id}`}
+                type="number"
+                min="1"
+                max={inventoryLimit || 1}
+                value={selectedQuantity}
+                disabled={inventoryLimit <= 0}
+                className="h-full min-w-0 flex-1 border-x border-border bg-transparent text-center text-sm outline-none disabled:opacity-50"
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+
+                  if (nextValue === "") {
+                    return;
+                  }
+
+                  setSelectedQuantity(clampDetailQuantity(Number(nextValue), inventoryLimit));
+                }}
+              />
+              <button
+                type="button"
+                className="grid size-11 place-items-center text-muted-foreground transition hover:text-foreground disabled:opacity-40"
+                aria-label={`Increase ${product.name} quantity`}
+                disabled={isMaximumQuantity}
+                onClick={() => setSelectedQuantity(clampDetailQuantity(selectedQuantity + 1, inventoryLimit))}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+            <AddToCartButton product={product} quantity={selectedQuantity} size="lg" className="h-11" />
+            <Button asChild variant="outline" size="lg" className="h-11 sm:col-span-2">
               <Link to="/products">Keep browsing</Link>
             </Button>
           </div>

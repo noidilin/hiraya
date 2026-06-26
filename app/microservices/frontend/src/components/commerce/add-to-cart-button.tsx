@@ -6,11 +6,12 @@ import { useCartStore } from "@/hooks/use-cart";
 
 type AddToCartButtonProps = {
   product: Product;
+  quantity?: number;
   className?: string;
   size?: "default" | "sm" | "lg";
 };
 
-export function AddToCartButton({ product, className, size = "default" }: AddToCartButtonProps) {
+export function AddToCartButton({ product, quantity = 1, className, size = "default" }: AddToCartButtonProps) {
   const addItem = useCartStore((state) => state.addItem);
   const isSoldOut = product.inventory <= 0;
 
@@ -21,7 +22,7 @@ export function AddToCartButton({ product, className, size = "default" }: AddToC
       className={className}
       disabled={isSoldOut}
       aria-label={isSoldOut ? `${product.name} is sold out` : `Add ${product.name} to cart`}
-      onClick={() => addItem(product, 1)}
+      onClick={() => addItem(product, quantity)}
     >
       <ShoppingBag aria-hidden="true" />
       {isSoldOut ? "Sold out" : "Add to cart"}
