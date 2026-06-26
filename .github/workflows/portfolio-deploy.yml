@@ -1,0 +1,313 @@
+name: portfolio-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/portfolio/**'
+      - 'docs/portfolio/**'
+      - '.github/workflows/portfolio-deploy.yml'
+      - '.github/scripts/**portfolio**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hiraya-portfolio-deploy-dev
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-1
+  PORTFOLIO_DIR: infra/portfolio
+  PORTFOLIO_APP_DEPLOY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-app-deploy
+  PORTFOLIO_KNOWLEDGE_SYNC_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-knowledge-sync
+
+jobs:
+  detect-changes:
+    name: detect-portfolio-changes
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.classify.outputs.app_changed }}
+      knowledge_changed: ${{ steps.classify.outputs.knowledge_changed }}
+      should_deploy: ${{ steps.classify.outputs.should_deploy }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: classify-changed-paths
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha="${{ github.event.before }}"
+          if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+            base_sha="HEAD^"
+          fi
+          changed_paths=$(git diff --name-only "$base_sha" "${GITHUB_SHA}")
+          printf '%s\n' "$changed_paths"
+
+          app_changed=false
+          knowledge_changed=false
+          while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            case "$path" in
+              app/portfolio/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.github/workflows/portfolio-deploy.yml|.github/scripts/*portfolio*)
+                app_changed=true
+                ;;
+            esac
+            case "$path" in
+              docs/portfolio/*|.github/workflows/portfolio-deploy.yml|.github/scripts/*portfolio*)
+                knowledge_changed=true
+                ;;
+            esac
+          done <<< "$changed_paths"
+
+          should_deploy=false
+          if [[ "$app_changed" == "true" || "$knowledge_changed" == "true" ]]; then
+            should_deploy=true
+          fi
+
+          {
+            echo "app_changed=$app_changed"
+            echo "knowledge_changed=$knowledge_changed"
+            echo "should_deploy=$should_deploy"
+          } >> "$GITHUB_OUTPUT"
+
+  knowledge-sync:
+    name: sync-curated-project-knowledge
+    needs: detect-changes
+    if: needs.detect-changes.outputs.knowledge_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: install-dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: validate-curated-project-knowledge
+        shell: bash
+        run: pnpm run portfolio:knowledge:validate
+
+      - name: configure-aws-credentials-with-knowledge-sync-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_KNOWLEDGE_SYNC_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-knowledge-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: read-portfolio-outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          {
+            echo "KNOWLEDGE_BUCKET=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw knowledge_bucket_name)"
+            echo "KNOWLEDGE_PREFIX=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw knowledge_prefix)"
+            echo "CITATION_MANIFEST_KEY=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw citation_manifest_key)"
+            echo "KNOWLEDGE_BASE_ID=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw bedrock_knowledge_base_id)"
+            echo "DATA_SOURCE_ID=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw bedrock_data_source_id)"
+            echo "GUIDE_API_LAMBDA=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw guide_api_lambda_function_name)"
+          } >> "$GITHUB_ENV"
+
+      - name: mirror-knowledge-and-manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_path="${RUNNER_TEMP}/citations.json"
+          node .github/scripts/generate-portfolio-citation-manifest.mjs --root . --output "$manifest_path"
+          aws s3 sync docs/portfolio/ "s3://${KNOWLEDGE_BUCKET}/${KNOWLEDGE_PREFIX}" --delete --exclude '*' --include '*.md' --cache-control "no-cache"
+          aws s3 cp "$manifest_path" "s3://${KNOWLEDGE_BUCKET}/${CITATION_MANIFEST_KEY}" --content-type "application/json" --cache-control "no-cache"
+
+      - name: start-and-wait-for-bedrock-ingestion
+        shell: bash
+        run: |
+          set -euo pipefail
+          job_id=$(aws bedrock-agent start-ingestion-job \
+            --knowledge-base-id "$KNOWLEDGE_BASE_ID" \
+            --data-source-id "$DATA_SOURCE_ID" \
+            --description "hiraya-portfolio-${GITHUB_SHA}" \
+            --query 'ingestionJob.ingestionJobId' \
+            --output text)
+          echo "Started Bedrock ingestion job ${job_id}."
+
+          for attempt in {1..60}; do
+            status=$(aws bedrock-agent get-ingestion-job \
+              --knowledge-base-id "$KNOWLEDGE_BASE_ID" \
+              --data-source-id "$DATA_SOURCE_ID" \
+              --ingestion-job-id "$job_id" \
+              --query 'ingestionJob.status' \
+              --output text)
+            case "$status" in
+              COMPLETE)
+                echo "Bedrock ingestion job ${job_id} completed."
+                exit 0
+                ;;
+              FAILED|STOPPED)
+                aws bedrock-agent get-ingestion-job \
+                  --knowledge-base-id "$KNOWLEDGE_BASE_ID" \
+                  --data-source-id "$DATA_SOURCE_ID" \
+                  --ingestion-job-id "$job_id" >&2 || true
+                echo "Bedrock ingestion job ${job_id} ended with status ${status}." >&2
+                exit 1
+                ;;
+            esac
+            echo "Waiting for Bedrock ingestion (${attempt}/60); status=${status}."
+            sleep 20
+          done
+          echo "Timed out waiting for Bedrock ingestion job ${job_id}." >&2
+          exit 1
+
+      - name: bump-lambda-knowledge-version
+        shell: bash
+        run: |
+          set -euo pipefail
+          config=$(aws lambda get-function-configuration --function-name "$GUIDE_API_LAMBDA")
+          env_json=$(jq -c --arg version "$GITHUB_SHA" '.Environment.Variables // {} | .KNOWLEDGE_VERSION = $version' <<< "$config")
+          aws lambda update-function-configuration \
+            --function-name "$GUIDE_API_LAMBDA" \
+            --environment "Variables=${env_json}" >/dev/null
+          aws lambda wait function-updated --function-name "$GUIDE_API_LAMBDA"
+
+  app-deploy:
+    name: deploy-portfolio-app
+    needs: [detect-changes, knowledge-sync]
+    if: always() && needs.detect-changes.outputs.app_changed == 'true' && (needs.knowledge-sync.result == 'success' || needs.knowledge-sync.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: install-dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: build-and-test-portfolio-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run portfolio:frontend:test
+          pnpm run portfolio:frontend:build
+          pnpm run portfolio:frontend:lint
+          pnpm run portfolio:guide-api:test
+          pnpm run portfolio:guide-api:build
+          (cd app/portfolio/guide-api/dist/src && zip -qr "${RUNNER_TEMP}/guide-api.zip" .)
+
+      - name: configure-aws-credentials-with-app-deploy-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_APP_DEPLOY_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-app-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: read-portfolio-outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          {
+            echo "SITE_BUCKET=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw site_bucket_name)"
+            echo "DISTRIBUTION_ID=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw cloudfront_distribution_id)"
+            echo "GUIDE_API_LAMBDA=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw guide_api_lambda_function_name)"
+          } >> "$GITHUB_ENV"
+
+      - name: update-guide-api-lambda-code
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws lambda update-function-code \
+            --function-name "$GUIDE_API_LAMBDA" \
+            --zip-file "fileb://${RUNNER_TEMP}/guide-api.zip" >/dev/null
+          aws lambda wait function-updated --function-name "$GUIDE_API_LAMBDA"
+
+      - name: upload-spa-assets-and-invalidate-shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws s3 sync app/portfolio/frontend/dist/ "s3://${SITE_BUCKET}/" --delete \
+            --exclude 'index.html' \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp app/portfolio/frontend/dist/index.html "s3://${SITE_BUCKET}/index.html" \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/" "/index.html" >/dev/null
+
+  smoke:
+    name: smoke-deployed-portfolio
+    needs: [detect-changes, knowledge-sync, app-deploy]
+    if: always() && needs.detect-changes.outputs.should_deploy == 'true' && (needs.knowledge-sync.result == 'success' || needs.knowledge-sync.result == 'skipped') && (needs.app-deploy.result == 'success' || needs.app-deploy.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: install-toolchain
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: configure-aws-credentials-with-app-deploy-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.PORTFOLIO_APP_DEPLOY_ROLE_ARN }}
+          role-session-name: hiraya-portfolio-smoke-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: generate-portfolio-backend-config
+        shell: bash
+        run: .github/scripts/write-terraform-backend.sh portfolio
+
+      - name: read-public-portfolio-url
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform -chdir="${PORTFOLIO_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
+          domain_name=$(terraform -chdir="${PORTFOLIO_DIR}" output -raw portfolio_domain_name)
+          echo "PORTFOLIO_PUBLIC_URL=https://${domain_name}" >> "$GITHUB_ENV"
+
+      - name: smoke-portfolio-deploy
+        shell: bash
+        run: node .github/scripts/portfolio-public-smoke.mjs
