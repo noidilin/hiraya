@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: orders
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-orders:9c5e794dc8417ab670d3beef0ece8a4ecd97e747
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-orders:eef469aa55b0d8de55450b11da0eddad0b58eda9
           ports:
             - containerPort: 3005
           env:
