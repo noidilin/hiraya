@@ -84,6 +84,7 @@ The deployment changes are limited to the frontend container build, local runtim
 - Product service image URLs are read from primary `product_images` rows and fall back only to `/product-images/placeholder.jpg`; the previous hardcoded legacy filename matching has been removed from active product-service queries.
 - Phase 3A seeded demo order-history path is implemented: the active orders service defaults omitted legacy `userId` requests to the seeded demo customer ID, shared order fixtures use that same user ID and Hiraya Furugi product IDs, and protected `/orders` browser coverage exercises the order-history adapter through `/api/orders/my-orders`.
 - Product-detail cart flow is implemented: detail pages default quantity to one, cap quantity controls by product inventory, pass selected quantity into the persisted cart store, and browser coverage verifies inventory capping plus reload persistence.
+- Phase 5 checkout flow is implemented: logged-out checkout preserves the persisted cart and returns to `/cart` after login or registration, logged-in checkout posts a pending `/api/orders` payload with `userId`, line items, and shipping address, order confirmation uses the created pending order/last-order state without payment-collected copy, and tests document the current server-side order ownership limitation.
 
 ## Phase 0 — Confirm replacement baseline
 

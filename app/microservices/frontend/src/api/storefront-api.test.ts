@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clearAccessToken, setAccessToken } from "./client";
 import { getProduct, listCategories, listProducts } from "./products";
-import { listMyOrders } from "./orders";
+import { createOrder, listMyOrders } from "./orders";
 
 const productWire = {
   id: "haori-indigo-001",
@@ -91,6 +91,52 @@ describe("Storefront API adapters", () => {
       { id: "outerwear", name: "Outerwear", productCount: 7 },
     ]);
     expect(fetch).toHaveBeenCalledWith("/api/products/categories", expect.any(Object));
+  });
+
+  it("creates pending checkout orders through the active orders endpoint", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          id: "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
+          userId: "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+          totalAmount: "256.00",
+          status: "pending",
+          paymentStatus: "pending",
+          createdAt: "2026-02-14T10:22:31.000Z",
+          updatedAt: "2026-02-14T10:22:31.000Z",
+          items: [
+            {
+              id: "b9460644-95f4-47ac-853d-9579ac793f0b",
+              orderId: "8d46347c-43db-4f01-b6c7-d5d3288f0ecb",
+              productId: productWire.id,
+              quantity: 2,
+              price: productWire.price,
+              product: productWire,
+            },
+          ],
+        },
+      }),
+    );
+
+    const order = await createOrder({
+      userId: "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+      items: [{ productId: productWire.id, quantity: 2 }],
+      shippingAddress: { street: "123 Demo St", city: "Manila", state: "Metro Manila", zipCode: "1000", country: "PH" },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/orders",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          userId: "f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6",
+          items: [{ productId: productWire.id, quantity: 2 }],
+          shippingAddress: { street: "123 Demo St", city: "Manila", state: "Metro Manila", zipCode: "1000", country: "PH" },
+        }),
+      }),
+    );
+    expect(order).toEqual(expect.objectContaining({ status: "pending", paymentStatus: "pending", totalAmount: 256 }));
   });
 
   it("loads seeded order history through the active orders endpoint", async () => {

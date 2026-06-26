@@ -49,8 +49,8 @@ Current frontend behavior:
 Important current limitations:
 
 - Active auth responses return `token`, not `refreshToken`.
-- The frontend contains `/auth/refresh` client logic, but the active auth service does **not** implement `POST /api/auth/refresh`. Do not rely on refresh-token flows unless the backend contract is deliberately extended.
-- The active orders service does not validate the bearer token; `/api/orders/my-orders` uses `?userId=` or a demo fallback. Keep protected order pages client-side gated, but do not assume server-side per-token authorization until the backend is changed.
+- The active auth service does **not** implement `POST /api/auth/refresh`. Do not rely on refresh-token flows unless the backend contract is deliberately extended.
+- The active orders service does not validate the bearer token; checkout sends `userId`, and `/api/orders/my-orders` uses `?userId=` or a demo fallback. Keep checkout and order pages client-side gated, but do not assume server-side per-token authorization until the backend is changed.
 
 ## Consumed endpoint inventory
 
@@ -59,16 +59,15 @@ Important current limitations:
 | `/api/products` | GET | Home, Products, product service | implemented | Main catalog/featured source. |
 | `/api/products/:id` | GET | ProductDetail | implemented | Product detail source. |
 | `/api/auth/login` | POST | Login/AuthContext | implemented | Returns signed JWT in `data.token`. |
-| `/api/auth/register` | POST | Register | implemented | Registers customer; UI redirects to login. |
+| `/api/products/categories` | GET | Products category filter | implemented | Category filter options come from the API. |
+| `/api/auth/register` | POST | Register | implemented | Registers customer and stores returned token immediately. |
 | `/api/auth/me` | GET | AuthProvider startup | implemented | Requires valid bearer token. |
 | `/api/auth/logout` | POST | AuthContext logout | implemented | No server-side session revocation. |
 | `/api/orders/my-orders` | GET | Orders page | implemented | Uses demo/userId query fallback. |
-| `/api/orders` | POST | orderService only / future checkout | implemented | Cart checkout currently disabled/missing in UI baseline. |
+| `/api/orders` | POST | Cart checkout | implemented | Creates pending orders from `userId`, line items, and optional shipping address. |
 | `/api/orders/:id/status` | PATCH | orderService only | implemented | Admin-like mutation; no current visible UI consumer. |
 | `/api/auth/refresh` | POST | api client interceptor + authService method | **not implemented** | Legacy/client-only expectation; exclude unless backend adds it. |
 | `/api/orders/:id` | GET | orderService method only | **not implemented** | Shared fixtures mention detail, but active orders service lacks this route. |
-
-Active but not currently consumed by the Storefront UI: `GET /api/products/categories`.
 
 ## Data shapes
 

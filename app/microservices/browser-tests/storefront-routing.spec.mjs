@@ -10,8 +10,20 @@ const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
 };
 
+
+const categoryEnvelope = {
+  success: true,
+  data: Array.from(new Set(storefrontContractFixtures.productWireSet.map((product) => product.category))).map((name) => ({
+    id: name.toLowerCase().replaceAll(' ', '-'),
+    name,
+    description: null,
+    image_url: null,
+    product_count: String(storefrontContractFixtures.productWireSet.filter((product) => product.category === name).length),
+  })),
+};
+
 const routeStorefrontApi = async (page) => {
-  await page.route('**/api/**', async (route) => {
+  await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
     throw new Error(`Unexpected unmocked Storefront API request: ${route.request().url()}`);
   });
 
@@ -27,6 +39,14 @@ const routeStorefrontApi = async (page) => {
         headers: jsonHeaders,
         json: productListEnvelope,
       });
+    },
+  );
+
+
+  await page.route(
+    (url) => url.pathname === `${storefrontContractPaths.productList}/categories`,
+    async (route) => {
+      await route.fulfill({ status: 200, headers: jsonHeaders, json: categoryEnvelope });
     },
   );
 
@@ -55,15 +75,15 @@ test.describe('Vintage Storefront direct routes', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: /unearth timeless vintage/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /shop collection/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /vintage pieces, edited with restraint/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /enter archive/i })).toBeVisible();
   });
 
   test('direct loading the catalog route succeeds', async ({ page }) => {
     await page.goto('/products');
 
     await expect(page).toHaveURL('/products');
-    await expect(page.getByRole('heading', { name: /all vintage finds/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /shop all/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: storefrontContractFixtures.productWireSet[0].name })).toBeVisible();
   });
 
@@ -74,7 +94,7 @@ test.describe('Vintage Storefront direct routes', () => {
 
     await expect(page).toHaveURL(`/products/${product.id}`);
     await expect(page.getByRole('heading', { name: product.name })).toBeVisible();
-    await expect(page.getByRole('button', { name: /add to cart/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: `Add ${product.name} to cart` })).toBeVisible();
     await expect(page.getByText(`${product.inventory_quantity} available`)).toBeVisible();
   });
 
@@ -83,15 +103,15 @@ test.describe('Vintage Storefront direct routes', () => {
 
     await expect(page).toHaveURL('/cart');
     await expect(page.getByRole('heading', { name: /your cart is empty/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /start shopping/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /shop the archive/i })).toBeVisible();
   });
 
   test('direct loading the login route succeeds', async ({ page }) => {
     await page.goto('/login');
 
-    await expect(page).toHaveURL('/login');
-    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: /email address/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/login(\?.*)?$/);
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /^email$/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 });
@@ -101,8 +121,8 @@ test.describe('Vintage Storefront auth guards', () => {
     test(`unauthenticated direct loading ${protectedRoute} redirects to login`, async ({ page }) => {
       await page.goto(protectedRoute);
 
-      await expect(page).toHaveURL('/login');
-      await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
+      await expect(page).toHaveURL(/\/login(\?.*)?$/);
+      await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
     });
   }
 });

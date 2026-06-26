@@ -11,137 +11,177 @@ const jsonHeaders = {
 };
 
 const product = storefrontContractFixtures.productDetailEnvelope.data;
-const productPrice = Number.parseFloat(product.price);
+const user = storefrontContractFixtures.authenticatedUserWire;
 
-const formatMoney = (amount) => `$${amount.toFixed(2)}`;
-
-const cartTotals = (quantity) => {
-  const subtotal = productPrice * quantity;
-  const shipping = subtotal > 500 ? 0 : 15;
-  const tax = subtotal * 0.08;
-
-  return {
-    subtotal: formatMoney(subtotal),
-    shipping: shipping === 0 ? 'FREE' : formatMoney(shipping),
-    tax: formatMoney(tax),
-    total: formatMoney(subtotal + shipping + tax),
-  };
-};
-
-const routeStorefrontCartApi = async (page) => {
-  await page.route('**/api/**', async (route) => {
+const routeProductDetailApi = async (page) => {
+  await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
     throw new Error(`Unexpected unmocked Storefront API request: ${route.request().url()}`);
   });
 
   await page.route(
     (url) => url.pathname === storefrontContractPaths.productDetailFixture,
     async (route) => {
-      const productDetailEnvelope = storefrontContractSchemas.productDetailEnvelope.parse(
-        storefrontContractFixtures.productDetailEnvelope,
-      );
-
       await route.fulfill({
         status: 200,
         headers: jsonHeaders,
-        json: productDetailEnvelope,
+        json: storefrontContractSchemas.productDetailEnvelope.parse(storefrontContractFixtures.productDetailEnvelope),
       });
     },
   );
 };
 
-const addFixtureProductToCart = async (page) => {
+const addFixtureProductToCart = async (page, quantity = 1) => {
   await page.goto(`/products/${product.id}`);
   await expect(page.getByRole('heading', { name: product.name })).toBeVisible();
 
-  await page.getByRole('button', { name: /add to cart/i }).click();
-  await page.getByRole('button', { name: /view cart/i }).click();
+  if (quantity > 1) {
+    await page.getByRole('spinbutton', { name: `${product.name} quantity` }).fill(String(quantity));
+  }
+
+  await page.getByRole('button', { name: `Add ${product.name} to cart` }).click();
+  await page.getByRole('link', { name: /view cart/i }).click();
 
   await expect(page).toHaveURL('/cart');
-  await expect(page.getByRole('heading', { name: /shopping cart/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cart' })).toBeVisible();
+};
+
+const fillShippingAddress = async (page) => {
+  await page.getByLabel('Street address').fill('123 Demo St');
+  await page.getByLabel('City').fill('Manila');
+  await page.getByLabel('State or province').fill('Metro Manila');
+  await page.getByLabel('Postal code').fill('1000');
+  await page.getByLabel('Country').fill('Philippines');
 };
 
 test.beforeEach(async ({ page }) => {
-  await routeStorefrontCartApi(page);
+  await routeProductDetailApi(page);
 });
 
-test.describe('Vintage Storefront cart management', () => {
-  test('updates cart quantities within inventory limits and recalculates visible totals', async ({ page }) => {
-    await addFixtureProductToCart(page);
+test.describe('Vintage Storefront checkout cart flow', () => {
+  test('logged-out checkout preserves cart state and returns to cart after login', async ({ page }) => {
+    await page.route(
+      (url) => url.pathname === storefrontContractPaths.authLogin,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          headers: jsonHeaders,
+          json: storefrontContractSchemas.authSuccessEnvelope.parse(storefrontContractFixtures.authSuccessEnvelope),
+        });
+      },
+    );
 
-    const orderSummary = page.getByRole('region', { name: /order summary/i });
-    const increaseQuantity = page.getByLabel(`Increase quantity for ${product.name}`);
-    const decreaseQuantity = page.getByLabel(`Decrease quantity for ${product.name}`);
+    await addFixtureProductToCart(page, 2);
+    await fillShippingAddress(page);
 
-    await expect(page.getByText('1 Item in your cart')).toBeVisible();
-    await expect(decreaseQuantity).toBeDisabled();
-    await expect(orderSummary.getByText(cartTotals(1).subtotal)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(1).shipping)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(1).tax)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(1).total)).toBeVisible();
+    await page.getByRole('link', { name: /go to account/i }).click();
+    await expect(page).toHaveURL('/login?redirect=%2Fcart');
 
-    await increaseQuantity.click();
+    await page.getByRole('textbox', { name: /^email$/i }).fill(user.email);
+    await page.getByLabel(/password/i).fill('correct-horse-battery-staple');
+    await page.getByRole('button', { name: /^sign in$/i }).click();
 
-    await expect(page.getByText('2 Items in your cart')).toBeVisible();
-    await expect(decreaseQuantity).toBeEnabled();
-    await expect(orderSummary.getByText(cartTotals(2).subtotal)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(2).tax)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(2).total)).toBeVisible();
-
-    for (let quantity = 2; quantity < product.inventory_quantity; quantity += 1) {
-      await increaseQuantity.click();
-    }
-
-    await expect(page.getByText(`${product.inventory_quantity} Items in your cart`)).toBeVisible();
-    await expect(increaseQuantity).toBeDisabled();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity).subtotal)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity).shipping)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity).tax)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity).total)).toBeVisible();
-
-    await decreaseQuantity.click();
-
-    await expect(page.getByText(`${product.inventory_quantity - 1} Items in your cart`)).toBeVisible();
-    await expect(increaseQuantity).toBeEnabled();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity - 1).subtotal)).toBeVisible();
-    await expect(orderSummary.getByText(cartTotals(product.inventory_quantity - 1).total)).toBeVisible();
-  });
-
-  test('removes a cart item and returns the shopper to the empty-cart state', async ({ page }) => {
-    await addFixtureProductToCart(page);
-
-    await expect(page.getByText('1 Item in your cart')).toBeVisible();
-
-    await page.getByRole('button', { name: `Remove ${product.name} from cart` }).click();
-
-    await expect(page.getByRole('heading', { name: /your cart is empty/i })).toBeVisible();
-    await expect(page.getByText(/looks like you haven't added any products/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: /start shopping/i })).toBeVisible();
-    await expect(page.getByText(product.name)).toBeHidden();
-  });
-
-  test('clears the cart and shows the empty-cart behavior', async ({ page }) => {
-    await addFixtureProductToCart(page);
-
-    await page.getByLabel(`Increase quantity for ${product.name}`).click();
-    await expect(page.getByText('2 Items in your cart')).toBeVisible();
-
-    await page.getByRole('button', { name: /clear cart/i }).click();
-
-    await expect(page.getByRole('heading', { name: /your cart is empty/i })).toBeVisible();
-    await expect(page.getByText(/looks like you haven't added any products/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: /start shopping/i })).toBeVisible();
-    await expect(page.getByText(product.name)).toBeHidden();
-  });
-
-  test('presents checkout as unavailable without navigating away from the cart', async ({ page }) => {
-    await addFixtureProductToCart(page);
-
-    const checkoutButton = page.getByRole('button', { name: /checkout coming soon/i });
-
-    await expect(page.getByText(/coming soon/i).first()).toBeVisible();
-    await expect(checkoutButton).toBeDisabled();
-    await expect(page.getByText(/checkout is coming soon/i)).toBeVisible();
-    await expect(page.getByText(/checkout is unavailable in this demo slice/i)).toBeVisible();
     await expect(page).toHaveURL('/cart');
+    await expect(page.getByRole('link', { name: product.name })).toBeVisible();
+    await expect(page.getByRole('spinbutton', { name: `${product.name} quantity` })).toHaveValue('2');
+  });
+
+  test('logged-out checkout preserves cart state and returns to cart after registration', async ({ page }) => {
+    await page.route(
+      (url) => url.pathname === '/api/auth/register',
+      async (route) => {
+        await route.fulfill({
+          status: 201,
+          headers: jsonHeaders,
+          json: storefrontContractSchemas.authSuccessEnvelope.parse(storefrontContractFixtures.authSuccessEnvelope),
+        });
+      },
+    );
+
+    await addFixtureProductToCart(page, 2);
+    await fillShippingAddress(page);
+
+    await page.getByRole('link', { name: /go to account/i }).click();
+    await page.goto('/register?redirect=%2Fcart');
+    await page.getByLabel('First name').fill(user.firstName);
+    await page.getByLabel('Last name').fill(user.lastName);
+    await page.getByRole('textbox', { name: /^email$/i }).fill(user.email);
+    await page.getByLabel(/password/i).fill('correct-horse-battery-staple');
+    await page.getByRole('button', { name: /^create account$/i }).click();
+
+    await expect(page).toHaveURL('/cart');
+    await expect(page.getByRole('link', { name: product.name })).toBeVisible();
+    await expect(page.getByRole('spinbutton', { name: `${product.name} quantity` })).toHaveValue('2');
+  });
+
+  test('logged-in checkout posts a pending order payload and shows confirmation without payment-collected copy', async ({ page }) => {
+    const submittedOrders = [];
+    const createdOrder = {
+      ...storefrontContractFixtures.orderDetailEnvelope,
+      data: {
+        ...storefrontContractFixtures.orderDetailEnvelope.data,
+        userId: user.id,
+        status: 'pending',
+        paymentStatus: 'pending',
+        totalAmount: '256.00',
+        items: [
+          {
+            ...storefrontContractFixtures.orderDetailEnvelope.data.items[0],
+            quantity: 2,
+            price: product.price,
+            product,
+          },
+        ],
+      },
+    };
+
+    await page.addInitScript(({ token }) => window.localStorage.setItem('accessToken', token), {
+      token: storefrontContractFixtures.authSuccessEnvelope.data.token,
+    });
+
+    await page.route(
+      (url) => url.pathname === storefrontContractPaths.authMe,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          headers: jsonHeaders,
+          json: storefrontContractSchemas.authenticatedUserEnvelope.parse(storefrontContractFixtures.authenticatedUserEnvelope),
+        });
+      },
+    );
+
+    await page.route(
+      (url) => url.pathname === storefrontContractPaths.orderCreate,
+      async (route) => {
+        submittedOrders.push(route.request().postDataJSON());
+        await route.fulfill({
+          status: 201,
+          headers: jsonHeaders,
+          json: storefrontContractSchemas.orderDetailEnvelope.parse(createdOrder),
+        });
+      },
+    );
+
+    await addFixtureProductToCart(page, 2);
+    await fillShippingAddress(page);
+    await page.getByRole('button', { name: /^place order$/i }).click();
+
+    await expect(page).toHaveURL('/order-confirmed');
+    await expect(page.getByRole('heading', { name: /order confirmed/i })).toBeVisible();
+    await expect(page.getByText(/reserved and the order record is ready/i)).toBeVisible();
+    await expect(page.getByText(/pending/i).first()).toBeVisible();
+    await expect(page.getByText(/paid|payment collected|charged/i)).toHaveCount(0);
+    expect(submittedOrders).toEqual([
+      {
+        userId: user.id,
+        items: [{ productId: product.id, quantity: 2 }],
+        shippingAddress: {
+          street: '123 Demo St',
+          city: 'Manila',
+          state: 'Metro Manila',
+          zipCode: '1000',
+          country: 'Philippines',
+        },
+      },
+    ]);
   });
 });

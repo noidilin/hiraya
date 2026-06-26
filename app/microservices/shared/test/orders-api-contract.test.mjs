@@ -94,6 +94,33 @@ describe('active orders service Storefront contract', () => {
     });
   });
 
+  it('documents current server-side ownership limitation: create order trusts request userId without bearer validation', async () => {
+    const clientSuppliedUserId = '11111111-2222-4333-8444-555555555555';
+    const { app, query } = createTestApp({
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ...orderRow, user_id: clientSuppliedUserId }] })
+        .mockResolvedValueOnce({ rows: [{ id: itemRow.id }] }),
+    });
+
+    await request(app)
+      .post('/')
+      .send({
+        userId: clientSuppliedUserId,
+        items: [{ productId: product.id, quantity: 2 }],
+        shippingAddress: orderRow.shipping_address,
+      })
+      .expect(201);
+
+    expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [
+      clientSuppliedUserId,
+      '256.00',
+      'pending',
+      JSON.stringify(orderRow.shipping_address),
+      'pending',
+    ]);
+  });
+
   it('creates orders for the seeded demo customer when a legacy client omits userId', async () => {
     const { app, query } = createTestApp({
       query: vi
