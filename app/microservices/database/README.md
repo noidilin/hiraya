@@ -28,16 +28,33 @@ The seed data represents the Hiraya Furugi Catalog and matches shared Storefront
 
 Categories are Dresses, Accessories, Outerwear, Denim, and Tops. Seeded products use `Hiraya Furugi` as their brand value. Product image URLs are stored in `product_images`; `/product-images/placeholder.jpg` is reserved for products without a primary image.
 
-The seeded demo customer is `demo@hirayavintage.test` with the Storefront API contract test password. The seed stores only the bcrypt hash and includes one delivered sample order for order-history QA.
+The seeded demo customer is:
 
-## Setup
+- Email: `demo@hirayavintage.test`
+- Password: `correct horse battery staple`
+- User ID: `f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6`
 
-Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup. The local full-stack smoke command (`pnpm run app:smoke:compose`) intentionally runs Compose `down --volumes`, starts from this clean seed state, creates one new pending checkout order, and tears volumes down again.
+The seed stores only the bcrypt hash, not plaintext credentials, and includes one delivered sample order for order-history QA. Checkout-created orders are separate pending rows created by the running orders service.
 
-For quick manual reseeding against an existing products database:
+## Local setup and reset
+
+Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup.
+
+To reset all local Vintage app database state and reseed from `20-init-schema.sql`, run from the repository root:
+
+```bash
+docker compose -f app/microservices/docker-compose.yml down --volumes --remove-orphans
+pnpm run docker:up
+```
+
+The local full-stack smoke command (`pnpm run app:smoke:compose`) intentionally performs this reset, starts from the clean seed state, creates one new pending checkout order, and tears volumes down again.
+
+For quick manual reseeding against an existing products database only:
 
 ```bash
 psql -d products_db -f quick-seed.sql
 ```
 
-For GitOps restore flows, reset only Vintage app database state and restore with `gitops/apps/vintage/k8s/database/vintage_full.sql`. No Terraform, EKS platform, or GitOps routing reset is required for this catalog migration.
+That helper is product/catalog scoped; it does not reseed the demo auth user or sample order. Use the Compose volume reset when validating login, checkout, and order-history behavior.
+
+For GitOps restore flows, reset only Vintage app database state and restore with `gitops/apps/vintage/k8s/database/vintage_full.sql`. No Terraform, EKS platform, or GitOps routing reset is required for this catalog migration. See `docs/runbooks/services/vintage-storefront-db-reset.md` for the deployed dev procedure.
