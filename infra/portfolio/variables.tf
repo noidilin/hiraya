@@ -34,6 +34,18 @@ variable "guide_api_zip_path" {
   default     = "build/guide-api.zip"
 }
 
+variable "guide_model_arn" {
+  description = "Fast, low-cost Bedrock model ARN used by Hiraya Guide RetrieveAndGenerate."
+  type        = string
+  default     = "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.nova-lite-v1:0"
+}
+
+variable "guide_embedding_model_arn" {
+  description = "Bedrock embedding model ARN used by the Portfolio Knowledge Base."
+  type        = string
+  default     = "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v2:0"
+}
+
 variable "skip_aws_credentials_validation" {
   description = "Skip AWS account validation for credential-free Terraform validate in PR checks."
   type        = bool

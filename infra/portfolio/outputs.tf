@@ -9,8 +9,28 @@ output "knowledge_bucket_name" {
 }
 
 output "knowledge_prefix" {
-  description = "Prefix ingested by the future Bedrock Knowledge Base data source."
+  description = "Prefix ingested by the Bedrock Knowledge Base data source."
   value       = "knowledge/"
+}
+
+output "bedrock_knowledge_base_id" {
+  description = "Bedrock Knowledge Base ID used by Hiraya Guide."
+  value       = aws_bedrockagent_knowledge_base.guide.id
+}
+
+output "bedrock_data_source_id" {
+  description = "Bedrock Knowledge Base S3 data source ID for knowledge sync ingestion jobs."
+  value       = aws_bedrockagent_data_source.guide.data_source_id
+}
+
+output "bedrock_guardrail_id" {
+  description = "Bedrock Guardrail ID configured for Hiraya Guide."
+  value       = aws_bedrock_guardrail.guide.guardrail_id
+}
+
+output "bedrock_guardrail_version" {
+  description = "Pinned Bedrock Guardrail version configured for Hiraya Guide."
+  value       = aws_bedrock_guardrail_version.guide.version
 }
 
 output "citation_manifest_key" {

@@ -1,5 +1,9 @@
 import type { GuideCitation } from './contract.js'
 
+export type CitationManifest = {
+  sources?: Record<string, GuideCitation>
+}
+
 type RawCitation = Partial<GuideCitation> & Record<string, unknown>
 
 const fallbackCitation: GuideCitation = {
@@ -11,13 +15,14 @@ export function localAnsweredCitation(): GuideCitation {
   return fallbackCitation
 }
 
-export function normalizeCitations(rawCitations: RawCitation[]): GuideCitation[] {
+export function normalizeCitations(rawCitations: RawCitation[], manifest?: CitationManifest): GuideCitation[] {
   const seen = new Set<string>()
   const normalized: GuideCitation[] = []
 
   for (const citation of rawCitations) {
-    const title = typeof citation.title === 'string' ? citation.title.trim() : ''
-    const source = typeof citation.source === 'string' ? citation.source.trim() : ''
+    const manifestCitation = lookupManifestCitation(citation.source, manifest)
+    const title = (manifestCitation?.title ?? stringValue(citation.title)).trim()
+    const source = (manifestCitation?.source ?? stringValue(citation.source)).trim()
 
     if (!title || !source) continue
 
@@ -29,4 +34,14 @@ export function normalizeCitations(rawCitations: RawCitation[]): GuideCitation[]
   }
 
   return normalized
+}
+
+function lookupManifestCitation(source: unknown, manifest: CitationManifest | undefined): GuideCitation | undefined {
+  if (!manifest?.sources || typeof source !== 'string') return undefined
+  const key = source.replace(/^s3:\/\/[^/]+\/knowledge\//, 'knowledge/')
+  return manifest.sources[source] ?? manifest.sources[key] ?? manifest.sources[key.replace(/^knowledge\//, 'docs/portfolio/')]
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value : ''
 }

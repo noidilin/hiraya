@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
+import { answerWithBedrock } from './bedrock.js'
 import { localAnsweredCitation, normalizeCitations } from './citations.js'
 import type { GuideChatRequest, GuideChatResponse, HttpRequest, HttpResponse } from './contract.js'
 import { expectedOriginSecret } from './origin-secret.js'
@@ -82,6 +83,10 @@ async function answerGuideQuestion(request: GuideChatRequest): Promise<GuideChat
       sessionId: request.sessionId ?? newSessionId(),
       citations: [],
     }
+  }
+
+  if (process.env.BEDROCK_KNOWLEDGE_BASE_ID && process.env.BEDROCK_MODEL_ARN) {
+    return answerWithBedrock(request)
   }
 
   if (/weather|recipe|sports|unsupported|off[-_ ]?topic/i.test(request.message)) {

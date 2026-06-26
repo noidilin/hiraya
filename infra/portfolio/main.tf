@@ -88,6 +88,192 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "knowledge" {
   }
 }
 
+resource "aws_iam_role" "bedrock_knowledge_base" {
+  name                 = "${local.name_prefix}-kb"
+  permissions_boundary = local.runtime_boundary_arn
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "bedrock.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "bedrock_knowledge_base" {
+  name = "${local.name_prefix}-kb"
+  role = aws_iam_role.bedrock_knowledge_base.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.knowledge.arn,
+          "${aws_s3_bucket.knowledge.arn}/knowledge/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = var.guide_embedding_model_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "aoss:APIAccessAll"
+        ]
+        Resource = aws_opensearchserverless_collection.knowledge.arn
+      }
+    ]
+  })
+}
+
+resource "aws_opensearchserverless_security_policy" "knowledge_encryption" {
+  name = "${var.project_name}-${var.environment}-portfolio-kb"
+  type = "encryption"
+  policy = jsonencode({
+    Rules = [{
+      ResourceType = "collection"
+      Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
+    }]
+    AWSOwnedKey = true
+  })
+}
+
+resource "aws_opensearchserverless_security_policy" "knowledge_network" {
+  name = "${var.project_name}-${var.environment}-portfolio-kb"
+  type = "network"
+  policy = jsonencode([{
+    Rules = [
+      {
+        ResourceType = "collection"
+        Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
+      },
+      {
+        ResourceType = "dashboard"
+        Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
+      }
+    ]
+    AllowFromPublic = true
+  }])
+}
+
+resource "aws_opensearchserverless_collection" "knowledge" {
+  name = "${var.project_name}-${var.environment}-portfolio-kb"
+  type = "VECTORSEARCH"
+
+  depends_on = [
+    aws_opensearchserverless_security_policy.knowledge_encryption,
+    aws_opensearchserverless_security_policy.knowledge_network,
+  ]
+
+  tags = local.common_tags
+}
+
+resource "aws_opensearchserverless_access_policy" "knowledge" {
+  name = "${var.project_name}-${var.environment}-portfolio-kb"
+  type = "data"
+  policy = jsonencode([{
+    Rules = [
+      {
+        ResourceType = "collection"
+        Resource     = ["collection/${aws_opensearchserverless_collection.knowledge.name}"]
+        Permission   = ["aoss:CreateCollectionItems", "aoss:DescribeCollectionItems", "aoss:UpdateCollectionItems"]
+      },
+      {
+        ResourceType = "index"
+        Resource     = ["index/${aws_opensearchserverless_collection.knowledge.name}/*"]
+        Permission   = ["aoss:CreateIndex", "aoss:DeleteIndex", "aoss:DescribeIndex", "aoss:ReadDocument", "aoss:UpdateIndex", "aoss:WriteDocument"]
+      }
+    ]
+    Principal = [aws_iam_role.bedrock_knowledge_base.arn]
+  }])
+}
+
+resource "aws_bedrock_guardrail" "guide" {
+  name                      = "${local.name_prefix}-guide"
+  blocked_input_messaging   = "Hiraya Guide cannot help with prompt attacks or attempts to bypass its curated project knowledge boundary."
+  blocked_outputs_messaging = "Hiraya Guide cannot provide that response."
+  description               = "Basic prompt-attack guardrail for public Hiraya Guide traffic."
+
+  content_policy_config {
+    filters_config {
+      input_strength  = "HIGH"
+      output_strength = "MEDIUM"
+      type            = "PROMPT_ATTACK"
+    }
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_bedrock_guardrail_version" "guide" {
+  guardrail_arn = aws_bedrock_guardrail.guide.guardrail_arn
+  description   = "Pinned v1 prompt-attack guardrail for Hiraya Guide."
+}
+
+resource "aws_bedrockagent_knowledge_base" "guide" {
+  name     = "${local.name_prefix}-guide"
+  role_arn = aws_iam_role.bedrock_knowledge_base.arn
+
+  knowledge_base_configuration {
+    type = "VECTOR"
+
+    vector_knowledge_base_configuration {
+      embedding_model_arn = var.guide_embedding_model_arn
+    }
+  }
+
+  storage_configuration {
+    type = "OPENSEARCH_SERVERLESS"
+
+    opensearch_serverless_configuration {
+      collection_arn    = aws_opensearchserverless_collection.knowledge.arn
+      vector_index_name = "hiraya-guide-index"
+
+      field_mapping {
+        metadata_field = "AMAZON_BEDROCK_METADATA"
+        text_field     = "AMAZON_BEDROCK_TEXT_CHUNK"
+        vector_field   = "hiraya-guide-vector"
+      }
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.bedrock_knowledge_base,
+    aws_opensearchserverless_access_policy.knowledge,
+  ]
+
+  tags = local.common_tags
+}
+
+resource "aws_bedrockagent_data_source" "guide" {
+  knowledge_base_id = aws_bedrockagent_knowledge_base.guide.id
+  name              = "${local.name_prefix}-guide-s3"
+
+  data_source_configuration {
+    type = "S3"
+
+    s3_configuration {
+      bucket_arn         = aws_s3_bucket.knowledge.arn
+      inclusion_prefixes = ["knowledge/"]
+    }
+  }
+}
+
 resource "aws_acm_certificate" "portfolio" {
   provider = aws.use1
 
@@ -186,6 +372,27 @@ resource "aws_iam_role_policy" "guide_api" {
           "s3:GetObject"
         ]
         Resource = "${aws_s3_bucket.knowledge.arn}/manifests/citations.json"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:RetrieveAndGenerate"
+        ]
+        Resource = aws_bedrockagent_knowledge_base.guide.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = var.guide_model_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:ApplyGuardrail"
+        ]
+        Resource = aws_bedrock_guardrail.guide.guardrail_arn
       }
     ]
   })
@@ -211,10 +418,16 @@ resource "aws_lambda_function" "guide_api" {
 
   environment {
     variables = {
-      GUIDE_ORIGIN_SECRET_ARN  = aws_secretsmanager_secret.origin_secret.arn
-      CITATION_MANIFEST_BUCKET = aws_s3_bucket.knowledge.bucket
-      CITATION_MANIFEST_KEY    = "manifests/citations.json"
-      KNOWLEDGE_VERSION        = "initial"
+      GUIDE_ORIGIN_SECRET_ARN        = aws_secretsmanager_secret.origin_secret.arn
+      CITATION_MANIFEST_BUCKET       = aws_s3_bucket.knowledge.bucket
+      CITATION_MANIFEST_KEY          = "manifests/citations.json"
+      BEDROCK_KNOWLEDGE_BASE_ID      = aws_bedrockagent_knowledge_base.guide.id
+      BEDROCK_MODEL_ARN              = var.guide_model_arn
+      BEDROCK_GUARDRAIL_ID           = aws_bedrock_guardrail.guide.guardrail_id
+      BEDROCK_GUARDRAIL_VERSION      = aws_bedrock_guardrail_version.guide.version
+      BEDROCK_MAX_OUTPUT_TOKENS      = "700"
+      BEDROCK_RETRIEVAL_RESULT_LIMIT = "5"
+      KNOWLEDGE_VERSION              = "initial"
     }
   }
 
