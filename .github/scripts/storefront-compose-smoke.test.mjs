@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 import {
   SEEDED_DEMO_USER_ID,
+  assertHirayaProduct,
   checkStorefrontStack,
   diagnosticsLabelForStep,
   extractProducts,
@@ -36,6 +37,25 @@ test('extractProducts requires a successful non-empty product envelope', () => {
   assert.throws(
     () => extractProducts({ success: true, data: { products: [] } }),
     /products response returned no products/
+  );
+});
+
+test('assertHirayaProduct requires the seeded non-placeholder product image URL', () => {
+  assert.doesNotThrow(() => assertHirayaProduct({
+    id: '67be2d5e-ecfb-4bf9-b751-8474f9d7bcac',
+    name: 'Prairie Midi Dress',
+    brand: 'Hiraya Furugi',
+    image_url: '/product-images/prairie-midi-dress.jpg',
+  }));
+
+  assert.throws(
+    () => assertHirayaProduct({
+      id: '67be2d5e-ecfb-4bf9-b751-8474f9d7bcac',
+      name: 'Prairie Midi Dress',
+      brand: 'Hiraya Furugi',
+      image_url: '/product-images/placeholder.jpg',
+    }),
+    /expected product image_url.*prairie-midi-dress\.jpg.*placeholder\.jpg/
   );
 });
 

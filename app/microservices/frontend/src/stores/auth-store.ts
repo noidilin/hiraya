@@ -30,13 +30,19 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   status: "idle",
   error: null,
   hasBootstrapped: false,
 
   async bootstrap() {
+    const current = get();
+
+    if (current.hasBootstrapped && current.status === "authenticated" && current.user) {
+      return current.user;
+    }
+
     if (!getAccessToken()) {
       set({
         user: null,
