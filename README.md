@@ -29,11 +29,12 @@ Common root commands:
 | Command | Purpose |
 | --- | --- |
 | `pnpm run app:baseline` | Run the no-AWS Vintage Storefront baseline used by PR checks. |
+| `pnpm run app:smoke:compose` | Reset local Compose volumes, start the real Vintage Storefront stack, verify shell/API/auth/images/orders/checkout, and tear it down. |
 | `pnpm run reports:permissions:validate` | Validate report control data and standards mappings. |
 | `pnpm run reports:permissions` | Generate ignored report artifacts under `docs/reports/build/`. |
 | `pnpm run services:changed -- --all` | Render the full service image matrix. Pass changed file paths instead of `--all` for targeted detection. |
 | `pnpm run docker:build` | Build the Docker Compose stack using the root build context and `app/microservices/docker-compose.yml`. |
-| `pnpm run docker:up` / `pnpm run docker:down` | Start or stop the production-like local Compose stack from the repository root. The Storefront is served by nginx on `http://localhost:3000` and proxies `/api/` to the gateway. |
+| `pnpm run docker:up` / `pnpm run docker:down` | Start or stop the production-like local Compose stack from the repository root. The Storefront is served by nginx on `http://localhost:3000` and proxies `/api/` to the gateway. Use `docker compose -f app/microservices/docker-compose.yml down --volumes` when intentionally resetting local database state. |
 | `pnpm run docker:up:frontend-dev` | Start the profiled Vite hot-reload Storefront service on `http://localhost:3000` against the same Compose backend stack. |
 
 ## Structure

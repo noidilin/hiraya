@@ -32,7 +32,7 @@ The seeded demo customer is `demo@hirayavintage.test` with the Storefront API co
 
 ## Setup
 
-Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup.
+Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup. The local full-stack smoke command (`pnpm run app:smoke:compose`) intentionally runs Compose `down --volumes`, starts from this clean seed state, creates one new pending checkout order, and tears volumes down again.
 
 For quick manual reseeding against an existing products database:
 
