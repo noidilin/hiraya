@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { listCategories, listProducts, getProduct, PLACEHOLDER_PRODUCT_IMAGE, type Product } from "@/api";
+import { listCategories, listProducts, getProduct, type Product } from "@/api";
 import {
   getHirayaFurugiCatalogProduct,
   hirayaFurugiCatalogProducts,
@@ -24,12 +24,10 @@ function findCatalogMatch(product: Product): Product | undefined {
 
 export function withCatalogPresentation(product: Product): Product {
   const catalogProduct = findCatalogMatch(product);
-  const hasSparseImage = !product.imageUrl || product.imageUrl === PLACEHOLDER_PRODUCT_IMAGE;
-
   return {
     ...(catalogProduct ?? product),
     ...product,
-    imageUrl: hasSparseImage && catalogProduct ? catalogProduct.imageUrl : product.imageUrl,
+    imageUrl: product.imageUrl,
     description: product.description || catalogProduct?.description || "",
     inventory: Number.isFinite(product.inventory) ? product.inventory : (catalogProduct?.inventory ?? 0),
   };

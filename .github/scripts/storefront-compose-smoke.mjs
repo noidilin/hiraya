@@ -8,6 +8,17 @@ export const SEEDED_DEMO_USER_ID = 'f8b01ff1-9114-4c3e-92a7-45a8d1f2d6e6';
 export const SEEDED_DEMO_EMAIL = 'demo@hirayavintage.test';
 export const SEEDED_DEMO_PASSWORD = 'correct horse battery staple';
 
+export const EXPECTED_HIRAYA_PRODUCT_IMAGE_URLS = Object.freeze(new Map([
+  ['67be2d5e-ecfb-4bf9-b751-8474f9d7bcac', '/product-images/prairie-midi-dress.jpg'],
+  ['e858df02-4a5b-4f8e-a1f4-2b6c28150d0b', '/product-images/washed-linen-work-jacket.jpg'],
+  ['760f89d0-c80f-4798-8c75-f26070eb35d8', '/product-images/indigo-straight-denim.jpg'],
+  ['99026f04-ced9-42a5-b9e3-9440c4e38902', '/product-images/cotton-lace-night-blouse.jpg'],
+  ['d68c49dd-ccfb-4965-8b70-c98d32f77d71', '/product-images/sumi-silk-scarf.jpg'],
+  ['b87e70bb-13e1-4200-87ab-d1c7698e43c6', '/product-images/wool-twill-evening-coat.jpg'],
+  ['4db3c0fe-b753-42d2-a102-e26c5a9f71f5', '/product-images/patchwork-market-tote.jpg'],
+  ['f7b0b8b5-7e1d-4562-9cd4-10ac3f12fe35', '/product-images/linen-tab-collar-shirt.jpg'],
+]));
+
 const CHECK_STEPS = Object.freeze([
   'frontend shell',
   'product envelope',
@@ -170,12 +181,17 @@ function assertStorefrontShell(baseUrl, response, html) {
   }
 }
 
-function assertHirayaProduct(product) {
+export function assertHirayaProduct(product) {
   if (product.brand !== 'Hiraya Furugi') {
     throw new Error(`expected a Hiraya Furugi product from seeded catalog; got ${JSON.stringify(product).slice(0, 240)}.`);
   }
-  if (!String(product.image_url ?? '').startsWith('/product-images/')) {
-    throw new Error(`expected product image_url to be frontend-served /product-images path; got ${product.image_url}.`);
+
+  const expectedImageUrl = EXPECTED_HIRAYA_PRODUCT_IMAGE_URLS.get(product.id);
+  if (!expectedImageUrl) {
+    throw new Error(`expected a known seeded Hiraya Furugi product id; got ${product.id}.`);
+  }
+  if (product.image_url !== expectedImageUrl) {
+    throw new Error(`expected product image_url for ${product.id} to be ${expectedImageUrl}; got ${product.image_url}.`);
   }
 }
 

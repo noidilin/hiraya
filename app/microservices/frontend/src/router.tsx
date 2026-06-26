@@ -15,7 +15,7 @@ import { OrdersRoute } from '@/routes/orders';
 import { ProductDetailRoute } from '@/routes/product-detail';
 import { ProductsRoute } from '@/routes/products';
 import { ProfileRoute } from '@/routes/profile';
-import { getAccessToken } from '@/api';
+import { useAuthStore } from '@/stores/auth-store';
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -27,8 +27,10 @@ const indexRoute = createRoute({
   component: HomeRoute,
 });
 
-function requireAuth(location: { href: string }) {
-  if (!getAccessToken()) {
+async function requireAuth(location: { href: string }) {
+  const user = await useAuthStore.getState().bootstrap();
+
+  if (!user) {
     throw redirect({
       to: '/login',
       search: { redirect: location.href },
@@ -92,14 +94,14 @@ const orderConfirmedRoute = createRoute({
 const profileRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/profile',
-  beforeLoad: ({ location }) => requireAuth(location),
+  beforeLoad: async ({ location }) => requireAuth(location),
   component: ProfileRoute,
 });
 
 const ordersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/orders',
-  beforeLoad: ({ location }) => requireAuth(location),
+  beforeLoad: async ({ location }) => requireAuth(location),
   component: OrdersRoute,
 });
 
