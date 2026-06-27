@@ -29,7 +29,7 @@ resource "aws_iam_policy" "github_portfolio_plan" {
         Resource = "arn:aws:s3:::${var.state_bucket_name}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.terraform_state_list_prefixes
+            "s3:prefix" = local.portfolio_state_list_prefixes
           }
         }
       },
@@ -143,7 +143,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Resource = "arn:aws:s3:::${var.state_bucket_name}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.terraform_state_list_prefixes
+            "s3:prefix" = local.portfolio_state_list_prefixes
           }
         }
       },
