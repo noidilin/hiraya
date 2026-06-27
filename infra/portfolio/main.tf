@@ -250,6 +250,17 @@ resource "aws_bedrockagent_data_source" "guide" {
       inclusion_prefixes = ["knowledge/"]
     }
   }
+
+  vector_ingestion_configuration {
+    chunking_configuration {
+      chunking_strategy = "FIXED_SIZE"
+
+      fixed_size_chunking_configuration {
+        max_tokens         = 200
+        overlap_percentage = 15
+      }
+    }
+  }
 }
 
 resource "aws_acm_certificate" "portfolio" {
@@ -354,13 +365,22 @@ resource "aws_iam_role_policy" "guide_api" {
       {
         Effect = "Allow"
         Action = [
-          "bedrock:RetrieveAndGenerate"
+          "bedrock:Retrieve"
         ]
         Resource = aws_bedrockagent_knowledge_base.guide.arn
       },
       {
         Effect = "Allow"
         Action = [
+          "bedrock:RetrieveAndGenerate"
+        ]
+        # RetrieveAndGenerate does not support resource-level permissions.
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:Converse",
           "bedrock:InvokeModel"
         ]
         Resource = local.guide_model_arn

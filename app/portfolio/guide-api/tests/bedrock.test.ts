@@ -45,6 +45,59 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(config?.retrievalConfiguration?.vectorSearchConfiguration?.numberOfResults, 4)
   })
 
+  it('uses Retrieve citations when RetrieveAndGenerate omits retrieved references', async () => {
+    const response = await answerWithBedrock(
+      { message: 'How does Hiraya deploy portfolio changes?' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieve: async () => ({
+          $metadata: {},
+          retrievalResults: [
+            {
+              content: { text: 'raw retrieved chunk must stay server-side' },
+              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/CICD.md' } },
+            },
+          ],
+        }),
+        retrieveAndGenerate: async () => ({
+          $metadata: {},
+          output: { text: 'Hiraya deploys portfolio changes through GitHub Actions gates.' },
+          sessionId: 'bedrock-session-2',
+          citations: [{ generatedResponsePart: { textResponsePart: { text: 'answer', span: { start: 0, end: 6 } } }, retrievedReferences: [] }],
+        }),
+      },
+    )
+
+    assert.equal(response.status, 'answered')
+    assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' }])
+    assert.doesNotMatch(JSON.stringify(response), /raw retrieved chunk/)
+  })
+
+  it('refuses generated text when Bedrock returns an insufficient evidence answer', async () => {
+    const response = await answerWithBedrock(
+      { message: 'What is the private payroll password?' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieve: async () => ({
+          $metadata: {},
+          retrievalResults: [{ content: { text: 'raw chunk' }, location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/CICD.md' } } }],
+        }),
+        retrieveAndGenerate: async () => ({
+          $metadata: {},
+          output: { text: 'I do not have enough curated evidence to provide that private payroll password.' },
+          sessionId: 'bedrock-session-3',
+          citations: [],
+        }),
+      },
+    )
+
+    assert.equal(response.status, 'refused')
+    assert.equal(response.citations.length, 0)
+    assert.doesNotMatch(response.answer, /private payroll password/i)
+  })
+
   it('refuses generated text when Bedrock returns no usable citations', async () => {
     const response = await answerWithBedrock(
       { message: 'Invent something without evidence' },

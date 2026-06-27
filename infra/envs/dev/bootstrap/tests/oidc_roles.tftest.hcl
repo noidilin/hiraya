@@ -324,6 +324,18 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition = alltrue([
+      for required_action in ["lambda:GetFunctionConfiguration", "lambda:UpdateFunctionCode"] : anytrue(flatten([
+        for statement in jsondecode(aws_iam_policy.github_portfolio_app_deploy.policy).Statement : [
+          for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          if statement.Sid == "AllowPortfolioFunctionDeploy"
+        ]
+      ]))
+    ])
+    error_message = "The portfolio app deploy role must support Lambda code updates and waiters."
+  }
+
+  assert {
     condition = length([
       for statement in jsondecode(aws_iam_policy.github_portfolio_knowledge_sync.policy).Statement : statement
       if anytrue([for action in try(tolist(statement.Action), [statement.Action]) : startswith(action, "cloudfront:")])
