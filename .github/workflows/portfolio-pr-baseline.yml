@@ -209,6 +209,9 @@ jobs:
           install: true
           cache: true
 
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
       - name: install-dependencies
         shell: bash
         run: pnpm install --frozen-lockfile

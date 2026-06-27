@@ -1,6 +1,7 @@
 name: portfolio-deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -69,6 +70,11 @@ jobs:
             esac
           done <<< "$changed_paths"
 
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            app_changed=true
+            knowledge_changed=true
+          fi
+
           should_deploy=false
           if [[ "$app_changed" == "true" || "$knowledge_changed" == "true" ]]; then
             should_deploy=true
@@ -99,6 +105,9 @@ jobs:
         with:
           install: true
           cache: true
+
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: install-dependencies
         shell: bash
@@ -220,6 +229,9 @@ jobs:
         with:
           install: true
           cache: true
+
+      - name: set-up-node-pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: install-dependencies
         shell: bash
