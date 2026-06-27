@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-gateway:eef469aa55b0d8de55450b11da0eddad0b58eda9
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-gateway:af9a7a386b96e2a77b169d031e61e246cc5e16bb
           ports:
             - containerPort: 3001
           env:
