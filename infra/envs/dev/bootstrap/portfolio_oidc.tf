@@ -551,6 +551,7 @@ resource "aws_iam_policy" "github_portfolio_app_deploy" {
         Effect = "Allow"
         Action = [
           "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
           "lambda:UpdateFunctionCode",
           "lambda:UpdateFunctionConfiguration"
         ]

@@ -48,10 +48,14 @@ test('Portfolio Stack uses Terraform-managed S3 Vectors for the Bedrock Knowledg
   assert.match(main, /resource "aws_s3vectors_vector_bucket" "knowledge"/, 'S3 Vectors vector bucket should be declared');
   assert.doesNotMatch(main, /resource "aws_s3vectors_vector_bucket_policy" "knowledge"/, 'S3 Vectors access should be scoped through the Bedrock KB IAM role policy, not a separate vector bucket policy');
   assert.match(main, /resource "aws_iam_role_policy" "bedrock_knowledge_base"[\s\S]*"s3vectors:QueryVectors"[\s\S]*Resource\s+=\s+aws_s3vectors_index\.knowledge\.index_arn/, 'Bedrock KB IAM role policy should scope S3 Vectors access to the index');
+  assert.match(main, /"bedrock:Retrieve"[\s\S]*Resource\s+=\s+aws_bedrockagent_knowledge_base\.guide\.arn/, 'Guide API Lambda should allow Retrieve on the Knowledge Base used by RetrieveAndGenerate');
+  assert.match(main, /"bedrock:RetrieveAndGenerate"[\s\S]*RetrieveAndGenerate does not support resource-level permissions\.[\s\S]*Resource\s+=\s+"\*"/, 'Guide API Lambda should allow RetrieveAndGenerate with the only resource scope supported by AWS');
+  assert.match(main, /"bedrock:Converse"[\s\S]*"bedrock:InvokeModel"[\s\S]*Resource\s+=\s+local\.guide_model_arn/, 'Guide API Lambda should allow the Bedrock runtime action used by RetrieveAndGenerate model generation');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*data_type\s+=\s+"float32"/, 'S3 Vectors index should use float32 vectors');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*dimension\s+=\s+1024/, 'S3 Vectors index should match Titan Text Embeddings V2 default dimensions');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*distance_metric\s+=\s+"cosine"/, 'S3 Vectors index should use cosine distance');
   assert.match(main, /storage_configuration[\s\S]*type\s+=\s+"S3_VECTORS"[\s\S]*s3_vectors_configuration[\s\S]*index_arn\s+=\s+aws_s3vectors_index\.knowledge\.index_arn/, 'Bedrock KB should use S3 Vectors storage');
+  assert.match(main, /vector_ingestion_configuration[\s\S]*chunking_strategy\s+=\s+"FIXED_SIZE"[\s\S]*max_tokens\s+=\s+200/, 'S3 Vectors ingestion should use small fixed-size chunks to stay below filterable metadata limits');
   assert.doesNotMatch(main, /aws_opensearchserverless_|OPENSEARCH_SERVERLESS|aoss:/, 'OpenSearch Serverless resources and permissions should be removed');
   assert.match(main, /aws:SourceAccount/, 'Bedrock KB role trust should include confused-deputy SourceAccount protection');
   assert.match(main, /aws:SourceArn/, 'Bedrock KB role trust should include confused-deputy SourceArn protection');
