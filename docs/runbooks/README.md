@@ -11,6 +11,12 @@ Use this page to choose a runbook by scenario or action. These runbooks target t
 | Deploy or recreate the dev EKS platform | [platform/deploy-dev-platform.md](platform/deploy-dev-platform.md) |
 | Destroy the disposable dev EKS platform | [platform/destroy-dev-platform.md](platform/destroy-dev-platform.md) |
 
+## Portfolio operations
+
+| I want to... | Use this runbook |
+|---|---|
+| First deploy the durable Portfolio Stack and Hiraya Guide | [portfolio/first-deploy.md](portfolio/first-deploy.md) |
+
 ## Service operations
 
 | I want to... | Use this runbook |
