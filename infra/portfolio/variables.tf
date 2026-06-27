@@ -40,6 +40,13 @@ variable "guide_model_arn" {
   default     = null
 }
 
+variable "guide_api_reserved_concurrent_executions" {
+  description = "Optional reserved concurrency for the Guide API Lambda. Leave null in low-quota dev accounts so Lambda preserves the required unreserved concurrency pool."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
 variable "guide_embedding_model_arn" {
   description = "Optional Bedrock embedding model ARN override for the Portfolio Knowledge Base. Must be Titan Text Embeddings v2 because the S3 Vectors index dimension is fixed at 1024. Defaults to a region-matched Titan Text Embeddings v2 ARN."
   type        = string

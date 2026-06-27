@@ -53,6 +53,7 @@ resource "aws_iam_policy" "github_portfolio_plan" {
           "apigateway:GET",
           "bedrock:Get*",
           "bedrock:List*",
+          "cloudfront:DescribeFunction",
           "cloudfront:Get*",
           "cloudfront:List*",
           "iam:Get*",
@@ -69,6 +70,7 @@ resource "aws_iam_policy" "github_portfolio_plan" {
           "s3vectors:GetVectorBucket",
           "s3vectors:GetVectorBucketPolicy",
           "s3vectors:ListIndexes",
+          "s3vectors:ListTagsForResource",
           "s3vectors:ListVectorBuckets",
           "secretsmanager:DescribeSecret",
           "secretsmanager:GetResourcePolicy",
@@ -81,10 +83,12 @@ resource "aws_iam_policy" "github_portfolio_plan" {
         Sid    = "AllowPortfolioBucketReadInspection"
         Effect = "Allow"
         Action = [
+          "s3:GetAccelerateConfiguration",
           "s3:GetBucket*",
           "s3:GetEncryptionConfiguration",
           "s3:GetLifecycleConfiguration",
-          "s3:GetPublicAccessBlock"
+          "s3:GetPublicAccessBlock",
+          "s3:GetReplicationConfiguration"
         ]
         Resource = [
           local.portfolio_site_bucket_arn,
@@ -185,6 +189,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "apigateway:GET",
           "bedrock:Get*",
           "bedrock:List*",
+          "cloudfront:DescribeFunction",
           "cloudfront:Get*",
           "cloudfront:List*",
           "iam:Get*",
@@ -201,6 +206,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "s3vectors:GetVectorBucket",
           "s3vectors:GetVectorBucketPolicy",
           "s3vectors:ListIndexes",
+          "s3vectors:ListTagsForResource",
           "s3vectors:ListVectorBuckets",
           "secretsmanager:DescribeSecret",
           "secretsmanager:GetResourcePolicy",
@@ -213,10 +219,12 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Sid    = "AllowPortfolioBucketReadInspection"
         Effect = "Allow"
         Action = [
+          "s3:GetAccelerateConfiguration",
           "s3:GetBucket*",
           "s3:GetEncryptionConfiguration",
           "s3:GetLifecycleConfiguration",
-          "s3:GetPublicAccessBlock"
+          "s3:GetPublicAccessBlock",
+          "s3:GetReplicationConfiguration"
         ]
         Resource = [
           local.portfolio_site_bucket_arn,
@@ -267,7 +275,9 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "apigateway:DELETE",
           "apigateway:PATCH",
           "apigateway:POST",
-          "apigateway:PUT"
+          "apigateway:PUT",
+          "apigateway:TagResource",
+          "apigateway:UntagResource"
         ]
         Resource = local.portfolio_apigateway_arn_pattern
       },
@@ -295,13 +305,15 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "cloudfront:CreateInvalidation",
           "cloudfront:DeleteDistribution",
           "cloudfront:DeleteOriginAccessControl",
+          "cloudfront:DeleteOriginRequestPolicy",
           "cloudfront:DeleteFunction",
           "cloudfront:PublishFunction",
           "cloudfront:TagResource",
           "cloudfront:UntagResource",
           "cloudfront:UpdateDistribution",
           "cloudfront:UpdateFunction",
-          "cloudfront:UpdateOriginAccessControl"
+          "cloudfront:UpdateOriginAccessControl",
+          "cloudfront:UpdateOriginRequestPolicy"
         ]
         Resource = local.portfolio_cloudfront_arn_patterns
       },
@@ -311,10 +323,25 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Action = [
           "cloudfront:CreateDistribution",
           "cloudfront:CreateFunction",
-          "cloudfront:CreateOriginAccessControl"
+          "cloudfront:CreateOriginAccessControl",
+          "cloudfront:CreateOriginRequestPolicy"
         ]
         Resource = "*"
       },
+
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_policy" "github_portfolio_apply_aux" {
+  name        = "${local.name_prefix}-github-portfolio-apply-aux"
+  description = "Additional approved Terraform apply access for durable Hiraya Portfolio infrastructure."
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
       {
         Sid    = "AllowPortfolioLambdaMutation"
         Effect = "Allow"
@@ -416,6 +443,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Action = [
           "secretsmanager:CreateSecret",
           "secretsmanager:DeleteSecret",
+          "secretsmanager:GetSecretValue",
           "secretsmanager:PutSecretValue",
           "secretsmanager:TagResource",
           "secretsmanager:UntagResource",
@@ -472,6 +500,11 @@ resource "aws_iam_policy" "github_portfolio_apply" {
 resource "aws_iam_role_policy_attachment" "github_portfolio_apply" {
   role       = aws_iam_role.github_portfolio_apply.name
   policy_arn = aws_iam_policy.github_portfolio_apply.arn
+}
+
+resource "aws_iam_role_policy_attachment" "github_portfolio_apply_aux" {
+  role       = aws_iam_role.github_portfolio_apply.name
+  policy_arn = aws_iam_policy.github_portfolio_apply_aux.arn
 }
 
 resource "aws_iam_role" "github_portfolio_app_deploy" {
