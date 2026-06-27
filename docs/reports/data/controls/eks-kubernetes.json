@@ -9,7 +9,7 @@
       "network_ingress",
       "observability_incident"
     ],
-    "updatedAt": "2026-06-22"
+    "updatedAt": "2026-06-27"
   },
   "controls": [
     {
@@ -492,8 +492,8 @@
     {
       "rationale": "Limit GitOps reconciliation to authorized source paths, namespaces, and resource kinds.",
       "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
-      "implementedSummary": "Terraform installs an Argo CD Application that syncs the repository main branch gitops/ path and enables prune/selfHeal.",
-      "gapSummary": "The Application still uses the default project; no restrictive AppProject limits source, destination, namespace, or resource kinds.",
+      "implementedSummary": "Cluster bootstrap creates separate hiraya-platform and hiraya-workloads AppProjects. The root app syncs gitops/clusters/dev/root from main with prune/selfHeal, and the vintage workload Application uses the hiraya-workloads project limited to configured workload namespaces.",
+      "gapSummary": "The platform AppProject remains intentionally broad, and the workload AppProject still allows all namespaced resource kinds; no resource-kind denylist or admission policy blocks privileged workload manifests.",
       "frameworks": {
         "awsWellArchitected": [
           "security",
@@ -507,11 +507,11 @@
       "resources": [
         {
           "type": "argocd_application",
-          "name": "vintage GitOps application"
+          "name": "hiraya-root and vintage Applications"
         },
         {
           "type": "argocd_project",
-          "name": "default project"
+          "name": "hiraya-platform and hiraya-workloads AppProjects"
         },
         {
           "type": "k8s_manifest",
@@ -520,16 +520,20 @@
       ],
       "evidence": [
         {
-          "path": "infra/envs/dev/cluster-bootstrap/chart/templates/resources.yaml",
-          "summary": "Application syncs the gitops path from main with automated prune and self-heal."
+          "path": "infra/envs/dev/cluster-bootstrap/main.tf",
+          "summary": "Bootstrap creates platform and workload AppProjects plus the root app-of-apps Application."
         },
         {
-          "path": "infra/envs/dev/cluster-bootstrap/chart/templates/resources.yaml",
-          "summary": "Helm template creates the Argo CD Application."
+          "path": "gitops/clusters/dev/root/applications/vintage.yml",
+          "summary": "Vintage workload Application is assigned to the hiraya-workloads AppProject."
+        },
+        {
+          "path": "gitops/clusters/dev/root/applications/platform-namespaces.yml",
+          "summary": "Platform Applications are assigned to the hiraya-platform AppProject."
         },
         {
           "path": "gitops/apps/vintage/kustomization.yml",
-          "summary": "GitOps tree defines the synced desired state."
+          "summary": "GitOps tree defines the synced workload desired state."
         }
       ],
       "reportViews": [
@@ -547,7 +551,7 @@
         }
       ],
       "id": "sec.argocd.project-boundary",
-      "title": "Argo CD GitOps boundary needs AppProject restrictions",
+      "title": "Argo CD GitOps boundary uses AppProjects but still allows broad resource kinds",
       "domain": "eks_kubernetes",
       "lifecyclePhases": [
         "gitops_sync"

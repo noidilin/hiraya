@@ -7,7 +7,7 @@
     "domains": [
       "identity_access"
     ],
-    "updatedAt": "2026-06-22"
+    "updatedAt": "2026-06-27"
   },
   "controls": [
     {
@@ -37,8 +37,8 @@
           "summary": "Bootstrap IAM roles are codified, but IAM Identity Center resources are absent."
         },
         {
-          "path": "docs/reports/report-zhTW.md",
-          "summary": "Architecture report identifies security improvements for production readiness."
+          "path": "docs/reports/README.md",
+          "summary": "Reports README documents these JSON controls as the durable source for future permission/audit reporting."
         }
       ],
       "reportViews": [
@@ -74,8 +74,8 @@
     {
       "rationale": "Make Kubernetes API ownership explicit and versioned instead of relying on creator privileges or temporary admin users.",
       "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
-      "implementedSummary": "The GitHub apply role has permissions to create EKS access entries; if GitHub creates the cluster it can become the consistent cluster owner. Terraform/GitHub apply can manage the platform through the EKS API.",
-      "gapSummary": "Terraform does not yet declare named operator access entries, aws-auth mappings, Identity Center role mappings, or Kubernetes RBAC for human operators.",
+      "implementedSummary": "The EKS module now declares cluster_admin access entries and associates AmazonEKSClusterAdminPolicy for configured principal ARNs. Platform core seeds the cluster bootstrap role as an admin principal and allows additional admin principal ARNs via variables.",
+      "gapSummary": "Human operator access is still not tied to codified IAM Identity Center permission sets/groups, and Kubernetes RBAC is not yet split into least-privilege operator roles.",
       "frameworks": {
         "awsWellArchitected": [
           "security",
@@ -104,11 +104,15 @@
       "evidence": [
         {
           "path": "infra/modules/eks/main.tf",
-          "summary": "EKS cluster module defines cluster access mode and access-related settings."
+          "summary": "EKS module defines access_config and aws_eks_access_entry/aws_eks_access_policy_association resources."
+        },
+        {
+          "path": "infra/envs/dev/platform-core/main.tf",
+          "summary": "Platform core passes the GitHub cluster-bootstrap role and optional admin principal ARNs into the EKS module."
         },
         {
           "path": "infra/envs/dev/bootstrap/main.tf",
-          "summary": "Apply role includes permissions needed for EKS access entry management."
+          "summary": "Bootstrap creates the GitHub cluster-bootstrap role used for cluster administration automation."
         },
         {
           "path": "docs/runbooks/troubleshooting/eks-github-runner-access.md",
