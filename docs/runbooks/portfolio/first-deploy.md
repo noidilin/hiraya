@@ -270,12 +270,15 @@ config=$(aws lambda get-function-configuration \
   --region "$AWS_REGION" \
   --function-name "$GUIDE_API_LAMBDA")
 
-env_json=$(jq -c --arg version "$version" '.Environment.Variables // {} | .KNOWLEDGE_VERSION = $version' <<< "$config")
+env_file=$(mktemp)
+jq -c --arg version "$version" \
+  '{Variables: (.Environment.Variables // {} | .KNOWLEDGE_VERSION = $version)}' \
+  <<< "$config" > "$env_file"
 
 aws lambda update-function-configuration \
   --region "$AWS_REGION" \
   --function-name "$GUIDE_API_LAMBDA" \
-  --environment "Variables=${env_json}" >/dev/null
+  --environment "file://${env_file}" >/dev/null
 
 aws lambda wait function-updated \
   --region "$AWS_REGION" \
@@ -308,5 +311,5 @@ Do not test the regional API Gateway endpoint directly unless you intentionally 
 | ACM validation hangs | Route 53 hosted zone name and certificate validation records |
 | Bedrock ingestion fails | S3 object prefix, KB IAM role S3 permissions, S3 Vectors index dimension, Bedrock model access |
 | Guide returns `not_ready` | Ingestion job status and Lambda environment variables from Terraform outputs |
-| Public URL 403/404 after deploy | CloudFront distribution status, S3 asset sync, SPA custom error responses, invalidation completion |
+| Public URL 403/404 after deploy | CloudFront distribution status, default behavior function association, `aws_cloudfront_function.spa_rewrite`, S3 asset sync, invalidation completion |
 | API returns 403 through API Gateway | Direct API Gateway calls lack the CloudFront origin secret header; test through CloudFront |

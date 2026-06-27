@@ -4,6 +4,11 @@ data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
 
+data "aws_route53_zone" "portfolio_public" {
+  name         = var.portfolio_hosted_zone_name
+  private_zone = false
+}
+
 data "aws_iam_policy_document" "github_image_push_assume_role" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]

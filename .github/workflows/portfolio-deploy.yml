@@ -207,10 +207,13 @@ jobs:
         run: |
           set -euo pipefail
           config=$(aws lambda get-function-configuration --function-name "$GUIDE_API_LAMBDA")
-          env_json=$(jq -c --arg version "$GITHUB_SHA" '.Environment.Variables // {} | .KNOWLEDGE_VERSION = $version' <<< "$config")
+          env_file=$(mktemp)
+          jq -c --arg version "$GITHUB_SHA" \
+            '{Variables: (.Environment.Variables // {} | .KNOWLEDGE_VERSION = $version)}' \
+            <<< "$config" > "$env_file"
           aws lambda update-function-configuration \
             --function-name "$GUIDE_API_LAMBDA" \
-            --environment "Variables=${env_json}" >/dev/null
+            --environment "file://${env_file}" >/dev/null
           aws lambda wait function-updated --function-name "$GUIDE_API_LAMBDA"
 
   app-deploy:

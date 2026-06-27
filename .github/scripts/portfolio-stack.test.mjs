@@ -30,6 +30,8 @@ test('Portfolio Stack Terraform defines durable SPA and health API routing', asy
   assert.match(main, /aws_cloudfront_function" "spa_rewrite"/, 'SPA fallback should use a viewer-request rewrite instead of global error remapping');
   assert.match(main, /function_association[\s\S]*event_type\s+=\s+"viewer-request"[\s\S]*function_arn\s+=\s+aws_cloudfront_function\.spa_rewrite\.arn/, 'default site behavior should attach the SPA rewrite function');
   assert.match(main, /uri === '\/api'[\s\S]*uri\.indexOf\('\/api\/'\) === 0/, 'SPA rewrite must skip API requests');
+  assert.match(main, /uri === '\/' \|\| lastSegment\.indexOf\('\.'\) === -1[\s\S]*request\.uri = '\/index\.html'/, 'SPA rewrite should send route-like paths, including trailing-slash client routes, to root index.html');
+  assert.doesNotMatch(main, /request\.uri = uri \+ 'index\.html'/, 'SPA rewrite must not append nested index.html for trailing-slash client routes');
   assert.doesNotMatch(main, /custom_error_response[\s\S]*response_page_path\s+=\s+"\/index\.html"/, 'SPA fallback must not be distribution-wide');
 });
 

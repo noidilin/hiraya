@@ -65,13 +65,6 @@ resource "aws_iam_policy" "github_portfolio_plan" {
           "logs:List*",
           "route53:Get*",
           "route53:List*",
-          "s3:GetBucket*",
-          "s3:GetEncryptionConfiguration",
-          "s3:GetLifecycleConfiguration",
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:GetPublicAccessBlock",
-          "s3:ListBucket",
           "s3vectors:GetIndex",
           "s3vectors:GetVectorBucket",
           "s3vectors:GetVectorBucketPolicy",
@@ -83,6 +76,41 @@ resource "aws_iam_policy" "github_portfolio_plan" {
           "secretsmanager:ListSecrets"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "AllowPortfolioBucketReadInspection"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucket*",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetPublicAccessBlock"
+        ]
+        Resource = [
+          local.portfolio_site_bucket_arn,
+          local.portfolio_knowledge_bucket_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioBucketObjectReadInspection"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [
+          local.portfolio_site_object_arn,
+          local.portfolio_knowledge_object_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioBucketListInspection"
+        Effect = "Allow"
+        Action = ["s3:ListBucket"]
+        Resource = [
+          local.portfolio_site_bucket_arn,
+          local.portfolio_knowledge_bucket_arn
+        ]
       }
     ]
   })
@@ -169,13 +197,6 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "logs:List*",
           "route53:Get*",
           "route53:List*",
-          "s3:GetBucket*",
-          "s3:GetEncryptionConfiguration",
-          "s3:GetLifecycleConfiguration",
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:GetPublicAccessBlock",
-          "s3:ListBucket",
           "s3vectors:GetIndex",
           "s3vectors:GetVectorBucket",
           "s3vectors:GetVectorBucketPolicy",
@@ -187,6 +208,41 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "secretsmanager:ListSecrets"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "AllowPortfolioBucketReadInspection"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucket*",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetPublicAccessBlock"
+        ]
+        Resource = [
+          local.portfolio_site_bucket_arn,
+          local.portfolio_knowledge_bucket_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioBucketObjectReadInspection"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [
+          local.portfolio_site_object_arn,
+          local.portfolio_knowledge_object_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioBucketListInspection"
+        Effect = "Allow"
+        Action = ["s3:ListBucket"]
+        Resource = [
+          local.portfolio_site_bucket_arn,
+          local.portfolio_knowledge_bucket_arn
+        ]
       },
       {
         Sid    = "AllowPortfolioAcmMutation"
@@ -291,7 +347,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Sid      = "AllowPortfolioDnsMutation"
         Effect   = "Allow"
         Action   = ["route53:ChangeResourceRecordSets"]
-        Resource = "arn:aws:route53:::hostedzone/*"
+        Resource = local.portfolio_public_hosted_zone_arn
       },
       {
         Sid    = "AllowPortfolioSiteBucketMutation"

@@ -41,9 +41,15 @@ variable "guide_model_arn" {
 }
 
 variable "guide_embedding_model_arn" {
-  description = "Optional Bedrock embedding model ARN override for the Portfolio Knowledge Base. Defaults to a region-matched Titan Text Embeddings v2 ARN."
+  description = "Optional Bedrock embedding model ARN override for the Portfolio Knowledge Base. Must be Titan Text Embeddings v2 because the S3 Vectors index dimension is fixed at 1024. Defaults to a region-matched Titan Text Embeddings v2 ARN."
   type        = string
   default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.guide_embedding_model_arn == null ? true : can(regex("^arn:aws(-[a-z]+)?:bedrock:[a-z0-9-]+::foundation-model/amazon\\.titan-embed-text-v2:0$", var.guide_embedding_model_arn))
+    error_message = "guide_embedding_model_arn must be null or a Titan Text Embeddings v2 foundation-model ARN (amazon.titan-embed-text-v2:0), matching the fixed 1024-dimension S3 Vectors index."
+  }
 }
 
 variable "skip_aws_credentials_validation" {
