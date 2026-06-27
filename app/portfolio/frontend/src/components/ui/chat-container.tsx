@@ -11,10 +11,7 @@ export type ChatContainerContentProps = {
   className?: string
 } & React.HTMLAttributes<HTMLDivElement>
 
-export type ChatContainerScrollAnchorProps = {
-  className?: string
-  ref?: React.RefObject<HTMLDivElement>
-} & React.HTMLAttributes<HTMLDivElement>
+export type ChatContainerScrollAnchorProps = React.ComponentProps<'div'>
 
 function ChatContainerRoot({
   children,

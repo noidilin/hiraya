@@ -29,6 +29,6 @@ createServer((request, response) => {
       response.end(JSON.stringify({ status: 'error', answer: 'Unexpected local server error.', citations: [] }))
     })
   })
-}).listen(port, '0.0.0.0', () => {
+}).listen(port, '127.0.0.1', () => {
   console.info(`hiraya-guide-api local server listening on http://localhost:${port}`)
 })

@@ -343,6 +343,25 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition = length([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : statement
+      if statement.Sid == "AllowPortfolioInfrastructureMutation"
+    ]) == 0
+    error_message = "The portfolio apply role must split broad infrastructure mutation into service-scoped statements."
+  }
+
+  assert {
+    condition = contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowPortfolioSiteBucketMutation"
+      ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-site") && contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowPortfolioKnowledgeBucketMutation"
+    ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-knowledge")
+    error_message = "The portfolio apply role must scope S3 bucket mutation to Portfolio site and knowledge buckets."
+  }
+
+  assert {
     condition = alltrue([
       for required_action in [
         "s3vectors:CreateVectorBucket",

@@ -9,6 +9,9 @@ on:
       - 'infra/portfolio/**'
       - 'infra/envs/dev/bootstrap/backend.tf'
       - 'infra/envs/dev/bootstrap/backend.hcl.example'
+      - 'infra/envs/dev/bootstrap/data.tf'
+      - 'infra/envs/dev/bootstrap/locals.tf'
+      - 'infra/envs/dev/bootstrap/outputs.tf'
       - 'infra/envs/dev/bootstrap/portfolio_oidc.tf'
       - 'infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl'
       - '.github/actions/setup-node-pnpm/action.yml'
@@ -76,7 +79,7 @@ jobs:
                 ;;
             esac
             case "$path" in
-              infra/portfolio/*|infra/envs/dev/bootstrap/backend.tf|infra/envs/dev/bootstrap/backend.hcl.example|infra/envs/dev/bootstrap/portfolio_oidc.tf|infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl|.github/scripts/write-terraform-backend.sh|.github/workflows/portfolio-pr-baseline.yml|.github/workflows/portfolio-infra-deploy.yml)
+              infra/portfolio/*|infra/envs/dev/bootstrap/backend.tf|infra/envs/dev/bootstrap/backend.hcl.example|infra/envs/dev/bootstrap/data.tf|infra/envs/dev/bootstrap/locals.tf|infra/envs/dev/bootstrap/outputs.tf|infra/envs/dev/bootstrap/portfolio_oidc.tf|infra/envs/dev/bootstrap/tests/oidc_roles.tftest.hcl|.github/scripts/write-terraform-backend.sh|.github/workflows/portfolio-pr-baseline.yml|.github/workflows/portfolio-infra-deploy.yml)
                 infra_changed=true
                 ;;
             esac

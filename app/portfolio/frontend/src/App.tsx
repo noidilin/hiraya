@@ -75,7 +75,7 @@ function App() {
   const canSend = input.trim().length > 0 && !isSending
 
   const latestCitations = useMemo(
-    () => messages.findLast((message) => message.citations?.length)?.citations ?? [],
+    () => messages.findLast((message) => message.role === 'guide')?.citations ?? [],
     [messages],
   )
 
@@ -119,6 +119,7 @@ function App() {
           status: 'error',
           content:
             'The Guide API is not reachable yet. The frontend is already wired to the planned same-origin /api/guide/chat route for the Lambda integration.',
+          citations: [],
         },
       ])
     } finally {

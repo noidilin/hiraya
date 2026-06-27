@@ -35,15 +35,15 @@ variable "guide_api_zip_path" {
 }
 
 variable "guide_model_arn" {
-  description = "Fast, low-cost Bedrock model ARN used by Hiraya Guide RetrieveAndGenerate."
+  description = "Optional Bedrock model ARN override for Hiraya Guide RetrieveAndGenerate. Defaults to a region-matched Nova Lite model ARN."
   type        = string
-  default     = "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.nova-lite-v1:0"
+  default     = null
 }
 
 variable "guide_embedding_model_arn" {
-  description = "Bedrock embedding model ARN used by the Portfolio Knowledge Base."
+  description = "Optional Bedrock embedding model ARN override for the Portfolio Knowledge Base. Defaults to a region-matched Titan Text Embeddings v2 ARN."
   type        = string
-  default     = "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v2:0"
+  default     = null
 }
 
 variable "skip_aws_credentials_validation" {

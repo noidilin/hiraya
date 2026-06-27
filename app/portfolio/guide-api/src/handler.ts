@@ -59,6 +59,13 @@ export async function handleRequest(request: HttpRequest): Promise<HttpResponse>
 
     status = 'not_found'
     return json(404, { status: 'error', answer: 'Not found.', citations: [] })
+  } catch {
+    status = 'error'
+    return json(502, {
+      status: 'error',
+      answer: 'Hiraya Guide hit an unexpected service error. Please try again later.',
+      citations: [],
+    })
   } finally {
     console.info(JSON.stringify({ route: request.path, status, citationCount, latencyMs: Date.now() - started }))
   }

@@ -100,9 +100,10 @@ function validateFrontmatter(fileName: string, expectedCategory: string, frontma
 
 function validateMarkdown(fileName: string, body: string, content: string, errors: string[]): void {
   const meaningfulBody = body
+    .replace(/<!--[\s\S]*?-->/g, '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line !== '' && !line.startsWith('<!--') && !line.startsWith('-->'));
+    .filter((line) => line !== '');
 
   if (meaningfulBody.length === 0) {
     errors.push(`${fileName}: body must contain non-empty Markdown content`);
