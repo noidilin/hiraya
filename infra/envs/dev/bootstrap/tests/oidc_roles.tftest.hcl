@@ -272,6 +272,11 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition     = aws_iam_role_policy_attachment.github_portfolio_apply_aux.role == aws_iam_role.github_portfolio_apply.name
+    error_message = "The portfolio apply role must attach the auxiliary apply policy."
+  }
+
+  assert {
     condition = contains(
       flatten([
         for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : try(tolist(statement.Resource), [statement.Resource])
