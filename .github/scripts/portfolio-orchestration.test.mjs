@@ -53,7 +53,8 @@ function runSmoke(baseUrl) {
 test('Portfolio orchestration workflow coordinates app deploy, knowledge sync, and final smoke', async () => {
   const workflow = await readFile(workflowPath, 'utf8');
 
-  assert.match(workflow, /^on:\n\s+push:\n\s+branches:\s+\[main\]/m, 'workflow should run from main branch pushes');
+  assert.match(workflow, /^on:\n\s+workflow_dispatch:\n\s+push:\n\s+branches:\s+\[main\]/m, 'workflow should run from main branch pushes and manual dispatch');
+  assert.match(workflow, /GITHUB_EVENT_NAME[\s\S]*workflow_dispatch[\s\S]*app_changed=true[\s\S]*knowledge_changed=true/, 'manual dispatch should force app and knowledge deploy paths');
   assert.match(workflow, /concurrency:[\s\S]*group: hiraya-portfolio-deploy-dev/, 'workflow should prevent overlapping Portfolio deploys');
   assert.match(workflow, /detect-changes:/, 'workflow should classify changed paths');
   assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, 'workflow should define the Terraform state bucket for backend generation');
