@@ -72,6 +72,11 @@ resource "aws_iam_policy" "github_portfolio_plan" {
           "s3:GetObjectVersion",
           "s3:GetPublicAccessBlock",
           "s3:ListBucket",
+          "s3vectors:GetIndex",
+          "s3vectors:GetVectorBucket",
+          "s3vectors:GetVectorBucketPolicy",
+          "s3vectors:ListIndexes",
+          "s3vectors:ListVectorBuckets",
           "secretsmanager:DescribeSecret",
           "secretsmanager:GetResourcePolicy",
           "secretsmanager:ListSecretVersionIds",
@@ -171,6 +176,11 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "s3:GetObjectVersion",
           "s3:GetPublicAccessBlock",
           "s3:ListBucket",
+          "s3vectors:GetIndex",
+          "s3vectors:GetVectorBucket",
+          "s3vectors:GetVectorBucketPolicy",
+          "s3vectors:ListIndexes",
+          "s3vectors:ListVectorBuckets",
           "secretsmanager:DescribeSecret",
           "secretsmanager:GetResourcePolicy",
           "secretsmanager:ListSecretVersionIds",
@@ -234,6 +244,14 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "s3:PutLifecycleConfiguration",
           "s3:PutObject",
           "s3:PutObjectTagging",
+          "s3vectors:CreateIndex",
+          "s3vectors:CreateVectorBucket",
+          "s3vectors:DeleteIndex",
+          "s3vectors:DeleteVectorBucket",
+          "s3vectors:DeleteVectorBucketPolicy",
+          "s3vectors:PutVectorBucketPolicy",
+          "s3vectors:TagResource",
+          "s3vectors:UntagResource",
           "secretsmanager:CreateSecret",
           "secretsmanager:DeleteSecret",
           "secretsmanager:PutSecretValue",
@@ -329,8 +347,8 @@ resource "aws_iam_policy" "github_portfolio_app_deploy" {
           "s3:PutObjectTagging"
         ]
         Resource = [
-          local.portfolio_s3_bucket_arn,
-          local.portfolio_s3_object_arn
+          local.portfolio_site_bucket_arn,
+          local.portfolio_site_object_arn
         ]
       },
       {
@@ -400,8 +418,8 @@ resource "aws_iam_policy" "github_portfolio_knowledge_sync" {
           "s3:PutObjectTagging"
         ]
         Resource = [
-          local.portfolio_s3_bucket_arn,
-          local.portfolio_s3_object_arn
+          local.portfolio_knowledge_bucket_arn,
+          local.portfolio_knowledge_object_arn
         ]
       },
       {

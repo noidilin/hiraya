@@ -3,6 +3,15 @@ import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+const requiredDocuments = [
+  'PROJECT_BRIEF.md',
+  'ARCHITECTURE.md',
+  'CICD.md',
+  'SECURITY_GATES.md',
+  'TEAM_ROLES.md',
+  'DECISIONS.md',
+];
+
 function parseArgs(argv) {
   const options = {
     root: process.cwd(),
@@ -65,30 +74,29 @@ function parseFrontmatter(fileName, content) {
 async function buildManifest(root) {
   const docsDir = path.join(root, 'docs/portfolio');
   const entries = await readdir(docsDir, { withFileTypes: true });
-  const documents = [];
+  const availableFiles = new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name));
+  const sources = {};
 
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.md') || entry.name === 'README.md') {
-      continue;
+  for (const fileName of requiredDocuments) {
+    if (!availableFiles.has(fileName)) {
+      throw new Error(`${fileName}: required curated document is missing`);
     }
 
-    const relativePath = `docs/portfolio/${entry.name}`;
-    const content = await readFile(path.join(docsDir, entry.name), 'utf8');
-    const frontmatter = parseFrontmatter(entry.name, content);
-    documents.push({
-      key: `knowledge/${entry.name}`,
-      source: relativePath,
+    const relativePath = `docs/portfolio/${fileName}`;
+    const content = await readFile(path.join(docsDir, fileName), 'utf8');
+    const frontmatter = parseFrontmatter(fileName, content);
+    const citation = {
       title: frontmatter.title,
-      category: frontmatter.category ?? null,
-      lastReviewed: frontmatter.last_reviewed ?? null,
-    });
+      source: relativePath,
+    };
+    sources[`knowledge/${fileName}`] = citation;
+    sources[relativePath] = citation;
   }
 
-  documents.sort((left, right) => left.source.localeCompare(right.source));
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    documents,
+    sources: Object.fromEntries(Object.entries(sources).sort(([left], [right]) => left.localeCompare(right))),
   };
 }
 
@@ -97,7 +105,7 @@ async function main() {
   const manifest = await buildManifest(root);
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(`Wrote ${manifest.documents.length} Portfolio citation manifest entries to ${output}`);
+  console.log(`Wrote ${Object.keys(manifest.sources).length} Portfolio citation manifest source mappings to ${output}`);
 }
 
 main().catch((error) => {

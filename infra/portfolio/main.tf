@@ -99,6 +99,14 @@ resource "aws_iam_role" "bedrock_knowledge_base" {
         Service = "bedrock.amazonaws.com"
       }
       Action = "sts:AssumeRole"
+      Condition = {
+        StringEquals = {
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+        }
+        ArnLike = {
+          "aws:SourceArn" = "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:knowledge-base/*"
+        }
+      }
     }]
   })
 
@@ -133,74 +141,52 @@ resource "aws_iam_role_policy" "bedrock_knowledge_base" {
       {
         Effect = "Allow"
         Action = [
-          "aoss:APIAccessAll"
+          "s3vectors:PutVectors",
+          "s3vectors:GetVectors",
+          "s3vectors:DeleteVectors",
+          "s3vectors:QueryVectors",
+          "s3vectors:GetIndex"
         ]
-        Resource = aws_opensearchserverless_collection.knowledge.arn
+        Resource = aws_s3vectors_index.knowledge.index_arn
       }
     ]
   })
 }
 
-resource "aws_opensearchserverless_security_policy" "knowledge_encryption" {
-  name = "${var.project_name}-${var.environment}-portfolio-kb"
-  type = "encryption"
-  policy = jsonencode({
-    Rules = [{
-      ResourceType = "collection"
-      Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
-    }]
-    AWSOwnedKey = true
-  })
+resource "aws_s3vectors_vector_bucket" "knowledge" {
+  vector_bucket_name = "${local.name_prefix}-vectors"
+  tags               = local.common_tags
 }
 
-resource "aws_opensearchserverless_security_policy" "knowledge_network" {
-  name = "${var.project_name}-${var.environment}-portfolio-kb"
-  type = "network"
-  policy = jsonencode([{
-    Rules = [
-      {
-        ResourceType = "collection"
-        Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
-      },
-      {
-        ResourceType = "dashboard"
-        Resource     = ["collection/${var.project_name}-${var.environment}-portfolio-kb"]
-      }
-    ]
-    AllowFromPublic = true
-  }])
-}
-
-resource "aws_opensearchserverless_collection" "knowledge" {
-  name = "${var.project_name}-${var.environment}-portfolio-kb"
-  type = "VECTORSEARCH"
-
-  depends_on = [
-    aws_opensearchserverless_security_policy.knowledge_encryption,
-    aws_opensearchserverless_security_policy.knowledge_network,
-  ]
+resource "aws_s3vectors_index" "knowledge" {
+  vector_bucket_name = aws_s3vectors_vector_bucket.knowledge.vector_bucket_name
+  index_name         = "hiraya-guide-index"
+  data_type          = "float32"
+  dimension          = 1024
+  distance_metric    = "cosine"
 
   tags = local.common_tags
 }
 
-resource "aws_opensearchserverless_access_policy" "knowledge" {
-  name = "${var.project_name}-${var.environment}-portfolio-kb"
-  type = "data"
-  policy = jsonencode([{
-    Rules = [
-      {
-        ResourceType = "collection"
-        Resource     = ["collection/${aws_opensearchserverless_collection.knowledge.name}"]
-        Permission   = ["aoss:CreateCollectionItems", "aoss:DescribeCollectionItems", "aoss:UpdateCollectionItems"]
-      },
-      {
-        ResourceType = "index"
-        Resource     = ["index/${aws_opensearchserverless_collection.knowledge.name}/*"]
-        Permission   = ["aoss:CreateIndex", "aoss:DeleteIndex", "aoss:DescribeIndex", "aoss:ReadDocument", "aoss:UpdateIndex", "aoss:WriteDocument"]
+resource "aws_s3vectors_vector_bucket_policy" "knowledge" {
+  vector_bucket_arn = aws_s3vectors_vector_bucket.knowledge.vector_bucket_arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = aws_iam_role.bedrock_knowledge_base.arn
       }
-    ]
-    Principal = [aws_iam_role.bedrock_knowledge_base.arn]
-  }])
+      Action = [
+        "s3vectors:PutVectors",
+        "s3vectors:GetVectors",
+        "s3vectors:DeleteVectors",
+        "s3vectors:QueryVectors",
+        "s3vectors:GetIndex"
+      ]
+      Resource = aws_s3vectors_index.knowledge.index_arn
+    }]
+  })
 }
 
 resource "aws_bedrock_guardrail" "guide" {
@@ -238,23 +224,16 @@ resource "aws_bedrockagent_knowledge_base" "guide" {
   }
 
   storage_configuration {
-    type = "OPENSEARCH_SERVERLESS"
+    type = "S3_VECTORS"
 
-    opensearch_serverless_configuration {
-      collection_arn    = aws_opensearchserverless_collection.knowledge.arn
-      vector_index_name = "hiraya-guide-index"
-
-      field_mapping {
-        metadata_field = "AMAZON_BEDROCK_METADATA"
-        text_field     = "AMAZON_BEDROCK_TEXT_CHUNK"
-        vector_field   = "hiraya-guide-vector"
-      }
+    s3_vectors_configuration {
+      index_arn = aws_s3vectors_index.knowledge.index_arn
     }
   }
 
   depends_on = [
     aws_iam_role_policy.bedrock_knowledge_base,
-    aws_opensearchserverless_access_policy.knowledge,
+    aws_s3vectors_vector_bucket_policy.knowledge,
   ]
 
   tags = local.common_tags

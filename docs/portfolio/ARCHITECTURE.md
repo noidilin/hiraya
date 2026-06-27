@@ -17,14 +17,14 @@ This boundary is intentionally disposable. The maintainer can destroy the dev EK
 
 ## Durable Portfolio Stack
 
-Hiraya Portfolio is planned as a durable public app outside EKS. ADR-0008 defines a Portfolio Stack under `infra/portfolio` that owns CloudFront, private S3 static hosting, API Gateway, a Guide API Lambda, Secrets Manager, Bedrock Knowledge Bases, Guardrails, and supporting IAM. The same CloudFront distribution should serve the SPA and route `/api/*` to the Guide API so browser calls stay same-origin.
+Hiraya Portfolio is implemented in the repository as a durable public app outside EKS, but it has not yet been applied to AWS. ADR-0008 defines a Portfolio Stack under `infra/portfolio` that owns CloudFront, private S3 static hosting, API Gateway, a Guide API Lambda, Secrets Manager, Bedrock Knowledge Bases backed by S3 Vectors, Guardrails, and supporting IAM. The same CloudFront distribution serves the SPA and routes `/api/*` to the Guide API so browser calls stay same-origin after deployment.
 
 The Portfolio Stack should not be mixed into Project Bootstrap, Platform Core, or the EKS destroy workflow. Project Bootstrap owns the cross-cutting CI/CD foundation, while the Portfolio Stack owns the durable public application resources.
 
 ## Hiraya Guide knowledge flow
 
-Curated Project Knowledge is reviewed Markdown under `docs/portfolio/`. It is intended to be synced to an S3-backed Bedrock Knowledge Base. Hiraya Guide should use RetrieveAndGenerate, normalize citations, refuse when curated evidence is absent, and avoid returning raw retrieved chunks.
+Curated Project Knowledge is reviewed Markdown under `docs/portfolio/`. The deploy workflow stages exactly the six curated documents, syncs them to the S3 knowledge prefix, uploads a separate citation manifest, and starts Bedrock ingestion. Hiraya Guide uses RetrieveAndGenerate, normalizes citations, refuses when curated evidence is absent, and avoids returning raw retrieved chunks.
 
 ## Current scope and gaps
 
-The durable Portfolio Stack and Guide API are target architecture, not fully deployed infrastructure in this starter pack. This slice creates the initial Curated Project Knowledge and validation foundation so later workflow and Bedrock ingestion work has a reviewed source of truth.
+The durable Portfolio Stack, Guide API, Lambda packaging, curated sync, and validation are deploy-ready in the repository. The remaining gap is operational: the Portfolio Stack has not yet been applied to AWS, and the first knowledge ingestion has not yet run.

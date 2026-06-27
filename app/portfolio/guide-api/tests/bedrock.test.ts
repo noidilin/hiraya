@@ -104,6 +104,34 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(response.status, 'answered')
     assert.doesNotMatch(JSON.stringify(response), /raw retrieved chunk/)
   })
+
+  it('refuses unknown knowledge citations instead of exposing raw S3 labels', async () => {
+    const response = await answerWithBedrock(
+      { message: 'What does an unknown source say?' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieveAndGenerate: async () => ({
+          ...answeredOutput(),
+          citations: [
+            {
+              generatedResponsePart: { textResponsePart: { text: 'answer', span: { start: 0, end: 6 } } },
+              retrievedReferences: [
+                {
+                  content: { text: 'raw chunk' },
+                  location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/UNKNOWN.md' } },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    )
+
+    assert.equal(response.status, 'refused')
+    assert.equal(response.citations.length, 0)
+    assert.doesNotMatch(JSON.stringify(response), /s3:\/\/bucket\/knowledge\/UNKNOWN\.md/)
+  })
 })
 
 function answeredOutput(): RetrieveAndGenerateCommandOutput {

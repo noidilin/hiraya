@@ -10,10 +10,13 @@
     "build": "tsc -p tsconfig.json --pretty false",
     "typecheck": "tsc -p tsconfig.json --pretty false --noEmit",
     "test": "pnpm run build && node --test dist/tests/*.test.js",
+    "package": "pnpm run build && node scripts/package-lambda.mjs",
+    "package:clean": "rm -rf build",
     "dev": "node --watch dist/src/dev-server.js"
   },
   "devDependencies": {
     "@types/node": "^24.12.3",
+    "esbuild": "^0.27.0",
     "typescript": "~6.0.2"
   },
   "dependencies": {

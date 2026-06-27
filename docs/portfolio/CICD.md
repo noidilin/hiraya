@@ -19,10 +19,10 @@ The repository also keeps a separate Vintage Storefront baseline. The existing `
 
 Vintage Storefront delivery is GitOps-oriented. Kubernetes manifests and platform add-ons are rendered and reconciled by Argo CD after cluster bootstrap. This keeps in-cluster desired state visible in the repository instead of relying on manual kubectl changes.
 
-## Portfolio delivery target state
+## Portfolio delivery
 
-Hiraya Portfolio uses separate root scripts and should not change the Vintage Storefront `app:baseline` command. Planned Portfolio workflows will validate the frontend, Guide API, Curated Project Knowledge, and Portfolio Terraform independently. On merge, app and knowledge changes are intended to deploy automatically, while Portfolio infrastructure changes require a reviewed plan and manual approved apply.
+Hiraya Portfolio uses separate root scripts and does not change the Vintage Storefront `app:baseline` command. Portfolio workflows validate the frontend, bundled Guide API package, Curated Project Knowledge, and Portfolio Terraform independently. On merge, app and knowledge changes deploy through the Portfolio orchestration workflow, while Portfolio infrastructure changes require a reviewed plan and manual approved apply.
 
 ## Gaps and accepted risks
 
-The microservice image pipeline and full Portfolio orchestration are still being completed. The project accepts a small v1 workflow surface for the Portfolio Stack instead of introducing a service catalog for every Portfolio component immediately.
+The microservice image pipeline is still being completed. The Portfolio Stack is deploy-ready in code but not yet applied to AWS, so public smoke results depend on the first approved infrastructure deployment and knowledge ingestion. The project accepts a small v1 workflow surface for the Portfolio Stack instead of introducing a service catalog for every Portfolio component immediately.

@@ -21,6 +21,7 @@ concurrency:
 
 env:
   AWS_REGION: ap-northeast-1
+  TF_STATE_BUCKET: devops-hiraya-dev-tf-state
   PORTFOLIO_DIR: infra/portfolio
   PORTFOLIO_APP_DEPLOY_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-app-deploy
   PORTFOLIO_KNOWLEDGE_SYNC_ROLE_ARN: arn:aws:iam::549475122024:role/devops-hiraya-dev-github-portfolio-knowledge-sync
@@ -137,8 +138,17 @@ jobs:
         run: |
           set -euo pipefail
           manifest_path="${RUNNER_TEMP}/citations.json"
+          staging_dir="${RUNNER_TEMP}/portfolio-knowledge-staging"
           node .github/scripts/generate-portfolio-citation-manifest.mjs --root . --output "$manifest_path"
-          aws s3 sync docs/portfolio/ "s3://${KNOWLEDGE_BUCKET}/${KNOWLEDGE_PREFIX}" --delete --exclude '*' --include '*.md' --cache-control "no-cache"
+          rm -rf "$staging_dir"
+          mkdir -p "$staging_dir"
+          cp docs/portfolio/PROJECT_BRIEF.md "$staging_dir/"
+          cp docs/portfolio/ARCHITECTURE.md "$staging_dir/"
+          cp docs/portfolio/CICD.md "$staging_dir/"
+          cp docs/portfolio/SECURITY_GATES.md "$staging_dir/"
+          cp docs/portfolio/TEAM_ROLES.md "$staging_dir/"
+          cp docs/portfolio/DECISIONS.md "$staging_dir/"
+          aws s3 sync "$staging_dir/" "s3://${KNOWLEDGE_BUCKET}/${KNOWLEDGE_PREFIX}" --delete --cache-control "no-cache"
           aws s3 cp "$manifest_path" "s3://${KNOWLEDGE_BUCKET}/${CITATION_MANIFEST_KEY}" --content-type "application/json" --cache-control "no-cache"
 
       - name: start-and-wait-for-bedrock-ingestion
@@ -223,8 +233,8 @@ jobs:
           pnpm run portfolio:frontend:build
           pnpm run portfolio:frontend:lint
           pnpm run portfolio:guide-api:test
-          pnpm run portfolio:guide-api:build
-          (cd app/portfolio/guide-api/dist/src && zip -qr "${RUNNER_TEMP}/guide-api.zip" .)
+          pnpm run portfolio:guide-api:package
+          cp app/portfolio/guide-api/build/guide-api.zip "${RUNNER_TEMP}/guide-api.zip"
 
       - name: configure-aws-credentials-with-app-deploy-role
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6

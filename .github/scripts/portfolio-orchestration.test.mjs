@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const workflowPath = path.resolve(scriptsDir, '../workflows/portfolio-deploy.yml');
+const infraWorkflowPath = path.resolve(scriptsDir, '../workflows/portfolio-infra-deploy.yml');
 const manifestScriptPath = path.join(scriptsDir, 'generate-portfolio-citation-manifest.mjs');
 const smokeScriptPath = path.join(scriptsDir, 'portfolio-public-smoke.mjs');
 
@@ -55,13 +56,18 @@ test('Portfolio orchestration workflow coordinates app deploy, knowledge sync, a
   assert.match(workflow, /^on:\n\s+push:\n\s+branches:\s+\[main\]/m, 'workflow should run from main branch pushes');
   assert.match(workflow, /concurrency:[\s\S]*group: hiraya-portfolio-deploy-dev/, 'workflow should prevent overlapping Portfolio deploys');
   assert.match(workflow, /detect-changes:/, 'workflow should classify changed paths');
-  assert.match(workflow, /knowledge-sync:[\s\S]*aws s3 sync docs\/portfolio\/ "s3:\/\/\$\{KNOWLEDGE_BUCKET\}\/\$\{KNOWLEDGE_PREFIX\}" --delete/, 'knowledge sync should mirror curated docs with delete');
+  assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, 'workflow should define the Terraform state bucket for backend generation');
+  assert.match(workflow, /knowledge-sync:[\s\S]*staging_dir="\$\{RUNNER_TEMP\}\/portfolio-knowledge-staging"[\s\S]*aws s3 sync "\$staging_dir\/" "s3:\/\/\$\{KNOWLEDGE_BUCKET\}\/\$\{KNOWLEDGE_PREFIX\}" --delete/, 'knowledge sync should mirror staged curated docs with delete');
+  for (const doc of ['PROJECT_BRIEF.md', 'ARCHITECTURE.md', 'CICD.md', 'SECURITY_GATES.md', 'TEAM_ROLES.md', 'DECISIONS.md']) {
+    assert.match(workflow, new RegExp(`cp docs/portfolio/${doc} "\\$staging_dir/"`), `${doc} should be copied into the staging directory`);
+  }
+  assert.doesNotMatch(workflow, /cp docs\/portfolio\/README\.md|aws s3 sync docs\/portfolio\//, 'knowledge sync should not stage or sync README.md');
   assert.match(workflow, /generate-portfolio-citation-manifest\.mjs/, 'workflow should generate citation manifest from Markdown frontmatter');
   assert.match(workflow, /aws bedrock-agent start-ingestion-job/, 'workflow should start Bedrock ingestion');
   assert.match(workflow, /aws bedrock-agent get-ingestion-job/, 'workflow should poll Bedrock ingestion');
   assert.match(workflow, /KNOWLEDGE_VERSION/, 'workflow should bump Lambda knowledge-version environment');
   assert.match(workflow, /app-deploy:[\s\S]*needs:\s+\[detect-changes, knowledge-sync\]/, 'app deploy should wait for knowledge sync when both changed');
-  assert.match(workflow, /zip -qr "\$\{RUNNER_TEMP\}\/guide-api\.zip"/, 'Lambda zip should be built in workflow temp');
+  assert.match(workflow, /pnpm run portfolio:guide-api:package[\s\S]*cp app\/portfolio\/guide-api\/build\/guide-api\.zip "\$\{RUNNER_TEMP\}\/guide-api\.zip"/, 'Lambda zip should come from the package command');
   assert.match(workflow, /aws s3 sync app\/portfolio\/frontend\/dist\/ "s3:\/\/\$\{SITE_BUCKET\}\/" --delete/, 'frontend assets should be uploaded to S3');
   assert.match(workflow, /cache-control "public,max-age=31536000,immutable"/, 'hashed/static assets should get immutable cache headers');
   assert.match(workflow, /cache-control "no-cache"/, 'SPA shell should get no-cache headers');
@@ -70,11 +76,30 @@ test('Portfolio orchestration workflow coordinates app deploy, knowledge sync, a
   assert.match(workflow, /portfolio-public-smoke\.mjs/, 'workflow should run deployed Portfolio smoke checks');
 });
 
+test('Portfolio deploy workflows define backend state bucket before generating backend config', async () => {
+  for (const workflowFile of [workflowPath, infraWorkflowPath]) {
+    const workflow = await readFile(workflowFile, 'utf8');
+    assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, `${path.basename(workflowFile)} should define TF_STATE_BUCKET`);
+    assert.match(workflow, /write-terraform-backend\.sh portfolio/, `${path.basename(workflowFile)} should generate the Portfolio backend config`);
+  }
+});
+
 test('citation manifest generator maps curated Markdown to safe source labels outside the knowledge prefix', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'hiraya-citation-manifest-'));
   const docsDir = path.join(root, 'docs/portfolio');
   await mkdir(docsDir, { recursive: true });
-  await writeFile(path.join(docsDir, 'CICD.md'), '---\ntitle: CI/CD Workflow\naudience: portfolio_visitor\ncategory: cicd\nlast_reviewed: 2026-06-27\n---\n\n# CI/CD\n');
+  const docs = {
+    'PROJECT_BRIEF.md': ['Project Brief', 'project_brief'],
+    'ARCHITECTURE.md': ['Architecture Overview', 'architecture'],
+    'CICD.md': ['CI/CD Workflow', 'cicd'],
+    'SECURITY_GATES.md': ['Security Gates', 'security_gates'],
+    'TEAM_ROLES.md': ['Team Roles', 'team_roles'],
+    'DECISIONS.md': ['Key Decisions', 'decisions'],
+  };
+  for (const [fileName, [title, category]] of Object.entries(docs)) {
+    await writeFile(path.join(docsDir, fileName), `---\ntitle: ${title}\naudience: portfolio_visitor\ncategory: ${category}\nlast_reviewed: 2026-06-27\n---\n\n# ${title}\n`);
+  }
+  await writeFile(path.join(docsDir, 'EXTRA.md'), '---\ntitle: Extra\naudience: portfolio_visitor\ncategory: extra\nlast_reviewed: 2026-06-27\n---\n\n# not ingested\n');
   await writeFile(path.join(docsDir, 'README.md'), '# not ingested\n');
   const output = path.join(root, 'manifests/citations.json');
 
@@ -83,13 +108,12 @@ test('citation manifest generator maps curated Markdown to safe source labels ou
   assert.equal(result.status, 0, result.stderr);
   const manifest = JSON.parse(await readFile(output, 'utf8'));
   assert.equal(manifest.schemaVersion, 1);
-  assert.deepEqual(manifest.documents, [{
-    key: 'knowledge/CICD.md',
-    source: 'docs/portfolio/CICD.md',
-    title: 'CI/CD Workflow',
-    category: 'cicd',
-    lastReviewed: '2026-06-27',
-  }]);
+  assert.equal(manifest.documents, undefined);
+  assert.equal(Object.keys(manifest.sources).length, 12);
+  assert.deepEqual(manifest.sources['docs/portfolio/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
+  assert.deepEqual(manifest.sources['knowledge/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
+  assert.equal(manifest.sources['knowledge/README.md'], undefined);
+  assert.equal(manifest.sources['knowledge/EXTRA.md'], undefined);
 });
 
 test('Portfolio public smoke checks shell, health, answered citations, and refusal', async () => {

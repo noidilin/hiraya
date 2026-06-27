@@ -39,7 +39,7 @@ Portfolio Visitor browser
                                       |-> S3 citation manifest outside KB prefix
                                       `-> Bedrock Knowledge Bases RetrieveAndGenerate
                                              |-> S3 knowledge data source
-                                             |-> managed vector store
+                                             |-> S3 Vectors vector bucket/index
                                              `-> Terraform-managed Bedrock Guardrail
 ```
 
@@ -182,8 +182,8 @@ Use Amazon Bedrock Knowledge Bases with `RetrieveAndGenerate`.
 - Use a fast/low-cost generation model selected from current `ap-northeast-1` availability.
 - Set explicit max output tokens in every model invocation path.
 - Use the default embedding model unless implementation-time availability requires adjustment.
-- Prefer the simplest managed vector store, with S3 Vectors first if available in the target region/account; fall back to OpenSearch Serverless if needed.
-- Terraform manages the KB, data source, vector store, Guardrail, and IAM.
+- Use Amazon S3 Vectors as the v1 vector store to keep idle cost and operational complexity low for the small curated Markdown corpus.
+- Terraform manages the KB, S3 data source, S3 Vectors vector bucket/index, Guardrail, and IAM.
 - The workflow only syncs Markdown and starts/polls ingestion.
 - First apply may create an empty KB/data source; run knowledge sync after curated docs exist.
 
@@ -290,7 +290,7 @@ Terraform must not upload frontend build artifacts or curated knowledge document
 
 ## Application layout
 
-Recommended v1 layout, with `frontend/` already scaffolded and `guide-api/` still planned:
+Current v1 layout, with `frontend/` and `guide-api/` implemented locally:
 
 ```text
 app/portfolio/
@@ -298,7 +298,7 @@ app/portfolio/
     package.json
     src/
     vite.config.ts
-  guide-api/         # planned Node.js TypeScript Lambda package
+  guide-api/         # Node.js TypeScript Lambda package bundled with esbuild
     package.json
     src/
       handler.ts
@@ -317,6 +317,7 @@ Root scripts should be separate from Vintage Storefront scripts:
   "portfolio:frontend:test": "...",
   "portfolio:guide-api:build": "...",
   "portfolio:guide-api:test": "...",
+  "portfolio:guide-api:package": "...",
   "portfolio:knowledge:validate": "...",
   "portfolio:static": "..."
 }
@@ -376,15 +377,16 @@ Jobs:
 1. Detect changed paths.
 2. If knowledge changed:
    - validate frontmatter/nonempty/Markdown lint.
-   - mirror `docs/portfolio/*.md` to S3 `knowledge/` with delete.
-   - generate and upload citation manifest outside the KB prefix.
+   - stage the six curated Markdown files into `${RUNNER_TEMP}/portfolio-knowledge-staging`.
+   - mirror that staging directory to S3 `knowledge/` with delete.
+   - generate and upload a `sources`-schema citation manifest outside the KB prefix.
    - start Bedrock ingestion job.
    - poll until `COMPLETE` or fail on `FAILED`.
    - bump Lambda `KNOWLEDGE_VERSION` environment value.
 3. If app changed:
    - build/test frontend.
    - build/test Guide API.
-   - build Lambda zip in workflow temp only.
+   - run `pnpm run portfolio:guide-api:package` and deploy the packaged CommonJS Lambda zip.
    - upload frontend assets to S3 with correct cache headers.
    - update Lambda code with `aws lambda update-function-code`.
    - invalidate CloudFront paths `/` and `/index.html`.
@@ -435,9 +437,14 @@ Use workflow concurrency for Portfolio deploys to avoid overlapping knowledge/ap
 6. Portfolio workflows
    - Add Portfolio PR baseline.
    - Add one `main` orchestration workflow for knowledge sync, app deploy, and smoke.
-   - Ensure Lambda zip artifacts are generated in workflow temp only.
+   - Ensure Lambda zip artifacts come from the deterministic `app/portfolio/guide-api/build/guide-api.zip` package output.
 
 7. First deploy
+   - Build the local Lambda artifact before a local plan if not using the workflow:
+     ```sh
+     pnpm run portfolio:guide-api:package
+     terraform -chdir=infra/portfolio plan
+     ```
    - Apply Portfolio Stack infrastructure manually after plan approval.
    - Merge/sync curated knowledge.
    - Run Portfolio orchestration workflow.
@@ -451,7 +458,7 @@ Local/PR:
 - `terraform -chdir=infra/portfolio init -backend=false`
 - `terraform -chdir=infra/portfolio validate`
 - frontend build/test pass.
-- Guide API build/test pass.
+- Guide API build/test/package pass.
 - curated Markdown validation and lint pass.
 
 Post-deploy:

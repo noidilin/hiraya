@@ -1,8 +1,8 @@
 # Curated Project Knowledge
 
-Curated Project Knowledge is the reviewed Markdown source for Hiraya Guide. These files are written for Portfolio Visitors and are intended to be synced to the Bedrock Knowledge Base in a later workflow slice.
+Curated Project Knowledge is the reviewed Markdown source for Hiraya Guide. These files are written for Portfolio Visitors. The deploy workflow stages exactly these six files, syncs them to the Bedrock Knowledge Base S3 knowledge prefix, and excludes this README.
 
-The starter pack is:
+The curated set is:
 
 - `PROJECT_BRIEF.md`
 - `ARCHITECTURE.md`
@@ -11,7 +11,7 @@ The starter pack is:
 - `TEAM_ROLES.md`
 - `DECISIONS.md`
 
-Validate the starter pack from the repository root:
+Validate the curated set from the repository root:
 
 ```sh
 pnpm run portfolio:knowledge:validate
