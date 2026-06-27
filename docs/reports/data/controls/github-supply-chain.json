@@ -7,7 +7,7 @@
     "domains": [
       "github_supply_chain"
     ],
-    "updatedAt": "2026-06-22"
+    "updatedAt": "2026-06-27"
   },
   "controls": [
     {
@@ -482,8 +482,8 @@
     {
       "rationale": "Permit controlled image-version updates while avoiding unrelated repository writes or mixed infrastructure/application changes.",
       "boundarySummary": "Allow the named actors to perform the intended action only through the controlled workflow; deny bypasses, broad privileges, and unreviewed changes.",
-      "implementedSummary": "The update-manifests job limits contents: write to the minimal job that rewrites GitOps image fields and commits back to main.",
-      "gapSummary": "Accepted risk: the checkout write token must persist for rebase and push, so the job remains a high-value credential exposure point.",
+      "implementedSummary": "The update-manifests job keeps workflow permissions at contents: read, mints a Hiraya GitHub App token only after builds pass, updates image fields on a rolling promotion branch, validates the render, opens/updates a PR, and enables squash auto-merge after required checks.",
+      "gapSummary": "The GitHub App private key remains a sensitive repository secret and the app token can write promotion branches, so App installation scope and required checks must remain tightly controlled.",
       "frameworks": {
         "awsWellArchitected": [
           "security",
@@ -501,7 +501,7 @@
         },
         {
           "type": "github_token",
-          "name": "GITHUB_TOKEN contents: write"
+          "name": "Hiraya GitHub App promotion token"
         },
         {
           "type": "k8s_manifest",
@@ -511,15 +511,19 @@
       "evidence": [
         {
           "path": ".github/workflows/image-ci.yml",
-          "summary": "Only update-manifests needs contents: write and pushes manifest changes."
-        },
-        {
-          "path": "gitops/apps/vintage/kustomization.yml",
-          "summary": "GitOps source is a narrow manifest tree."
+          "summary": "update-manifests uses actions/create-github-app-token, pushes a promotion branch, and opens/updates an auto-merge PR instead of committing directly to main."
         },
         {
           "path": ".github/utils/services.json",
           "summary": "Service catalog constrains manifest update targets."
+        },
+        {
+          "path": "gitops/apps/vintage/kustomization.yml",
+          "summary": "GitOps source is a narrow workload manifest tree."
+        },
+        {
+          "path": "docs/runbooks/platform/enforce-app-baseline-required-check.md",
+          "summary": "Runbook documents required check enforcement for app promotion."
         }
       ],
       "reportViews": [
@@ -537,7 +541,7 @@
         }
       ],
       "id": "sec.github.manifest-update-token",
-      "title": "Manifest update write-token exposure is bounded",
+      "title": "Manifest promotion uses a scoped GitHub App token and PR gate",
       "domain": "github_supply_chain",
       "lifecyclePhases": [
         "gitops_update"
@@ -547,7 +551,7 @@
         "devops"
       ],
       "objective": "Permit controlled image-version updates while avoiding unrelated repository writes or mixed infrastructure/application changes.",
-      "status": "accepted_risk",
+      "status": "implemented",
       "risk": {
         "impact": 4,
         "likelihood": 2,

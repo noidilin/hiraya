@@ -44,8 +44,8 @@
         "sec.audit.permission-deployment-records"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Pod logs, dashboards, workflow logs, and CloudTrail can support audit evidence, but immutable retention and reviewer-only audit permissions are not codified.",
-      "gapSummary": "Define retention, archival, alerting, and read-only audit access for security evidence.",
+      "notes": "Prometheus/Grafana dashboards, ServiceMonitors, route smoke checks, workflow logs, and CloudTrail can support audit evidence, but pod log forwarding, immutable retention, and reviewer-only audit permissions are not codified.",
+      "gapSummary": "Define centralized runtime log delivery, retention, archival, alerting, and read-only audit access for security evidence.",
       "sortKey": 30
     },
     {
@@ -72,8 +72,8 @@
         "sec.terraform.state-access"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Terraform state access is split and generated admin values are marked sensitive, but application secrets remain in Git and rotation is not automated.",
-      "gapSummary": "Adopt Secrets Manager/KMS-backed delivery, remove plaintext Kubernetes secret sources from Git, and define rotation.",
+      "notes": "Terraform state access is split, and admin plus vintage application secrets are centralized in Secrets Manager and synced by External Secrets Operator. Secrets still originate in Terraform state and rotation is manual rather than scheduled.",
+      "gapSummary": "Add KMS/audit hardening, reduce sensitive Terraform state exposure, and automate rotation/revocation plus workload rollout.",
       "sortKey": 50
     },
     {

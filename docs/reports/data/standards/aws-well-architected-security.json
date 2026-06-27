@@ -32,8 +32,8 @@
         "sec.eks.operator-access-entries"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "CI identities use GitHub OIDC and repository-scoped trust; human AWS and Kubernetes operator access are not yet fully codified.",
-      "gapSummary": "Define IAM Identity Center permission sets, EKS access entries, and Kubernetes RBAC for human operators.",
+      "notes": "CI identities use GitHub OIDC and repository-scoped trust. EKS cluster-admin access entries are codified for automation principals, but human AWS/EKS access governance remains incomplete.",
+      "gapSummary": "Define IAM Identity Center permission sets, human operator mappings, Kubernetes RBAC, and periodic access-review evidence.",
       "sortKey": 20
     },
     {
@@ -61,8 +61,8 @@
         "ops.incident.aiops-investigation"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "CloudWatch pod log delivery, monitoring dashboards, runbooks, and workflow logs provide evidence, but alert-to-incident routing and immutable audit retention remain incomplete.",
-      "gapSummary": "Add centralized audit retention, alert routing, and an authorized remediation workflow.",
+      "notes": "Prometheus/Grafana monitoring dashboards, ServiceMonitors, runbooks, route smoke checks, workflow logs, and CloudTrail can provide investigation evidence, but pod log forwarding, alert-to-incident routing, and immutable audit retention remain incomplete.",
+      "gapSummary": "Add centralized runtime log delivery, centralized audit retention, alert routing, and an authorized remediation workflow.",
       "sortKey": 40
     },
     {
@@ -104,8 +104,8 @@
         "sec.terraform.state-access"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Terraform state access is split by role and generated admin passwords are sensitive outputs, but application secrets remain in Git and rotation is not codified.",
-      "gapSummary": "Move secrets to Secrets Manager/KMS-backed delivery, reduce state sensitivity, and codify rotation/revocation.",
+      "notes": "Terraform state access is split by role, and Argo CD, Grafana, and vintage application secrets are stored in Secrets Manager and synced through External Secrets Operator. Secrets still originate in Terraform state and rotation remains manual.",
+      "gapSummary": "Reduce state sensitivity, add customer-managed KMS/audited secret-read workflows, and automate rotation/revocation.",
       "sortKey": 70
     },
     {

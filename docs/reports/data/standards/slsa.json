@@ -71,8 +71,8 @@
         "sec.github.manifest-update-token"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "AWS credentials are short-lived and deploy/destroy workflows use an environment gate, but the manifest update job intentionally keeps a write token to push GitOps changes.",
-      "gapSummary": "Further isolate or broker manifest-update writes, or document compensating controls for the accepted token exposure.",
+      "notes": "AWS credentials are short-lived and deploy/destroy workflows use an environment gate. Manifest promotion now uses a scoped GitHub App token and PR gate instead of direct workflow-token writes to main, but the GitHub App private key remains a sensitive repository secret.",
+      "gapSummary": "Keep the GitHub App installation narrowly scoped and consider external token brokering or additional approval for promotion writes.",
       "sortKey": 50
     },
     {

@@ -60,8 +60,8 @@
         "sec.terraform.state-access"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "State read/write access is separated and generated admin values are sensitive outputs, but plaintext application secrets and absent rotation remain high-priority gaps.",
-      "gapSummary": "Use Secrets Manager/KMS-backed delivery, remove plaintext Git secrets, and automate rotation/revocation.",
+      "notes": "State read/write access is separated, and admin plus vintage application secrets are centralized in Secrets Manager and delivered by External Secrets Operator. Remaining gaps are Terraform state sensitivity, KMS/audit hardening, and manual rotation.",
+      "gapSummary": "Reduce sensitive Terraform state exposure, add KMS-backed/audited secret access patterns, and automate rotation/revocation.",
       "sortKey": 40
     },
     {
@@ -88,8 +88,8 @@
         "ops.incident.aiops-investigation"
       ],
       "alignmentStatus": "partially_aligned",
-      "notes": "Logs, metrics, dashboards, smoke checks, and AIOps queries support investigation, but closed-loop alerting and authorized remediation are incomplete.",
-      "gapSummary": "Add alert routing, incident-channel evidence, and remediation authorization records.",
+      "notes": "Metrics, dashboards, ServiceMonitors, smoke checks, workflow logs, and AIOps queries support investigation, but centralized pod log forwarding, closed-loop alerting, and authorized remediation are incomplete.",
+      "gapSummary": "Add centralized runtime log delivery, alert routing, incident-channel evidence, and remediation authorization records.",
       "sortKey": 60
     },
     {
