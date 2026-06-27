@@ -37,6 +37,20 @@ test('Portfolio Terraform validation is included in credential-free infra CI', a
   assert.match(workflow, /terraform -chdir="\$stack" init -backend=false/, 'Portfolio validation should avoid backend credentials');
 });
 
+test('Portfolio Stack uses Terraform-managed S3 Vectors for the Bedrock Knowledge Base', async () => {
+  const main = await readFile(portfolioMain, 'utf8');
+
+  assert.match(main, /resource "aws_s3vectors_vector_bucket" "knowledge"/, 'S3 Vectors vector bucket should be declared');
+  assert.match(main, /resource "aws_s3vectors_vector_bucket_policy" "knowledge"/, 'S3 Vectors vector bucket policy should scope Bedrock access to the index');
+  assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*data_type\s+=\s+"float32"/, 'S3 Vectors index should use float32 vectors');
+  assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*dimension\s+=\s+1024/, 'S3 Vectors index should match Titan Text Embeddings V2 default dimensions');
+  assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*distance_metric\s+=\s+"cosine"/, 'S3 Vectors index should use cosine distance');
+  assert.match(main, /storage_configuration[\s\S]*type\s+=\s+"S3_VECTORS"[\s\S]*s3_vectors_configuration[\s\S]*index_arn\s+=\s+aws_s3vectors_index\.knowledge\.index_arn/, 'Bedrock KB should use S3 Vectors storage');
+  assert.doesNotMatch(main, /aws_opensearchserverless_|OPENSEARCH_SERVERLESS|aoss:/, 'OpenSearch Serverless resources and permissions should be removed');
+  assert.match(main, /aws:SourceAccount/, 'Bedrock KB role trust should include confused-deputy SourceAccount protection');
+  assert.match(main, /aws:SourceArn/, 'Bedrock KB role trust should include confused-deputy SourceArn protection');
+});
+
 test('manual Portfolio infra deploy plans before approval and applies after dev approval', async () => {
   const workflow = await readFile(portfolioWorkflow, 'utf8');
 
@@ -46,5 +60,7 @@ test('manual Portfolio infra deploy plans before approval and applies after dev 
   assert.match(workflow, /uses: actions\/upload-artifact@/, 'preflight should upload plan evidence');
   assert.match(workflow, /environment: dev/, 'apply should require the dev GitHub environment approval');
   assert.match(workflow, /PORTFOLIO_APPLY_ROLE_ARN/, 'apply should use the dedicated Portfolio apply role');
+  assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, 'Portfolio infra deploy should define the Terraform state bucket');
+  assert.match(workflow, /pnpm run portfolio:guide-api:package[\s\S]*cp app\/portfolio\/guide-api\/build\/guide-api\.zip "\$\{PORTFOLIO_DIR\}\/build\/guide-api\.zip"/, 'workflow should package the Lambda bundle before planning/applying');
   assert.match(workflow, /terraform -chdir="\$\{PORTFOLIO_DIR\}" apply/, 'workflow should apply the approved Portfolio plan');
 });

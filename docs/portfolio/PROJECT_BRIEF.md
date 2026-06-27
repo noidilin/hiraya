@@ -23,7 +23,7 @@ Hiraya demonstrates several DevOps themes together:
 - GitHub Actions workflows that separate validation, infrastructure deployment, image publishing, and GitOps reconciliation.
 - Argo CD driven in-cluster delivery for the Vintage Storefront.
 - Security and permission-control evidence captured as reviewed repository data under `docs/reports/`.
-- A planned durable Portfolio Stack for Hiraya Portfolio and Hiraya Guide, separate from the disposable EKS platform.
+- A deploy-ready durable Portfolio Stack for Hiraya Portfolio and Hiraya Guide, separate from the disposable EKS platform and awaiting first approved AWS apply.
 
 ## Visitor promise
 

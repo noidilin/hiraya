@@ -54,11 +54,15 @@ locals {
     local.terraform_state_object_arns.portfolio,
   ]
 
-  portfolio_role_arn_pattern   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-portfolio-*"
-  portfolio_policy_arn_pattern = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-portfolio-*"
-  portfolio_lambda_arn_pattern = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-portfolio-*"
-  portfolio_s3_bucket_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-*"
-  portfolio_s3_object_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-*/*"
+  portfolio_role_arn_pattern     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-portfolio-*"
+  portfolio_policy_arn_pattern   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-portfolio-*"
+  portfolio_lambda_arn_pattern   = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-portfolio-*"
+  portfolio_site_bucket_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-site"
+  portfolio_site_object_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-site/*"
+  portfolio_knowledge_bucket_arn = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge"
+  portfolio_knowledge_object_arn = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge/*"
+  portfolio_vector_bucket_arn    = "arn:aws:s3vectors:${var.aws_region}:${data.aws_caller_identity.current.account_id}:bucket/${local.name_prefix}-portfolio-vectors"
+  portfolio_vector_index_arn     = "${local.portfolio_vector_bucket_arn}/index/hiraya-guide-index"
 
   platform_role_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-*"
   platform_policy_arn_pattern        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-*"

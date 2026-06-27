@@ -20,9 +20,12 @@ export function normalizeCitations(rawCitations: RawCitation[], manifest?: Citat
   const normalized: GuideCitation[] = []
 
   for (const citation of rawCitations) {
-    const manifestCitation = lookupManifestCitation(citation.source, manifest)
+    const rawSource = stringValue(citation.source).trim()
+    const manifestCitation = lookupManifestCitation(rawSource, manifest)
+    if (!manifestCitation && isKnowledgeStorageSource(rawSource)) continue
+
     const title = (manifestCitation?.title ?? stringValue(citation.title)).trim()
-    const source = (manifestCitation?.source ?? stringValue(citation.source)).trim()
+    const source = (manifestCitation?.source ?? rawSource).trim()
 
     if (!title || !source) continue
 
@@ -36,10 +39,14 @@ export function normalizeCitations(rawCitations: RawCitation[], manifest?: Citat
   return normalized
 }
 
-function lookupManifestCitation(source: unknown, manifest: CitationManifest | undefined): GuideCitation | undefined {
-  if (!manifest?.sources || typeof source !== 'string') return undefined
+function lookupManifestCitation(source: string, manifest: CitationManifest | undefined): GuideCitation | undefined {
+  if (!manifest?.sources) return undefined
   const key = source.replace(/^s3:\/\/[^/]+\/knowledge\//, 'knowledge/')
   return manifest.sources[source] ?? manifest.sources[key] ?? manifest.sources[key.replace(/^knowledge\//, 'docs/portfolio/')]
+}
+
+function isKnowledgeStorageSource(source: string): boolean {
+  return /^s3:\/\/[^/]+\/knowledge\//.test(source) || /^knowledge\//.test(source)
 }
 
 function stringValue(value: unknown): string {

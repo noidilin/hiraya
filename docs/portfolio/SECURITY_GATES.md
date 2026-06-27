@@ -26,7 +26,7 @@ Several controls are intentionally recorded as partial or not implemented:
 - Human AWS access through IAM Identity Center is not codified in the repository. It remains externally and manually governed.
 - Named human operator EKS access entries, aws-auth mappings, Identity Center role mappings, and Kubernetes RBAC are not fully declared.
 - Admin UI hardening for Argo CD and Grafana is partial. HTTPS routes and generated admin passwords exist, but SSO, IP allowlists, fine-grained RBAC, and detailed operation auditing remain gaps.
-- WAF is deferred for Hiraya Portfolio v1. The planned public controls are throttling, strict request validation, Lambda concurrency limits, explicit Bedrock token limits, and origin-header verification.
+- WAF is deferred for Hiraya Portfolio v1. The deploy-ready public controls are throttling, strict request validation, Lambda concurrency limits, explicit Bedrock token limits, and origin-header verification.
 
 ## Accepted risk statement
 

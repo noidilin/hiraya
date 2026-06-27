@@ -19,6 +19,7 @@
     "portfolio:guide-api:build": "pnpm --filter @hiraya/portfolio-guide-api build",
     "portfolio:guide-api:typecheck": "pnpm --filter @hiraya/portfolio-guide-api typecheck",
     "portfolio:guide-api:test": "pnpm --filter @hiraya/portfolio-guide-api test",
+    "portfolio:guide-api:package": "pnpm --filter @hiraya/portfolio-guide-api package",
     "portfolio:guide-api:dev": "pnpm --filter @hiraya/portfolio-guide-api dev",
     "portfolio:knowledge:validate": "pnpm run scripts:build && node .github/scripts/dist/validate-portfolio-knowledge.mjs --root .",
     "portfolio:static": "pnpm run portfolio:frontend:build && pnpm run portfolio:frontend:lint && pnpm run portfolio:guide-api:build",

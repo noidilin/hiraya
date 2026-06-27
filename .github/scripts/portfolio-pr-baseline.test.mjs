@@ -47,7 +47,7 @@ test('Portfolio PR baseline runs app, knowledge, and backend-free Terraform chec
   assert.match(app, /pnpm run portfolio:frontend:test/);
   assert.match(app, /pnpm run portfolio:frontend:build/);
   assert.match(app, /pnpm run portfolio:guide-api:test/);
-  assert.match(app, /pnpm run portfolio:guide-api:build/);
+  assert.match(app, /pnpm run portfolio:guide-api:package/);
 
   const knowledge = jobBlock(workflow, 'portfolio-knowledge-baseline');
   assert.match(knowledge, /if: \$\{\{ needs\.classify-portfolio-pr\.outputs\.knowledge_changed == 'true' \}\}/, 'knowledge checks should be relevant-path gated');
@@ -69,6 +69,7 @@ test('trusted same-repository Portfolio infrastructure PRs publish dedicated pla
   assert.match(plan, /PORTFOLIO_PLAN_ROLE_ARN: arn:aws:iam::549475122024:role\/devops-hiraya-dev-github-portfolio-plan/, 'plan should use the dedicated Portfolio plan role');
   assert.match(plan, /configure-aws-credentials/);
   assert.match(plan, /write-terraform-backend\.sh portfolio/);
+  assert.match(plan, /pnpm run portfolio:guide-api:package[\s\S]*cp app\/portfolio\/guide-api\/build\/guide-api\.zip "\$\{PORTFOLIO_DIR\}\/build\/guide-api\.zip"/, 'plan should use the packaged Lambda artifact');
   assert.match(plan, /terraform -chdir="\$\{PORTFOLIO_DIR\}" plan[\s\S]*-detailed-exitcode[\s\S]*pr-plan\.txt/, 'plan should create readable plan evidence');
   assert.match(plan, /actions\/upload-artifact@/, 'full plan should be uploaded as evidence');
   assert.match(plan, /publish-terraform-plan-comment\.sh "\$\{PORTFOLIO_DIR\}\/pr-plan\.txt" "\$\{PLAN_ARTIFACT_NAME\}"/, 'plan evidence should be published to the PR');

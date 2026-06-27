@@ -1,6 +1,6 @@
 # Hiraya Portfolio
 
-Durable public portfolio app planned in `docs/plan/portfolio-bedrock-KB.md`.
+Durable public portfolio app described in `docs/plan/portfolio-bedrock-KB.md`. The code is deploy-ready; the AWS Portfolio Stack still needs first approved apply.
 
 ## Frontend
 
@@ -11,11 +11,11 @@ The frontend lives in `app/portfolio/frontend` and is intentionally lean while t
 - shadcn registry config aligned with the lazycicd pattern.
 - prompt-kit registry alias for chat primitives: `@prompt-kit` -> `https://prompt-kit.com/c/{name}.json`.
 - Browser-scoped Bedrock session handling via the API response `sessionId`.
-- Relative API call to `POST /api/guide/chat` for future CloudFront `/api/*` routing.
+- Relative API call to `POST /api/guide/chat` for CloudFront `/api/*` routing.
 
 ## Guide API
 
-The local Guide API lives in `app/portfolio/guide-api` and provides the planned same-origin contract before Bedrock and Portfolio Stack infrastructure exist:
+The Guide API lives in `app/portfolio/guide-api` and provides the same-origin contract used locally and by the Lambda package:
 
 - `GET /api/health` returns `{ "ok": true, "service": "hiraya-guide-api" }`.
 - `POST /api/guide/chat` accepts `{ "message": string, "sessionId"?: string }`.
@@ -30,6 +30,7 @@ pnpm run portfolio:frontend:lint
 pnpm run portfolio:frontend:test
 pnpm run portfolio:guide-api:build
 pnpm run portfolio:guide-api:test
+pnpm run portfolio:guide-api:package
 pnpm run portfolio:guide-api:dev
 pnpm run portfolio:static
 ```

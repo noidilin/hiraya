@@ -23,7 +23,7 @@ Hiraya Guide should answer from Curated Project Knowledge. Raw repository snapsh
 
 ## Managed RAG keeps v1 small
 
-The planned Guide API uses Amazon Bedrock Knowledge Bases and RetrieveAndGenerate first. Lambda stays thin: validate public requests, verify the CloudFront origin header, call the managed RAG path, normalize citations, and refuse when citations are missing.
+The Guide API uses Amazon Bedrock Knowledge Bases and RetrieveAndGenerate first. Lambda stays thin: validate public requests, verify the CloudFront origin header, call the managed RAG path, normalize citations, and refuse when citations are missing. The v1 vector store is S3 Vectors because the curated Markdown corpus is small and does not need OpenSearch-style hybrid search.
 
 ## Honest limitations are part of the design
 

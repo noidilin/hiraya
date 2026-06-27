@@ -326,6 +326,88 @@ run "creates_scoped_infra_oidc_roles" {
   }
 
   assert {
+    condition = alltrue([
+      for required_action in [
+        "s3vectors:GetVectorBucket",
+        "s3vectors:GetVectorBucketPolicy",
+        "s3vectors:GetIndex",
+        "s3vectors:ListVectorBuckets",
+        "s3vectors:ListIndexes",
+        ] : anytrue(flatten([
+          for statement in jsondecode(aws_iam_policy.github_portfolio_plan.policy).Statement : [
+            for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          ]
+      ]))
+    ])
+    error_message = "The portfolio plan role must include S3 Vectors read permissions for Terraform refresh."
+  }
+
+  assert {
+    condition = alltrue([
+      for required_action in [
+        "s3vectors:CreateVectorBucket",
+        "s3vectors:DeleteVectorBucket",
+        "s3vectors:PutVectorBucketPolicy",
+        "s3vectors:DeleteVectorBucketPolicy",
+        "s3vectors:CreateIndex",
+        "s3vectors:DeleteIndex",
+        "s3vectors:TagResource",
+        "s3vectors:UntagResource",
+        ] : anytrue(flatten([
+          for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : [
+            for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          ]
+      ]))
+    ])
+    error_message = "The portfolio apply role must include S3 Vectors mutation permissions."
+  }
+
+  assert {
+    condition = !anytrue(flatten([
+      for policy in [aws_iam_policy.github_portfolio_plan.policy, aws_iam_policy.github_portfolio_apply.policy] : [
+        for statement in jsondecode(policy).Statement : [
+          for action in try(tolist(statement.Action), [statement.Action]) : startswith(action, "aoss:")
+        ]
+      ]
+    ]))
+    error_message = "Portfolio Terraform roles must not keep OpenSearch Serverless permissions after the S3 Vectors switch."
+  }
+
+  assert {
+    condition = contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_app_deploy.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowPortfolioAssetDeploy"
+      ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-site") && !contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_app_deploy.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowPortfolioAssetDeploy"
+    ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-knowledge")
+    error_message = "The portfolio app deploy role must be scoped to the site bucket only."
+  }
+
+  assert {
+    condition = contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_knowledge_sync.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowCuratedKnowledgeSync"
+      ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-knowledge") && !contains(flatten([
+      for statement in jsondecode(aws_iam_policy.github_portfolio_knowledge_sync.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      if statement.Sid == "AllowCuratedKnowledgeSync"
+    ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-site")
+    error_message = "The portfolio knowledge sync role must be scoped to the knowledge bucket only."
+  }
+
+  assert {
+    condition = alltrue([
+      for required_action in ["lambda:GetFunctionConfiguration", "lambda:UpdateFunctionConfiguration"] : anytrue(flatten([
+        for statement in jsondecode(aws_iam_policy.github_portfolio_knowledge_sync.policy).Statement : [
+          for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          if statement.Sid == "AllowKnowledgeVersionRefresh"
+        ]
+      ]))
+    ])
+    error_message = "The portfolio knowledge sync role must refresh the Guide API Lambda knowledge version."
+  }
+
+  assert {
     condition     = random_password.vintage_postgres.keepers.rotation_epoch == "1"
     error_message = "The Vintage secret must rotate only when the manual rotation epoch changes."
   }

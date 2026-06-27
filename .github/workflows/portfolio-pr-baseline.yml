@@ -130,7 +130,7 @@ jobs:
           pnpm run portfolio:frontend:build
           pnpm run portfolio:frontend:lint
           pnpm run portfolio:guide-api:test
-          pnpm run portfolio:guide-api:build
+          pnpm run portfolio:guide-api:package
 
   portfolio-knowledge-baseline:
     name: portfolio-knowledge-baseline
@@ -217,9 +217,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm run portfolio:guide-api:build
+          pnpm run portfolio:guide-api:package
           mkdir -p "${PORTFOLIO_DIR}/build"
-          (cd app/portfolio/guide-api/dist/src && zip -qr "${GITHUB_WORKSPACE}/${PORTFOLIO_DIR}/build/guide-api.zip" .)
+          cp app/portfolio/guide-api/build/guide-api.zip "${PORTFOLIO_DIR}/build/guide-api.zip"
 
       - name: configure-aws-credentials-with-portfolio-plan-role
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
