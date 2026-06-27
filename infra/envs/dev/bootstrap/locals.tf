@@ -68,15 +68,21 @@ locals {
     local.terraform_state_object_arns.portfolio,
   ]
 
-  portfolio_role_arn_pattern     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-portfolio-*"
-  portfolio_policy_arn_pattern   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-portfolio-*"
-  portfolio_lambda_arn_pattern   = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-portfolio-*"
-  portfolio_site_bucket_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-site"
-  portfolio_site_object_arn      = "arn:aws:s3:::${local.name_prefix}-portfolio-site/*"
-  portfolio_knowledge_bucket_arn = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge"
-  portfolio_knowledge_object_arn = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge/*"
-  portfolio_vector_bucket_arn    = "arn:aws:s3vectors:${var.aws_region}:${data.aws_caller_identity.current.account_id}:bucket/${local.name_prefix}-portfolio-vectors"
-  portfolio_vector_index_arn     = "${local.portfolio_vector_bucket_arn}/index/hiraya-guide-index"
+  portfolio_role_arn_pattern            = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-portfolio-*"
+  portfolio_policy_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-portfolio-*"
+  portfolio_lambda_arn_pattern          = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-portfolio-*"
+  portfolio_site_bucket_arn             = "arn:aws:s3:::${local.name_prefix}-portfolio-site"
+  portfolio_site_object_arn             = "arn:aws:s3:::${local.name_prefix}-portfolio-site/*"
+  portfolio_knowledge_bucket_arn        = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge"
+  portfolio_knowledge_object_arn        = "arn:aws:s3:::${local.name_prefix}-portfolio-knowledge/*"
+  portfolio_vector_bucket_arn           = "arn:aws:s3vectors:${var.aws_region}:${data.aws_caller_identity.current.account_id}:bucket/${local.name_prefix}-portfolio-vectors"
+  portfolio_vector_index_arn            = "${local.portfolio_vector_bucket_arn}/index/hiraya-guide-index"
+  portfolio_acm_certificate_arn_pattern = "arn:aws:acm:us-east-1:${data.aws_caller_identity.current.account_id}:certificate/*"
+  portfolio_apigateway_arn_pattern      = "arn:aws:apigateway:${var.aws_region}::/apis*"
+  portfolio_bedrock_arn_patterns        = ["arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:knowledge-base/*", "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:guardrail/*"]
+  portfolio_cloudfront_arn_patterns     = ["arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*", "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:origin-access-control/*", "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:function/${local.name_prefix}-portfolio-*"]
+  portfolio_log_group_arn_pattern       = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.name_prefix}-portfolio-*"
+  portfolio_origin_secret_arn_pattern   = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:/hiraya/${var.environment}/portfolio/*"
 
   platform_role_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-*"
   platform_policy_arn_pattern        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-*"

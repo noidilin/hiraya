@@ -37,7 +37,7 @@ describe('Hiraya Guide frontend API client', () => {
   })
 
   it('throws when the API cannot provide the planned response contract', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify({ status: 'error', answer: 'bad', citations: [] }), { status: 500 }))
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ status: 'unknown', answer: 'bad', citations: [] }), { status: 200 }))
     const client = createGuideClient(fetcher as unknown as typeof fetch)
 
     await expect(client.sendMessage({ message: 'hello' })).rejects.toThrow(/unexpected response/i)

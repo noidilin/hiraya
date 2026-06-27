@@ -28,10 +28,10 @@ export async function answerWithBedrock(request: GuideChatRequest, options: Guid
     return { status: 'not_ready', answer: notReadyAnswer, sessionId: request.sessionId, citations: [] }
   }
 
-  const manifest = options.citationManifest ?? (await citationManifest(env))
   const retrieveAndGenerate = options.retrieveAndGenerate ?? defaultRetrieveAndGenerate
 
   try {
+    const manifest = options.citationManifest ?? (await citationManifest(env))
     const output = await retrieveAndGenerate({
       input: { text: request.message },
       sessionId: request.sessionId,

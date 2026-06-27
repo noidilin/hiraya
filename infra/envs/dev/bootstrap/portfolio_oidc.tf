@@ -189,34 +189,80 @@ resource "aws_iam_policy" "github_portfolio_apply" {
         Resource = "*"
       },
       {
-        Sid    = "AllowPortfolioInfrastructureMutation"
+        Sid    = "AllowPortfolioAcmMutation"
         Effect = "Allow"
         Action = [
           "acm:AddTagsToCertificate",
           "acm:DeleteCertificate",
-          "acm:RemoveTagsFromCertificate",
-          "acm:RequestCertificate",
+          "acm:RemoveTagsFromCertificate"
+        ]
+        Resource = local.portfolio_acm_certificate_arn_pattern
+      },
+      {
+        Sid      = "AllowPortfolioAcmRequest"
+        Effect   = "Allow"
+        Action   = ["acm:RequestCertificate"]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowPortfolioApiGatewayMutation"
+        Effect = "Allow"
+        Action = [
           "apigateway:DELETE",
           "apigateway:PATCH",
           "apigateway:POST",
-          "apigateway:PUT",
-          "bedrock:Create*",
+          "apigateway:PUT"
+        ]
+        Resource = local.portfolio_apigateway_arn_pattern
+      },
+      {
+        Sid    = "AllowPortfolioBedrockMutation"
+        Effect = "Allow"
+        Action = [
           "bedrock:Delete*",
           "bedrock:TagResource",
           "bedrock:UntagResource",
-          "bedrock:Update*",
-          "cloudfront:CreateCloudFrontOriginAccessIdentity",
-          "cloudfront:CreateDistribution",
+          "bedrock:Update*"
+        ]
+        Resource = local.portfolio_bedrock_arn_patterns
+      },
+      {
+        Sid      = "AllowPortfolioBedrockCreate"
+        Effect   = "Allow"
+        Action   = ["bedrock:Create*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowPortfolioCloudFrontMutation"
+        Effect = "Allow"
+        Action = [
           "cloudfront:CreateInvalidation",
-          "cloudfront:CreateOriginAccessControl",
-          "cloudfront:DeleteCloudFrontOriginAccessIdentity",
           "cloudfront:DeleteDistribution",
           "cloudfront:DeleteOriginAccessControl",
+          "cloudfront:DeleteFunction",
+          "cloudfront:PublishFunction",
           "cloudfront:TagResource",
           "cloudfront:UntagResource",
-          "cloudfront:UpdateCloudFrontOriginAccessIdentity",
           "cloudfront:UpdateDistribution",
-          "cloudfront:UpdateOriginAccessControl",
+          "cloudfront:UpdateFunction",
+          "cloudfront:UpdateOriginAccessControl"
+        ]
+        Resource = local.portfolio_cloudfront_arn_patterns
+      },
+      {
+        Sid    = "AllowPortfolioCloudFrontCreate"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateDistribution",
+          "cloudfront:CreateFunction",
+          "cloudfront:CreateOriginAccessControl"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowPortfolioLambdaMutation"
+        Effect = "Allow"
+        Action = [
           "lambda:AddPermission",
           "lambda:CreateFunction",
           "lambda:DeleteFunction",
@@ -224,26 +270,76 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "lambda:TagResource",
           "lambda:UntagResource",
           "lambda:UpdateFunctionCode",
-          "lambda:UpdateFunctionConfiguration",
+          "lambda:UpdateFunctionConfiguration"
+        ]
+        Resource = local.portfolio_lambda_arn_pattern
+      },
+      {
+        Sid    = "AllowPortfolioLogsMutation"
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:DeleteLogGroup",
           "logs:DeleteRetentionPolicy",
           "logs:PutRetentionPolicy",
           "logs:TagResource",
-          "logs:UntagResource",
-          "route53:ChangeResourceRecordSets",
+          "logs:UntagResource"
+        ]
+        Resource = local.portfolio_log_group_arn_pattern
+      },
+      {
+        Sid      = "AllowPortfolioDnsMutation"
+        Effect   = "Allow"
+        Action   = ["route53:ChangeResourceRecordSets"]
+        Resource = "arn:aws:route53:::hostedzone/*"
+      },
+      {
+        Sid    = "AllowPortfolioSiteBucketMutation"
+        Effect = "Allow"
+        Action = [
           "s3:CreateBucket",
           "s3:DeleteBucket",
           "s3:DeleteBucketPolicy",
-          "s3:DeleteObject",
           "s3:PutBucketPolicy",
           "s3:PutBucketPublicAccessBlock",
           "s3:PutBucketTagging",
           "s3:PutBucketVersioning",
           "s3:PutEncryptionConfiguration",
-          "s3:PutLifecycleConfiguration",
+          "s3:PutLifecycleConfiguration"
+        ]
+        Resource = local.portfolio_site_bucket_arn
+      },
+      {
+        Sid    = "AllowPortfolioKnowledgeBucketMutation"
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:DeleteBucketPolicy",
+          "s3:PutBucketPolicy",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:PutBucketTagging",
+          "s3:PutEncryptionConfiguration"
+        ]
+        Resource = local.portfolio_knowledge_bucket_arn
+      },
+      {
+        Sid    = "AllowPortfolioBucketObjectMutation"
+        Effect = "Allow"
+        Action = [
+          "s3:DeleteObject",
           "s3:PutObject",
-          "s3:PutObjectTagging",
+          "s3:PutObjectTagging"
+        ]
+        Resource = [
+          local.portfolio_site_object_arn,
+          local.portfolio_knowledge_object_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioS3VectorsMutation"
+        Effect = "Allow"
+        Action = [
           "s3vectors:CreateIndex",
           "s3vectors:CreateVectorBucket",
           "s3vectors:DeleteIndex",
@@ -251,7 +347,17 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "s3vectors:DeleteVectorBucketPolicy",
           "s3vectors:PutVectorBucketPolicy",
           "s3vectors:TagResource",
-          "s3vectors:UntagResource",
+          "s3vectors:UntagResource"
+        ]
+        Resource = [
+          local.portfolio_vector_bucket_arn,
+          local.portfolio_vector_index_arn
+        ]
+      },
+      {
+        Sid    = "AllowPortfolioSecretMutation"
+        Effect = "Allow"
+        Action = [
           "secretsmanager:CreateSecret",
           "secretsmanager:DeleteSecret",
           "secretsmanager:PutSecretValue",
@@ -259,7 +365,7 @@ resource "aws_iam_policy" "github_portfolio_apply" {
           "secretsmanager:UntagResource",
           "secretsmanager:UpdateSecret"
         ]
-        Resource = "*"
+        Resource = local.portfolio_origin_secret_arn_pattern
       },
       {
         Sid    = "AllowPortfolioIamMutation"

@@ -14,13 +14,15 @@ data "aws_cloudfront_cache_policy" "optimized" {
 }
 
 locals {
-  name_prefix          = "devops-${var.project_name}-${var.environment}-portfolio"
-  site_origin_id       = "portfolio-site-s3"
-  api_origin_id        = "portfolio-guide-api"
-  domain_name          = trimsuffix(var.domain_name, ".")
-  api_origin_domain    = replace(aws_apigatewayv2_api.guide.api_endpoint, "https://", "")
-  origin_secret_name   = "/hiraya/${var.environment}/portfolio/origin-secret"
-  runtime_boundary_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
+  name_prefix               = "devops-${var.project_name}-${var.environment}-portfolio"
+  site_origin_id            = "portfolio-site-s3"
+  api_origin_id             = "portfolio-guide-api"
+  domain_name               = trimsuffix(var.domain_name, ".")
+  api_origin_domain         = replace(aws_apigatewayv2_api.guide.api_endpoint, "https://", "")
+  origin_secret_name        = "/hiraya/${var.environment}/portfolio/origin-secret"
+  runtime_boundary_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
+  guide_model_arn           = coalesce(var.guide_model_arn, "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-lite-v1:0")
+  guide_embedding_model_arn = coalesce(var.guide_embedding_model_arn, "arn:aws:bedrock:${var.region}::foundation-model/amazon.titan-embed-text-v2:0")
 
   common_tags = merge(var.tags, {
     Project     = var.project_name
@@ -60,6 +62,25 @@ resource "aws_s3_bucket_versioning" "site" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  rule {
+    id     = "cleanup-noncurrent-site-assets"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -136,7 +157,7 @@ resource "aws_iam_role_policy" "bedrock_knowledge_base" {
         Action = [
           "bedrock:InvokeModel"
         ]
-        Resource = var.guide_embedding_model_arn
+        Resource = local.guide_embedding_model_arn
       },
       {
         Effect = "Allow"
@@ -219,7 +240,7 @@ resource "aws_bedrockagent_knowledge_base" "guide" {
     type = "VECTOR"
 
     vector_knowledge_base_configuration {
-      embedding_model_arn = var.guide_embedding_model_arn
+      embedding_model_arn = local.guide_embedding_model_arn
     }
   }
 
@@ -364,7 +385,7 @@ resource "aws_iam_role_policy" "guide_api" {
         Action = [
           "bedrock:InvokeModel"
         ]
-        Resource = var.guide_model_arn
+        Resource = local.guide_model_arn
       },
       {
         Effect = "Allow"
@@ -385,13 +406,14 @@ resource "aws_cloudwatch_log_group" "guide_api" {
 }
 
 resource "aws_lambda_function" "guide_api" {
-  function_name = "${local.name_prefix}-guide-api"
-  role          = aws_iam_role.guide_api.arn
-  handler       = "handler.handler"
-  runtime       = "nodejs24.x"
-  filename      = var.guide_api_zip_path
-  timeout       = 10
-  memory_size   = 256
+  function_name    = "${local.name_prefix}-guide-api"
+  role             = aws_iam_role.guide_api.arn
+  handler          = "handler.handler"
+  runtime          = "nodejs24.x"
+  filename         = var.guide_api_zip_path
+  source_code_hash = fileexists(var.guide_api_zip_path) ? filebase64sha256(var.guide_api_zip_path) : null
+  timeout          = 10
+  memory_size      = 256
 
   reserved_concurrent_executions = 5
 
@@ -401,7 +423,7 @@ resource "aws_lambda_function" "guide_api" {
       CITATION_MANIFEST_BUCKET       = aws_s3_bucket.knowledge.bucket
       CITATION_MANIFEST_KEY          = "manifests/citations.json"
       BEDROCK_KNOWLEDGE_BASE_ID      = aws_bedrockagent_knowledge_base.guide.id
-      BEDROCK_MODEL_ARN              = var.guide_model_arn
+      BEDROCK_MODEL_ARN              = local.guide_model_arn
       BEDROCK_GUARDRAIL_ID           = aws_bedrock_guardrail.guide.guardrail_id
       BEDROCK_GUARDRAIL_VERSION      = aws_bedrock_guardrail_version.guide.version
       BEDROCK_MAX_OUTPUT_TOKENS      = "700"
@@ -496,6 +518,35 @@ resource "aws_cloudfront_origin_request_policy" "api_minimal" {
   }
 }
 
+resource "aws_cloudfront_function" "spa_rewrite" {
+  name    = "${local.name_prefix}-spa-rewrite"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite frontend routes to index.html without touching /api/* requests."
+  publish = true
+  code    = <<-EOT
+function handler(event) {
+  var request = event.request;
+  var uri = request.uri || '/';
+
+  if (uri === '/api' || uri.indexOf('/api/') === 0) {
+    return request;
+  }
+
+  if (uri.charAt(uri.length - 1) === '/') {
+    request.uri = uri + 'index.html';
+    return request;
+  }
+
+  var lastSegment = uri.split('/').pop();
+  if (lastSegment.indexOf('.') === -1) {
+    request.uri = '/index.html';
+  }
+
+  return request;
+}
+EOT
+}
+
 resource "aws_cloudfront_distribution" "portfolio" {
   enabled             = true
   comment             = "Durable Hiraya Portfolio SPA and Guide API"
@@ -533,6 +584,11 @@ resource "aws_cloudfront_distribution" "portfolio" {
     cached_methods         = ["GET", "HEAD"]
     cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_rewrite.arn
+    }
   }
 
   ordered_cache_behavior {
@@ -546,18 +602,6 @@ resource "aws_cloudfront_distribution" "portfolio" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.disabled.id
     origin_request_policy_id = aws_cloudfront_origin_request_policy.api_minimal.id
     compress                 = false
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
-
-  custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
   }
 
   restrictions {

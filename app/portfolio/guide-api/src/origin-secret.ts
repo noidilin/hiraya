@@ -24,6 +24,7 @@ export async function expectedOriginSecret(): Promise<string | undefined> {
 
 export function resetOriginSecretCacheForTest(): void {
   cachedOriginSecret = undefined
+  secretsManagerClient = undefined
 }
 
 function decodeSecretBinary(secretBinary: Uint8Array | undefined): string | undefined {

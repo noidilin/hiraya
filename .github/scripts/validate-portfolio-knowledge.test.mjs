@@ -74,6 +74,17 @@ test('fails when frontmatter or Markdown body content is invalid', async () => {
   assert.match(result.stderr, /SECURITY_GATES\.md: body must contain non-empty Markdown content/);
 });
 
+test('fails when Markdown body only contains HTML comments', async () => {
+  const root = await createKnowledgeFixture({
+    'DECISIONS.md': '---\ntitle: Decisions\naudience: portfolio_visitor\ncategory: decisions\nlast_reviewed: 2026-06-27\n---\n\n<!--\nComment-only draft is not meaningful portfolio knowledge.\n-->\n',
+  });
+
+  const result = validate(root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /DECISIONS\.md: body must contain non-empty Markdown content/);
+});
+
 test('fails Markdown lint for skipped heading levels and trailing whitespace', async () => {
   const root = await createKnowledgeFixture({
     'CICD.md': '---\ntitle: CI/CD Workflow\naudience: portfolio_visitor\ncategory: cicd\nlast_reviewed: 2026-06-27\n---\n\n# CI/CD Workflow  \n\n### Deploys\n\nContent.\n',

@@ -27,7 +27,10 @@ test('Portfolio Stack Terraform defines durable SPA and health API routing', asy
   assert.match(main, /cache_policy_id\s+=\s+data\.aws_cloudfront_cache_policy\.disabled\.id/, 'API responses should not be cached');
   assert.match(main, /custom_header[\s\S]*x-hiraya-origin-secret/, 'CloudFront should inject the origin secret header');
   assert.match(main, /cookie_behavior\s+=\s+"none"/, 'CloudFront should avoid forwarding viewer cookies to the API');
-  assert.match(main, /response_code\s+=\s+200[\s\S]*response_page_path\s+=\s+"\/index\.html"/, 'SPA fallback should serve index.html');
+  assert.match(main, /aws_cloudfront_function" "spa_rewrite"/, 'SPA fallback should use a viewer-request rewrite instead of global error remapping');
+  assert.match(main, /function_association[\s\S]*event_type\s+=\s+"viewer-request"[\s\S]*function_arn\s+=\s+aws_cloudfront_function\.spa_rewrite\.arn/, 'default site behavior should attach the SPA rewrite function');
+  assert.match(main, /uri === '\/api'[\s\S]*uri\.indexOf\('\/api\/'\) === 0/, 'SPA rewrite must skip API requests');
+  assert.doesNotMatch(main, /custom_error_response[\s\S]*response_page_path\s+=\s+"\/index\.html"/, 'SPA fallback must not be distribution-wide');
 });
 
 test('Portfolio Terraform validation is included in credential-free infra CI', async () => {

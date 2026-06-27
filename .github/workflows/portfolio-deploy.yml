@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: classify-changed-paths
         id: classify
@@ -50,6 +50,9 @@ jobs:
           base_sha="${{ github.event.before }}"
           if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
             base_sha="HEAD^"
+          fi
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --prune --depth=50 origin "${base_sha}"
           fi
           changed_paths=$(git diff --name-only "$base_sha" "${GITHUB_SHA}")
           printf '%s\n' "$changed_paths"

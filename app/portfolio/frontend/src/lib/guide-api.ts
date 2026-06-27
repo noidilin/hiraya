@@ -47,7 +47,7 @@ export function createGuideClient(fetcher: typeof fetch = fetch): GuideClient {
 }
 
 export function statusLabel(status: GuideStatus): string {
-  return status.replace('_', ' ')
+  return status.replaceAll('_', ' ')
 }
 
 export function fallbackText(status: GuideStatus): string {
