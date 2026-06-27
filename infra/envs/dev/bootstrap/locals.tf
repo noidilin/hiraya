@@ -14,7 +14,21 @@ locals {
     for name, key in local.terraform_state_keys : name => "${key}.tflock"
   }
 
-  terraform_state_list_prefixes = concat(values(local.terraform_state_keys), values(local.terraform_state_lockfile_keys))
+  platform_state_list_prefixes = [
+    local.terraform_state_keys.bootstrap,
+    local.terraform_state_keys.platform_core,
+    local.terraform_state_keys.cluster_bootstrap,
+    local.terraform_state_lockfile_keys.bootstrap,
+    local.terraform_state_lockfile_keys.platform_core,
+    local.terraform_state_lockfile_keys.cluster_bootstrap,
+  ]
+
+  portfolio_state_list_prefixes = [
+    local.terraform_state_keys.bootstrap,
+    local.terraform_state_keys.portfolio,
+    local.terraform_state_lockfile_keys.bootstrap,
+    local.terraform_state_lockfile_keys.portfolio,
+  ]
 
   terraform_state_object_arns = {
     for name, key in local.terraform_state_keys : name => "arn:aws:s3:::${var.state_bucket_name}/${key}"
