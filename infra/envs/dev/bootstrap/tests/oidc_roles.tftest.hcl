@@ -274,7 +274,7 @@ run "creates_scoped_infra_oidc_roles" {
   assert {
     condition = contains(
       flatten([
-        for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : try(tolist(statement.Resource), [statement.Resource])
         if statement.Sid == "AllowPortfolioStateMutation"
       ]),
       "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/portfolio/terraform.tfstate"
@@ -285,7 +285,7 @@ run "creates_scoped_infra_oidc_roles" {
   assert {
     condition = !contains(
       flatten([
-        for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+        for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : try(tolist(statement.Resource), [statement.Resource])
         if statement.Sid == "AllowPortfolioStateMutation"
       ]),
       "arn:aws:s3:::hiraya-tf-state/devops-hiraya-dev/dev/platform-core/terraform.tfstate"
@@ -298,6 +298,7 @@ run "creates_scoped_infra_oidc_roles" {
       for policy in [
         aws_iam_policy.github_portfolio_plan.policy,
         aws_iam_policy.github_portfolio_apply.policy,
+        aws_iam_policy.github_portfolio_apply_aux.policy,
         aws_iam_policy.github_portfolio_app_deploy.policy,
         aws_iam_policy.github_portfolio_knowledge_sync.policy,
         ] : [
@@ -333,6 +334,7 @@ run "creates_scoped_infra_oidc_roles" {
         "s3vectors:GetIndex",
         "s3vectors:ListVectorBuckets",
         "s3vectors:ListIndexes",
+        "s3vectors:ListTagsForResource",
         ] : anytrue(flatten([
           for statement in jsondecode(aws_iam_policy.github_portfolio_plan.policy).Statement : [
             for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
@@ -344,7 +346,7 @@ run "creates_scoped_infra_oidc_roles" {
 
   assert {
     condition = length([
-      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : statement
+      for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : statement
       if statement.Sid == "AllowPortfolioInfrastructureMutation"
     ]) == 0
     error_message = "The portfolio apply role must split broad infrastructure mutation into service-scoped statements."
@@ -352,13 +354,32 @@ run "creates_scoped_infra_oidc_roles" {
 
   assert {
     condition = contains(flatten([
-      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : try(tolist(statement.Resource), [statement.Resource])
       if statement.Sid == "AllowPortfolioSiteBucketMutation"
       ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-site") && contains(flatten([
-      for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : try(tolist(statement.Resource), [statement.Resource])
+      for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : try(tolist(statement.Resource), [statement.Resource])
       if statement.Sid == "AllowPortfolioKnowledgeBucketMutation"
     ]), "arn:aws:s3:::devops-hiraya-dev-portfolio-knowledge")
     error_message = "The portfolio apply role must scope S3 bucket mutation to Portfolio site and knowledge buckets."
+  }
+
+  assert {
+    condition = alltrue([
+      for required_action in [
+        "s3:GetAccelerateConfiguration",
+        "s3:GetReplicationConfiguration",
+        "secretsmanager:GetSecretValue",
+        "apigateway:TagResource",
+        "cloudfront:CreateOriginRequestPolicy",
+        "cloudfront:DescribeFunction",
+        "cloudfront:UpdateOriginRequestPolicy",
+        ] : anytrue(flatten([
+          for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : [
+            for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
+          ]
+      ]))
+    ])
+    error_message = "The portfolio apply role must include Terraform provider follow-up actions observed during apply."
   }
 
   assert {
@@ -373,7 +394,7 @@ run "creates_scoped_infra_oidc_roles" {
         "s3vectors:TagResource",
         "s3vectors:UntagResource",
         ] : anytrue(flatten([
-          for statement in jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement : [
+          for statement in concat(jsondecode(aws_iam_policy.github_portfolio_apply.policy).Statement, jsondecode(aws_iam_policy.github_portfolio_apply_aux.policy).Statement) : [
             for action in try(tolist(statement.Action), [statement.Action]) : action == required_action
           ]
       ]))

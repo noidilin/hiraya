@@ -189,27 +189,6 @@ resource "aws_s3vectors_index" "knowledge" {
   tags = local.common_tags
 }
 
-resource "aws_s3vectors_vector_bucket_policy" "knowledge" {
-  vector_bucket_arn = aws_s3vectors_vector_bucket.knowledge.vector_bucket_arn
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        AWS = aws_iam_role.bedrock_knowledge_base.arn
-      }
-      Action = [
-        "s3vectors:PutVectors",
-        "s3vectors:GetVectors",
-        "s3vectors:DeleteVectors",
-        "s3vectors:QueryVectors",
-        "s3vectors:GetIndex"
-      ]
-      Resource = aws_s3vectors_index.knowledge.index_arn
-    }]
-  })
-}
-
 resource "aws_bedrock_guardrail" "guide" {
   name                      = "${local.name_prefix}-guide"
   blocked_input_messaging   = "Hiraya Guide cannot help with prompt attacks or attempts to bypass its curated project knowledge boundary."
@@ -219,7 +198,7 @@ resource "aws_bedrock_guardrail" "guide" {
   content_policy_config {
     filters_config {
       input_strength  = "HIGH"
-      output_strength = "MEDIUM"
+      output_strength = "NONE"
       type            = "PROMPT_ATTACK"
     }
   }
@@ -254,7 +233,6 @@ resource "aws_bedrockagent_knowledge_base" "guide" {
 
   depends_on = [
     aws_iam_role_policy.bedrock_knowledge_base,
-    aws_s3vectors_vector_bucket_policy.knowledge,
   ]
 
   tags = local.common_tags
@@ -415,7 +393,7 @@ resource "aws_lambda_function" "guide_api" {
   timeout          = 10
   memory_size      = 256
 
-  reserved_concurrent_executions = 5
+  reserved_concurrent_executions = var.guide_api_reserved_concurrent_executions
 
   environment {
     variables = {
