@@ -46,7 +46,8 @@ test('Portfolio Stack uses Terraform-managed S3 Vectors for the Bedrock Knowledg
   const main = await readFile(portfolioMain, 'utf8');
 
   assert.match(main, /resource "aws_s3vectors_vector_bucket" "knowledge"/, 'S3 Vectors vector bucket should be declared');
-  assert.match(main, /resource "aws_s3vectors_vector_bucket_policy" "knowledge"/, 'S3 Vectors vector bucket policy should scope Bedrock access to the index');
+  assert.doesNotMatch(main, /resource "aws_s3vectors_vector_bucket_policy" "knowledge"/, 'S3 Vectors access should be scoped through the Bedrock KB IAM role policy, not a separate vector bucket policy');
+  assert.match(main, /resource "aws_iam_role_policy" "bedrock_knowledge_base"[\s\S]*"s3vectors:QueryVectors"[\s\S]*Resource\s+=\s+aws_s3vectors_index\.knowledge\.index_arn/, 'Bedrock KB IAM role policy should scope S3 Vectors access to the index');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*data_type\s+=\s+"float32"/, 'S3 Vectors index should use float32 vectors');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*dimension\s+=\s+1024/, 'S3 Vectors index should match Titan Text Embeddings V2 default dimensions');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*distance_metric\s+=\s+"cosine"/, 'S3 Vectors index should use cosine distance');

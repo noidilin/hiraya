@@ -45,6 +45,11 @@ variable "guide_api_reserved_concurrent_executions" {
   type        = number
   default     = null
   nullable    = true
+
+  validation {
+    condition     = var.guide_api_reserved_concurrent_executions == null || (var.guide_api_reserved_concurrent_executions >= 1 && floor(var.guide_api_reserved_concurrent_executions) == var.guide_api_reserved_concurrent_executions)
+    error_message = "guide_api_reserved_concurrent_executions must be null or a whole number greater than or equal to 1. Use null instead of 0 to leave reserved concurrency unset."
+  }
 }
 
 variable "guide_embedding_model_arn" {
