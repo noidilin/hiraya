@@ -83,6 +83,7 @@ locals {
   portfolio_cloudfront_arn_patterns     = ["arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*", "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:origin-access-control/*", "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:function/${local.name_prefix}-portfolio-*"]
   portfolio_log_group_arn_pattern       = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.name_prefix}-portfolio-*"
   portfolio_origin_secret_arn_pattern   = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:/hiraya/${var.environment}/portfolio/*"
+  portfolio_public_hosted_zone_arn      = "arn:aws:route53:::hostedzone/${data.aws_route53_zone.portfolio_public.zone_id}"
 
   platform_role_arn_pattern          = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-*"
   platform_policy_arn_pattern        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-*"

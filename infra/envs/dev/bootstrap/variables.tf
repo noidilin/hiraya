@@ -42,6 +42,12 @@ variable "github_repository" {
   default     = "noidilin/hiraya"
 }
 
+variable "portfolio_hosted_zone_name" {
+  description = "Route 53 public hosted zone name containing the durable Portfolio domain."
+  type        = string
+  default     = "noidilin.dev"
+}
+
 variable "tags" {
   description = "Additional tags for bootstrap resources."
   type        = map(string)

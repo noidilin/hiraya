@@ -532,13 +532,8 @@ function handler(event) {
     return request;
   }
 
-  if (uri.charAt(uri.length - 1) === '/') {
-    request.uri = uri + 'index.html';
-    return request;
-  }
-
   var lastSegment = uri.split('/').pop();
-  if (lastSegment.indexOf('.') === -1) {
+  if (uri === '/' || lastSegment.indexOf('.') === -1) {
     request.uri = '/index.html';
   }
 
