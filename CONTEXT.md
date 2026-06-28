@@ -8,6 +8,10 @@ This context defines the project-specific language used to describe the portfoli
 The public demo commerce experience in Hiraya where visitors browse vintage products and place orders.
 _Avoid_: frontend, current frontend, vintage frontend
 
+**Hiraya EKS Project**:
+The disposable EKS-hosted demonstration system that combines the Vintage Storefront with the cloud and Kubernetes platform needed to deliver and operate it.
+_Avoid_: microservice project, EKS app, cluster app
+
 **Hiraya Portfolio**:
 The public project introduction experience in Hiraya where Portfolio Visitors learn about the platform and use Hiraya Guide.
 _Avoid_: frontend, portfolio frontend, project site

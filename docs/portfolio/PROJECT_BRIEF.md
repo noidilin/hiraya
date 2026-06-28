@@ -7,24 +7,44 @@ last_reviewed: 2026-06-27
 
 # Project Brief
 
-Hiraya is a DevOps portfolio project that demonstrates how a small product team can design, deploy, observe, and explain a cloud-native application on AWS. The platform has two public experiences with different jobs.
+Hiraya is an end-to-end DevOps portfolio project built around the **Hiraya EKS Project**: a disposable AWS EKS platform that runs the **Vintage Storefront** microservice workload and demonstrates how application delivery, infrastructure automation, GitOps, observability, and security boundaries fit together.
 
-- **Vintage Storefront** is the disposable EKS-hosted commerce demo. It proves the Kubernetes, GitOps, service delivery, and observability story.
-- **Hiraya Portfolio** is the durable project-introduction site. It remains outside the disposable EKS platform so Portfolio Visitors can evaluate the project even when the cluster is destroyed to save cost.
-- **Hiraya Guide** is the portfolio-facing assistant. It should answer from Curated Project Knowledge only, not from a raw repository dump or live operational systems.
+The project is intentionally a dev-environment platform rather than a production retail system. Its purpose is to make the delivery architecture reviewable: a Portfolio Visitor can see how code moves from local development to CI validation, container images, GitOps manifests, EKS workloads, public routing, and operational dashboards.
 
-The current implementation emphasis is a dev environment, not a production retail system. The repository is intentionally explicit about what is implemented, what remains a gap, and which risks are accepted for a portfolio-scale environment.
+## What the project demonstrates
 
-## What Hiraya demonstrates
+Hiraya demonstrates a complete delivery path for a cloud-native workload:
 
-Hiraya demonstrates several DevOps themes together:
+- A React/Vite storefront served behind a same-origin API path.
+- Node.js backend services for authentication, catalog browsing, and order flows.
+- PostgreSQL-backed service data with reproducible local and deployed seed data.
+- Docker Compose for local full-stack validation.
+- GitHub Actions for pull-request validation, image builds, image promotion, infrastructure workflows, and deploy smoke checks.
+- Terraform for durable bootstrap resources and the disposable AWS/EKS foundation.
+- Argo CD and Kustomize for in-cluster desired state reconciliation.
+- Gateway API, AWS Load Balancer Controller, ExternalDNS, ACM, and Route 53 for public HTTPS access.
+- Prometheus and Grafana for the current metrics and dashboard surface.
 
-- AWS network and EKS platform design for a dev cluster.
-- GitHub Actions workflows that separate validation, infrastructure deployment, image publishing, and GitOps reconciliation.
-- Argo CD-driven in-cluster delivery for the Vintage Storefront.
-- Security and permission-control evidence captured as reviewed repository data under `docs/reports/`.
-- A deploy-ready durable Portfolio Stack for Hiraya Portfolio and Hiraya Guide, separate from the disposable EKS platform and awaiting first approved AWS apply.
+## Product workload
 
-## Visitor promise
+The Vintage Storefront is the concrete workload used to prove the platform. Portfolio Visitors can understand the system through three user-facing flows:
 
-A Portfolio Visitor should be able to ask how the platform is shaped and receive a grounded explanation with citations to Curated Project Knowledge. The assistant should not claim live operational access, expose internal report JSON, or present target-state permissions as already finished implementation.
+1. Browse the Hiraya Furugi Catalog.
+2. Sign in with the seeded demo customer.
+3. Create and inspect orders through the Storefront API path.
+
+Those flows are backed by an active service path of frontend, gateway, auth, product-service, orders, and PostgreSQL. The storefront keeps the public browser contract simple: the browser talks to the frontend origin, the frontend proxies `/api` to the gateway, and backend services remain private inside the cluster.
+
+## Platform boundary
+
+The Hiraya EKS Project is deliberately disposable. The cluster, worker nodes, in-cluster controllers, routes, app workloads, and dev database can be destroyed to control cost. Durable foundations such as ECR repositories, GitHub OIDC roles, Terraform state access, and long-lived workload secrets are kept outside that routine destroy boundary.
+
+This separation is one of the main portfolio points: the project distinguishes foundations that must survive rebuilds from platform layers that should be reproducible from code.
+
+## Documentation and assistant boundary
+
+These curated documents are the knowledge source for Hiraya Guide. They are written for Portfolio Visitors and explain the EKS project in polished but truthful language. Hiraya Guide should answer from these reviewed documents, cite the curated corpus, and avoid claiming live operational access or hidden implementation details.
+
+## Current posture
+
+Hiraya should be read as a strong dev-platform demonstration with explicit limits. It is not claiming production certification, formal compliance, or unlimited scale. The project records accepted risks and deferred hardening work so reviewers can evaluate both the implemented architecture and the engineering judgment behind it.
