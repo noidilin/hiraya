@@ -7,22 +7,91 @@ last_reviewed: 2026-06-27
 
 # CI/CD Workflow
 
-Hiraya uses GitHub Actions as the main automation layer. The workflow design separates validation, infrastructure work, image delivery, and GitOps reconciliation so permissions can stay narrow and review points are visible.
+Hiraya uses GitHub Actions as the automation layer for the EKS project. The workflow design separates pull-request validation, image delivery, GitOps promotion, infrastructure deployment, and public smoke checks so each path can use narrow permissions and clear review points.
 
-## Implemented CI/CD controls
+## CI/CD principles
 
-The report evidence records that AWS workflows use GitHub OIDC instead of long-lived AWS access keys. Jobs request `id-token` only when needed and assume dedicated AWS roles. Infrastructure deployment is separated from validation, and image publishing uses a controlled build-and-push path.
+The pipeline follows five principles:
 
-The repository also keeps a separate Vintage Storefront baseline. The existing `app:baseline` command validates service catalog data, backend contracts, frontend tests, GitOps rendering, and static app checks for the EKS-hosted storefront.
+1. **Validate before credentials**: application baselines run before AWS OIDC credentials, ECR login, image push, or manifest updates.
+2. **Use Git as desired state**: Kubernetes changes flow through GitOps manifests rather than manual `kubectl` changes.
+3. **Promote immutable images**: service images are tagged with the commit SHA and promoted through manifest updates.
+4. **Separate infrastructure from app delivery**: Terraform workflows are distinct from microservice image and GitOps workflows.
+5. **Keep PR checks no-AWS by default**: ordinary application pull requests can be validated without cloud credentials.
 
-## GitOps delivery
+## Pull-request baseline
 
-Vintage Storefront delivery is GitOps-oriented. Kubernetes manifests and platform add-ons are rendered and reconciled by Argo CD after cluster bootstrap. This keeps in-cluster desired state visible in the repository instead of relying on manual kubectl changes.
+The required Storefront PR gate is `app-baseline`. It is always reported for pull requests so branch protection does not get stuck behind path filters.
 
-## Portfolio delivery
+For microservice-related changes, the baseline runs:
 
-Hiraya Portfolio uses separate root scripts and does not change the Vintage Storefront `app:baseline` command. Portfolio workflows validate the frontend, bundled Guide API package, Curated Project Knowledge, and Portfolio Terraform independently. On merge, app and knowledge changes deploy through the Portfolio orchestration workflow, while Portfolio infrastructure changes require a reviewed plan and manual approved apply.
+- service catalog validation,
+- backend API contract tests,
+- frontend unit tests,
+- changed-service detection,
+- GitOps render assertions,
+- Storefront build, typecheck, and lint,
+- backend build.
 
-## Gaps and accepted risks
+For image-impacting PRs, the workflow also runs build-only Docker checks with `push: false`. Those builds prove that images can be produced without requesting AWS credentials or writing to ECR.
 
-The microservice image pipeline is still being completed. The Portfolio Stack is deploy-ready in code but not yet applied to AWS, so public smoke results depend on the first approved infrastructure deployment and knowledge ingestion. The project accepts a small v1 workflow surface for the Portfolio Stack instead of introducing a service catalog for every Portfolio component immediately.
+For trusted manifest-promotion PRs opened by the Hiraya bot, the baseline takes a faster path that validates rendered GitOps manifests before merge.
+
+## Service catalog and changed-service detection
+
+The service catalog in `.github/utils/services.json` is the source of truth for Storefront service metadata used by CI/CD. It records package names, image repositories, Docker build inputs, GitOps manifest targets, path ownership, and baseline participation.
+
+That catalog drives changed-service detection. Instead of rebuilding every image for every change, the workflow maps changed files to affected services and builds the relevant image matrix. This makes the pipeline easier to explain and keeps ownership metadata in one reviewable place.
+
+## Image build and promotion flow
+
+On pushes to `main` that affect the Storefront app, the `image-ci` workflow performs the delivery path:
+
+```text
+main branch change
+  → detect changed services
+  → run app baseline
+  → assume image-push role through GitHub OIDC
+  → build linux/amd64 images
+  → scan images with Trivy in advisory mode
+  → push commit-SHA images to ECR
+  → open or update a bot PR that changes GitOps image tags
+  → auto-merge after required checks pass
+  → Argo CD syncs the new desired state
+```
+
+The workflow uses AWS OIDC rather than static AWS access keys. The image push job requests `id-token: write` only when it needs to assume the dedicated image-push role.
+
+## GitOps deployment flow
+
+Application deployment state lives under `gitops/`. Argo CD watches the repository and reconciles the desired state into the cluster. When image tags change in Git, Argo CD applies the rollout instead of a workflow directly mutating Kubernetes objects.
+
+This creates a clear separation:
+
+- GitHub Actions builds and promotes artifacts.
+- Git stores the desired deployment state.
+- Argo CD applies and continuously reconciles that state.
+- Kubernetes performs rolling updates for the running workloads.
+
+A public deploy smoke runs after GitOps changes land on `main`. The smoke checks the public Storefront shell and `/api/products` response envelope for visibility. Recovery is manual; the project does not currently claim automatic rollback.
+
+## Infrastructure workflow
+
+Infrastructure deployment uses separate Terraform workflows. Platform Core has a pre-approval plan and an approved apply path. Cluster Bootstrap runs after Platform Core to install Argo CD and hand off to GitOps.
+
+Terraform roles are separated by responsibility:
+
+- plan roles inspect proposed infrastructure changes,
+- apply roles mutate AWS foundations,
+- the cluster-bootstrap role performs the Kubernetes handoff,
+- image-push roles publish service images.
+
+This split keeps infrastructure authority separate from application delivery authority.
+
+## Local and CI parity
+
+The root pnpm workspace provides the canonical command surface. The same app baseline used by CI can be run locally from the repository root. Docker Compose provides a production-like local runtime path, and the Compose smoke exercises the Storefront without AWS credentials.
+
+## Current polish and limits
+
+The pipeline is designed as a polished dev delivery system, not as a production release train. Trivy image scanning is currently advisory while CI/CD stabilizes. Public smoke tests provide visibility rather than automatic rollback. The workflow shape is intentionally explicit so a reviewer can see where stronger gates, approvals, or rollback automation would be added later.
