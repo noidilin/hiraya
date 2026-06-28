@@ -1,21 +1,20 @@
-# Hiraya Vintage Storefront + AIOps DevOps Portfolio 報告
+# Hiraya Vintage Storefront DevOps 架構流程設計
 
-## 一、專題概覽與設計理念
+## 一、方案概覽與設計理念
 
-本專題在 AWS 雲端環境上，建立一套以精品電商為情境的微服務系統，並整合 DevOps、GitOps、可觀測性與 AI 輔助運維能力。整體架構從本地 Docker Compose 開發環境出發，延伸至 AWS EKS 上的 Kubernetes 部署，搭配 Terraform 建置基礎設施、GitHub Actions 建置容器映像、ArgoCD 管理 GitOps 部署流程，最後以 Prometheus、Grafana 與 Amazon Bedrock Agent 作為 AIOps 診斷層的基礎。
+Hiraya 在 AWS 雲端環境上建立一套以二手古著電商為情境的微服務系統，並整合 DevOps 與 GitOps。整體架構從本地 Docker Compose 開發環境出發，延伸至 AWS EKS 上的 Kubernetes 部署，搭配 Terraform 建置 AWS foundation 與初始建置資源、GitHub Actions 建置 Container Image、Argo CD 管理 GitOps 部署流程，並以 Prometheus 與 Grafana 作為目前主要監控基礎。
 
-整體設計以「可重建、可驗證、可觀測、可回復」為主軸。AWS 上的 dev platform 由 Terraform 建置，微服務映像由 GitHub Actions 產生並推送至 ECR，Kubernetes desired state 由 Argo CD 依 GitOps 目錄同步到 EKS。應用對外透過 shared HTTPS edge 提供服務，內部工作負載則部署於 private subnets，以接近真實雲端平台的方式呈現網路隔離與交付流程。
+整體設計以「可重建、可驗證、可觀測、可回復」為主軸。AWS foundation 與 EKS 基礎由 Terraform 建置，Microservice Image 由 GitHub Actions 產生並推送至 ECR，Kubernetes 平台附加元件與 Application 的期望狀態則由 Argo CD 依 GitOps 期望狀態同步到 EKS。應用對外透過 Shared HTTPS Edge 提供服務，內部工作負載則部署於 Private Subnets，以接近真實雲端平台的方式呈現網路隔離與交付流程。
 
-本專題展示的能力重點如下：
+Hiraya 展示的工程能力重點如下：
 
-- **雲端平台設計**：以 AWS EKS、VPC、private subnets、NAT Gateway、S3 Gateway Endpoint、ALB、Route 53 與 ACM 建立可對外展示且可重建的 dev platform。
-- **Infrastructure as Code**：使用 Terraform 管理 durable bootstrap resources 與 disposable platform resources，讓環境具備版本化、可審查與可銷毀特性。
-- **CI/CD Pipeline**：以 GitHub Actions 建立 PR baseline、container image build、ECR push、manifest promotion、infra plan/apply/destroy 與 rollback workflow。
-- **GitOps Deployment**：使用 Argo CD 自動同步 `gitops/` 中的 Kubernetes manifests，讓 Git 成為部署狀態的單一事實來源。
-- **Observability**：透過 Prometheus、Grafana 與 CloudWatch Logs 呈現服務監控、dashboard 與集中式日誌能力。
-- **AIOps 延伸設計**：以 Kira 作為 AI-assisted SRE assistant 的規劃概念，說明 Amazon Bedrock Agent、Lambda tools、CloudWatch evidence 與 Diagnosis Session 的未來整合方向。
+- 雲端平台設計：以 AWS EKS、VPC、private subnets、NAT Gateway、S3 Gateway Endpoint、ALB、Route 53 與 ACM 建立可對外展示且可重建的 Dev 環境。
+- Infrastructure as Code：使用 Terraform 管理長期保留的初始建置資源、AWS foundation、EKS、IRSA 與 Secrets Manager resources，讓環境具備版本化、可審查與可銷毀特性。
+- CI/CD Pipeline：以 GitHub Actions 建立 PR baseline、container image build、ECR push、manifest promotion、infra plan/apply/destroy 與 rollback workflow。
+- GitOps Deployment：使用 Argo CD 自動同步 Cluster 平台附加元件與 Workload Manifests，讓 Git 成為 Kubernetes 部署狀態的單一事實來源。
+- Observability：透過 Prometheus 與 Grafana 呈現服務監控與 Dashboard。
 
-專題的範圍刻意聚焦在 **dev environment**。這代表系統的目標不是宣稱已達 production SLA，而是以合理成本展示 DevOps engineer 在 AWS、Kubernetes、CI/CD、GitOps、IaC 與 observability 上的架構思考與實作能力。
+目前範圍聚焦在 Dev 環境，以合理成本展示 DevOps 工程師在 AWS、Kubernetes、CI/CD、GitOps、IaC 與 Observability 上的架構設計與落地能力。
 
 ---
 
@@ -23,7 +22,7 @@
 
 ### 2.1 網路架構
 
-Hiraya 的網路架構部署於 **AWS ap-northeast-1**，以一個專用 VPC 承載 EKS platform 與 shared ingress layer。VPC 使用 public/private subnet 分層設計：public subnets 負責對外入口與 NAT Gateway，private subnets 承載 EKS worker nodes 與應用工作負載。
+Hiraya 的網路架構部署於 AWS ap-northeast-1，以一個專用 VPC 承載 EKS 與 Shared Ingress Layer。VPC 使用 Public/Private Subnet 分層設計：Public Subnets 負責對外入口與 NAT Gateway，Private Subnets 承載 EKS Worker Nodes 與應用工作負載。
 
 | 項目 | 設計 |
 |---|---|
@@ -35,37 +34,37 @@ Hiraya 的網路架構部署於 **AWS ap-northeast-1**，以一個專用 VPC 承
 | Outbound egress | Single NAT Gateway |
 | AWS private access optimization | S3 Gateway VPC Endpoint |
 
-此設計凸顯三個 DevOps portfolio 重點：
+此設計凸顯三個 Hiraya 重點：
 
-1. **應用服務不直接暴露到公網**
-   Frontend、gateway、backend services 皆維持 Kubernetes `ClusterIP`。對外流量集中由 shared ALB 與 Gateway API 控制，避免每個 service 建立自己的 LoadBalancer。
+1. 應用服務不直接暴露到公網
+   Frontend、Gateway、Backend Services 皆維持 Kubernetes `ClusterIP`。對外流量集中由 Shared ALB 與 Gateway API 控制，避免每個 Service 建立自己的 LoadBalancer。
 
-2. **public edge 與 private workloads 分離**
-   Public subnets 提供 ALB 與 NAT Gateway 所需的網路位置；EKS nodes 與 pods 位於 private subnets，降低工作負載直接暴露風險。
+2. Public Edge 與 Private Workloads 分離
+   Public Subnets 提供 ALB 與 NAT Gateway 所需的網路位置；EKS Nodes 與 Pods 位於 Private Subnets，降低工作負載直接暴露風險。
 
-3. **DNS 與 TLS 自動化**
-   ACM certificate 透過 Route 53 DNS validation 建立，ExternalDNS 讀取 Gateway API HTTPRoute hostnames 後管理 public DNS records，讓 GitOps route 與 DNS 自動銜接。
+3. DNS 與 TLS 自動化
+   ACM Certificate 透過 Route 53 DNS Validation 建立，ExternalDNS 讀取 Gateway API HTTPRoute Hostnames 後管理 Public DNS Records，讓 GitOps Route 與 DNS 自動銜接。
 
-對外流量路徑如下：
+用戶連接路徑如下：
 
-`User → Route 53 → ALB → Gateway API Gateway → HTTPRoute → frontend Service → nginx → gateway → backend services`
+`User → Route 53 → ALB → Gateway API Gateway → HTTPRoute → Frontend Service → Nginx → Gateway → Backend Services`
 
 此入口架構由以下元件組成：
 
-- **Gateway API CRDs**：由 Terraform 管理並安裝到 cluster。
-- **AWS Load Balancer Controller**：負責依 Gateway API resources 建立 ALB。
-- **Shared Gateway**：位於 `edge` namespace，作為所有 public routes 的統一入口。
-- **ExternalDNS**：依 HTTPRoute hostnames 管理 Route 53 records。
-- **ACM Certificate**：支援 `hiraya.noidilin.dev` 與 `*.hiraya.noidilin.dev`。
-- **HTTP to HTTPS redirect**：由 Gateway layer 處理。
+- Gateway API CRDs：由 Argo CD 納入 GitOps 管理的 Cluster 平台。
+- AWS Load Balancer Controller：負責依 Gateway API Resources 建立 ALB。
+- Shared Gateway：位於 `edge` Namespace，作為所有 Public Routes 的統一入口。
+- ExternalDNS：依 HTTPRoute Hostnames 管理 Route 53 Records。
+- ACM Certificate：支援 `hiraya.noidilin.dev` 與 `*.hiraya.noidilin.dev`。
+- HTTP to HTTPS Redirect：由 Gateway Layer 處理。
 
-EKS API endpoint 同時啟用 private access 與 public access。public access 是為了讓 GitHub-hosted runners 與開發端在 dev 階段能執行 Terraform 與 Kubernetes 操作；在更嚴格的 production 設計中，可改為限定來源 CIDR 或使用 VPC 內 self-hosted runner 後關閉 public endpoint。
+EKS API Endpoint 同時啟用 Private Access 與 Public Access。Public Access 是為了讓 GitHub-hosted Runners 與開發端在 Dev 階段能執行 Terraform 與 Kubernetes 操作；在更嚴格的 Production 設計中，可改為限定來源 CIDR 或使用 VPC 內 Self-Hosted Runner 後關閉 Public Endpoint。
 
 #### 2.1.1 微服務架構
 
-Kubernetes application layer 以 `vintage` namespace 為主要部署邊界。Argo CD 監控 repository 中的 `gitops/` 目錄，並將 manifests 同步至 cluster。
+Kubernetes Application Layer 以 `vintage` Namespace 為主要部署邊界。Argo CD 持續監控 Git 中的期望狀態，並將 Manifests 同步至 Cluster。
 
-| 元件 | Kubernetes 類型 | Service / Port | 對外性質 | Portfolio 展示重點 |
+| 元件 | Kubernetes 類型 | Service / Port | 對外性質 | 設計意圖 |
 |---|---|---:|---|---|
 | frontend | Deployment + Service + HTTPRoute | 3000 → 80 | Public via Gateway | 對外展示的 Hiraya Furugi storefront；nginx proxy `/api` |
 | gateway | Deployment + Service | 3001 | Private | API aggregation layer，統一前端 API entrypoint |
@@ -82,17 +81,17 @@ Kubernetes application layer 以 `vintage` namespace 為主要部署邊界。Arg
 - Argo CD：`https://argocd.hiraya.noidilin.dev`
 - Grafana：`https://grafana.hiraya.noidilin.dev`
 
-這讓 portfolio demo 可以從三個角度呈現：
+這模擬了三個角度的視角：
 
-1. **使用者視角**：瀏覽 public storefront。
-2. **平台工程視角**：在 Argo CD 查看 GitOps sync 狀態。
-3. **維運視角**：在 Grafana 觀察服務 metrics 與 dashboard。
+1. 使用者視角：瀏覽 Public Storefront。
+2. 平台工程視角：在 Argo CD 查看 GitOps 同步狀態。
+3. 維運視角：在 Grafana 觀察服務 Metrics 與 Dashboard。
 
-Prometheus 本身保持 `ClusterIP`，避免為了 demo 直接暴露核心監控服務。此設計刻意將「可公開展示的 UI」與「應保留在 cluster 內的 operation surface」分開。
+Prometheus 本身保持 `ClusterIP`，避免為了在 Demo 中直接暴露核心監控服務。此設計刻意將「可公開展示的 UI」與「應保留在 Cluster 內的維運操作面」分開。
 
 ### 2.2 計算與應用層
 
-雲端執行平台為 **Amazon EKS**。目前 dev 環境實測狀態如下：
+雲端執行平台為 **Amazon EKS**。目前 Dev 環境實測狀態如下：
 
 - **AWS Region**：`ap-northeast-1`
 - **EKS Cluster**：`devops-hiraya-dev-eks`
@@ -107,7 +106,7 @@ Prometheus 本身保持 `ClusterIP`，避免為了 demo 直接暴露核心監控
 
 #### 2.2.1 規格選擇的決策考量
 
-此組規格的選擇以 **dev environment 可展示性、成本控制與接近真實平台設計** 為主要權衡，而不是追求 production 等級的最大可用性或高吞吐量。
+此組規格的選擇以 dev 環境可展示性、成本控制與接近真實平台設計 為主要權衡，而不是追求 Production 等級的最大可用性或高吞吐量。
 
 目前平台透過 AWS Load Balancer Controller、Gateway API HTTPRoute、ExternalDNS 與 Route 53 對外發布主要入口：
 
@@ -117,15 +116,15 @@ Prometheus 本身保持 `ClusterIP`，避免為了 demo 直接暴露核心監控
 
 ### 2.2.1 目前 GitOps Pod 容量使用狀態
 
-本次重建 `cluster-bootstrap` 後，Argo CD 12 個 Application 皆為 `Synced / Healthy`，route smoke test 也通過。當前 dev 叢集在 3 台 `t3.medium` Spot 節點上的 Pod 容量如下：
+本次重建 Cluster 初始交接層後，Argo CD 12 個 Application 皆為 `Synced / Healthy`，Route Smoke Test 也通過。當前 Dev Cluster 在 3 台 `t3.medium` Spot 節點上的 Pod 容量如下：
 
 | 指標 | 數值 |
 |---|---:|
 | 節點數 | 3 |
-| 單節點 pod 上限 | 17 |
-| 叢集 pod slot 總數 | 51 |
-| 目前 Running pods | 42 |
-| 剩餘 pod slot | 9 |
+| 單節點 Pod 上限 | 17 |
+| Cluster Pod Slot 總數 | 51 |
+| 目前 Running Pods | 42 |
+| 剩餘 Pod Slot | 9 |
 
 節點分布如下：
 
@@ -135,312 +134,296 @@ Prometheus 本身保持 `ClusterIP`，避免為了 demo 直接暴露核心監控
 | `ip-10-1-12-124` | 17 / 17 |
 | `ip-10-1-13-156` | 17 / 17 |
 
-目前沒有 `MemoryPressure`、`DiskPressure` 或 `PIDPressure`，CPU 與記憶體壓力也偏低；主要限制不是 CPU/memory，而是 **t3.medium 在 EKS 上的 pod/IP 密度**。以目前 42 個 Running pods 來看，3 台 `t3.medium` 足夠支撐 dev GitOps 平台，但容量已偏緊，且其中兩台節點已達 pod slot 上限。
+目前沒有 `MemoryPressure`、`DiskPressure` 或 `PIDPressure`，CPU 與記憶體壓力也偏低；主要限制不是 CPU/Memory，而是 t3.medium 在 EKS 上的 Pod/IP 密度。以目前 42 個 Running Pods 來看，3 台 `t3.medium` 足夠支撐 dev GitOps 平台，但容量已偏緊，且其中兩台節點已達 Pod Slot 上限。
 
-若 Node Group 依照 min size 降到 2 台，總 pod slot 會變成 `2 × 17 = 34`，低於目前 42 個 Running pods，因此 Spot 中斷或短暫縮容時會有 Pod 無法排程的風險。
+若 Node Group 依照 min size 降到 2 台，總 Pod Slot 會變成 `2 × 17 = 34`，低於目前 42 個 Running Pods，因此 Spot 中斷或短暫縮容時會有 Pod 無法排程的風險。
 
 建議：
 
 - 維持目前功能測試：3 台 `t3.medium` 可接受。
-- 提高基本穩定性：將 Node Group `minSize` 調整為 3，避免 2 節點時 pod slot 不足。
+- 提高基本穩定性：將 Node Group `minSize` 調整為 3，避免 2 節點時 Pod Slot 不足。
 - 增加部署餘裕：將 `maxSize` 調整為 4，讓 Spot 替換或短期擴容有緩衝。
-- 若後續加入更多 controller、monitoring、AIOps 或多副本服務，建議改用 `t3.large` 或其他 pod/IP 與記憶體餘裕更高的 instance type。
+- 若後續加入更多 Controller、Monitoring 或多副本服務，建議改用 `t3.large` 或其他 Pod/IP 與記憶體餘裕更高的 Instance Type。
 
 #### 2.2.2 預估成本與支出合理性
 
-以下為 ap-northeast-1 dev environment 若 **24/7 持續運行** 的粗估月成本，實際金額會依 Spot market price、log 量、ALB LCU、NAT data processing 與資料傳輸量變動。
+以下為 ap-northeast-1 dev 環境若 24/7 持續運行的粗估月成本，實際金額會依 Spot 市場價格、ALB LCU、NAT Data Processing 與資料傳輸量變動。
 
-此成本分析方法參考 **AWS Billing and Cost Management** 與 **Well-Architected Cost Optimization Pillar** 的實務做法：先拆分主要 cost drivers，再以 AWS Pricing Calculator / Price List API 驗證單價、以 Cost Explorer 對照實際帳單、以 Budgets 設定 monthly guardrail，並用 Compute Optimizer 或 Cost Optimization Hub 持續檢查 right-sizing 建議。下表屬於架構設計階段的 rough order-of-magnitude estimate；正式營運時應以 Cost Explorer 的 `UnblendedCost` 與實際 usage 為準。
+此成本分析方法參考 AWS Billing and Cost Management 與 Well-Architected Cost Optimization Pillar 的實務做法：先拆分主要 Cost Drivers，再以 AWS Pricing Calculator / Price List API 驗證單價、以 Cost Explorer 對照實際帳單、以 Budgets 設定 Monthly Guardrail，並用 Compute Optimizer 或 Cost Optimization Hub 持續檢查 Right-Sizing 建議。下表屬於架構設計階段的 Rough Order-of-magnitude Estimate；正式營運時應以 Cost Explorer 的 `UnblendedCost` 與實際 Usage 為準。
 
 | 成本項目 | 估算假設 | 預估月費（USD） | 合理性說明 |
 |---|---|---:|---|
-| EKS control plane | 1 個 cluster，約 730 小時/月 | 約 73 | EKS 是本專題展示 Kubernetes、GitOps、Gateway API 與 platform engineering 的核心固定成本。 |
-| EC2 Spot worker nodes | 3 × `t3.medium` Spot，desired 3 | 約 35–45 | 以 Spot 換取較低運算成本，同時保留足夠資源給 microservices 與 observability。 |
-| EBS volumes | 3 × 20 GiB node disk + 10 GiB PostgreSQL PVC | 約 6–8 | 支援 node runtime 與 dev database persistent volume，成本低且可預期。 |
-| NAT Gateway | Single NAT Gateway + 少量 data processing | 約 45–55+ | private nodes 需要對外拉取映像、套件與呼叫 AWS APIs；只用單一 NAT 是 dev 成本與私有網路設計的折衷。 |
-| ALB / Gateway ingress | 1 個 shared ALB + 低流量 LCU | 約 18–25 | 以 shared ingress 服務 storefront、Argo CD 與 Grafana，避免每個 service 各建 LoadBalancer。 |
+| EKS Control Plane | 1 個 cluster，約 730 小時/月 | 約 73 | EKS 是展示 Kubernetes、GitOps、Gateway API 與 platform engineering 的核心固定成本。 |
+| EC2 Spot Worker Nodes | 3 × `t3.medium` Spot，desired 3 | 約 35–45 | 以 Spot 換取較低運算成本，同時保留足夠資源給 microservices 與 observability。 |
+| EBS Volumes | 3 × 20 GiB node disk + 10 GiB PostgreSQL PVC | 約 6–8 | 支援 node runtime 與 dev database persistent volume，成本低且可預期。 |
+| NAT Gateway | Single NAT Gateway + 少量 data processing | 約 45–55+ | private nodes 需要對外拉取 image、套件與呼叫 AWS APIs；只用單一 NAT 是 dev 成本與私有網路設計的折衷。 |
+| ALB / Gateway Ingress | 1 個 shared ALB + 低流量 LCU | 約 18–25 | 以 shared ingress 服務 storefront、Argo CD 與 Grafana，避免每個 service 各建 LoadBalancer。 |
 | Route 53 / ACM | 1 個 hosted zone、少量 DNS queries；ACM public certificate | 約 0.5–1 | 支援正式 HTTPS domain demo；ACM certificate 本身不另收費。 |
-| CloudWatch Logs | 14 天 retention、低到中等 dev log volume | 約 1–5 | 提供集中式日誌與後續 AIOps evidence，並透過 retention 控制成本。 |
-| ECR | 多個 microservice repositories，少量 image storage | 約 1–3 | 保留 image promotion 與 rollback 所需 artifact；可搭配 lifecycle policy 清理舊映像。 |
+| Secrets Manager | Vintage、Argo CD、Grafana 等少量 secrets | 約 1–2 | 將 runtime/admin credentials 外部化，避免密碼進入 Git 或 Terraform outputs。 |
+| ECR | 多個 microservice repositories，少量 image storage | 約 1–3 | 保留 image promotion 與 rollback 所需 artifact；可搭配 lifecycle policy 清理舊 image。 |
 
-- 本地：`app/microservices/database/vintage_full.sql`
-- K8s：`gitops/apps/vintage/k8s/database/vintage_full.sql`
-- Restore Job：`gitops/apps/vintage/k8s/database/restore-job.yml`
+資料初始化由 GitOps 管理。Seed SQL 會被包裝成 Kubernetes ConfigMap，Restore Job 會在 PostgreSQL Ready 後自動載入資料。Cluster 初始交接層完成 Argo CD 交接後，Argo CD 會建立 Vintage Application，並在首次同步時依 Sync Wave 建立 Database、Restore Job 與 Application Workloads。
 
-目前 `gitops/apps/vintage/kustomization.yml` 已將 SQL dump 建為 ConfigMap，並將 restore job 納入 Kustomize resources；Cluster Bootstrap 佈建 Argo CD root app 後會自動建立 `vintage` Application，由 Argo CD 在首次 sync 時執行 restore job 載入種子資料。
+資料庫密碼與連線字串不以明文 Kubernetes Secret Committed 到 Git；Vintage 透過 `ExternalSecret` 從 AWS Secrets Manager `/hiraya/dev/apps/vintage` Materialize Runtime Secret。
 
-資料庫密碼與連線字串不再以明文 Kubernetes Secret committed 到 Git；Vintage 透過 `ExternalSecret` 從 AWS Secrets Manager `/hiraya/dev/apps/vintage` materialize runtime secret。
+平台管理介面的 Admin Credentials 也由 AWS Secrets Manager 管理：Argo CD 使用 `/hiraya/dev/platform/argocd-admin`，Grafana 使用 `/hiraya/dev/platform/grafana-admin`。Cluster 初始交接層讀取 Argo CD Admin bcrypt hash 進行初始安裝；Grafana 則透過 External Secrets Operator 將 `grafana-admin` Kubernetes Secret materialize 到 `monitoring` Namespace，供 `kube-prometheus-stack` Helm Values 引用。Secret Values 不作為 Terraform Output，也不 Committed 到 Git。
 
-#### Container Registry
+### 2.3 Full SDLC CI/CD Pipeline 設計
 
-ECR repositories 由 Terraform bootstrap stack 建立，屬於 durable resources，不會隨 disposable platform destroy 而刪除。
+Hiraya 的交付管線以完整 SDLC 為核心，而不是只把程式碼打包成 image。整體流程分成四條責任清楚的交付路徑：Pull Request Validation、Image 發布、GitOps Promotion、Infrastructure 交付。這樣的設計讓每一次變更都能被驗證、審查、追蹤與回復。
 
-- `hiraya-frontend`
-- `hiraya-gateway`
-- `hiraya-auth`
-- `hiraya-order-service`
-- `hiraya-orders`
-- `hiraya-product-service`
-- `hiraya-user-service`
+核心設計決策如下：
 
-ECR 設計重點：
+1. 先驗證，後授權：PR 階段先執行不需要雲端權限的測試、建置與 Manifest Rendering；只有可信任的 main Branch 或經核准的 Environment 才能取得 AWS OIDC 權限。
+2. 先產生 Artifact，再部署：服務先被建置成 Immutable Container Image，並以 Commit SHA 作為部署版本，讓 Source、Image 與執行期狀態可以對應。
+3. Git 作為 Deployment 契約：CI 不直接修改 Kubernetes Runtime；所有部署狀態都透過 GitOps Manifest PR 推進，合併後由 Argo CD Reconciliation 落地。
+4. Infrastructure 變更需受控：Infrastructure 變更需要人工觸發、環境核准與 Plan 審查證據，並與一般 Application 發布分離。
+5. Rollback 走同一條控制路徑：回復不是手動 Patch Cluster，而是提交 Rollback Manifest PR，再由 Argo CD 將期望狀態收斂到指定版本。
 
-- **Immutable image tags**：以 commit SHA 作為部署版本，避免 tag 被覆寫。
-- **Scan on push**：上傳映像後自動執行 vulnerability scan。
-- **force delete disabled**：降低誤刪 repository 與歷史映像的風險。
+#### 2.3.1 Pull Request 驗證流程
 
-#### CI/CD Flow
+所有 PR 先進入低權限驗證關卡。此階段不提供 AWS Credentials，也不允許 Registry 寫入權限或 Cluster 變更。Pipeline 會根據服務目錄判斷變更範圍，只對受影響的 Microservices 執行必要檢查，避免無差別建置造成等待時間與成本浪費。
 
-- 目前觸發方式為 `workflow_dispatch`，也就是手動觸發。
-- Matrix 同時建置 7 個服務映像。
-- 映像推送至 ECR，tag 使用 Git commit SHA。
-- `update-manifests` job 會更新 `gitops/apps/vintage/k8s/` 中的 image tag，並 commit 回 repository。
+PR Validation 包含：
 
-GitOps 層由 Argo CD 管理：
+- 服務歸屬分類：判斷變更屬於 Frontend、Gateway、Backend Service、GitOps Manifest 或 Infrastructure Layer。
+- Application Baseline：執行套件相依圖檢查、服務目錄驗證、Backend Contract Tests、Frontend Unit Tests、Static Build、typecheck 與 lint。
+- GitOps Render Validation：驗證 Deployment Manifests、服務連線設定、路由設定、連接埠對應與環境變數契約是否一致。
+- Docker 僅建置 Gate：若變更會影響 Image，PR 只執行僅建置，不推送 Image，也不登入 ECR。
+- Infrastructure Static Checks：對 Terraform Modules、Helm/Kustomize Render Output 與 Kubernetes Schema 進行靜態驗證；可信任 PR 會額外產生 Terraform Plan 審查證據供 Reviewer 判斷。
 
-- Cluster Bootstrap Terraform 透過 Helm 安裝 Argo CD 至 `argocd` namespace。
-- Cluster Bootstrap 建立 root `hiraya-root` Application，監控 `gitops/clusters/dev/root` app-of-apps path。
-- Root app 建立 Cluster Platform 與 Vintage child Applications；目前已啟用 automated sync，包含 `prune: true` 與 `selfHeal: true`，讓 dev 環境可在首次 provisioning 後自動部署並持續回復到 Git 狀態。
+這個階段的目標是讓 Reviewer 在 merge 前取得充分審查證據：測試結果、Container Buildability、GitOps Render 結果與 Infrastructure Plan。雲端寫入權限被延後到後續可信任階段，降低 Supply Chain 與權限濫用風險。
 
-#### Infrastructure Pipeline
+#### 2.3.2 Image 發布與 artifact promotion 流程
 
-可觀測性目前由 Prometheus、Grafana 與 AIOps Assistant 基礎設計組成；Pod log forwarding 待後續 logging design 補齊。
+當 Application Change 合併到受保護的 main Branch 後，Pipeline 才進入 Image 發布流程。系統會重新偵測 Changed Services，並在取得 AWS Credentials 前再次執行 Baseline Validation，確保 main Branch 狀態仍然可建置、可測試、可部署。
 
-- `infra-ci.yml`：執行 Terraform fmt/validate、module tests、Helm render、GitOps render；trusted PR 可產生 Terraform plan。
-- `infra-deploy.yml`：手動觸發 dev deploy，先產生 plan artifact，再經 GitHub Environment approval 後 apply。
-- `infra-destroy.yml`：手動觸發 destroy，要求 typed confirmation，並先清理 Kubernetes EBS volumes，避免資源殘留。
+Image 發布設計如下：
 
-Argo CD Cluster Platform 透過 Helm 安裝 `kube-prometheus-stack` 至 `monitoring` namespace：
+1. 只針對受影響服務建立 Build Matrix，避免每次都建置全部 Microservices。
+2. GitHub Actions 透過 OIDC 取得短期 AWS Credentials，並只授權推送指定 ECR Repositories。
+3. 每個 Image 使用 Git commit SHA 作為 Tag，形成不可混淆的 Deployment Artifact。
+4. Image Build 目標平台固定為 Linux/amd64，確保在 EKS Worker Nodes 上行為一致。
+5. Vulnerability Scan 在 Image Push 前後提供 HIGH/CRITICAL 風險可視性；目前定位為提示型檢查門檻，後續可提升為阻擋型檢查門檻。
+6. Image Publish 完成後，Pipeline 不直接部署，而是建立 Manifest Promotion PR。
+
+Artifact Promotion 透過 Git PR 完成。Promotion PR 只更新對應服務的 image tag，diff 小、容易審查，也能套用 Branch Protection、Required Checks 與 Reviewer Process。這讓「Build Artifact」與「Deployment 期望狀態」解耦：ECR 保存可部署 Artifact，GitOps Manifest 決定哪個 Artifact 進入環境。
+
+ECR Repositories 由長期保留的初始建置層管理，不會隨可重建 EKS Platform Destroy 而刪除。這使 Image History、Rollback Targets 與供應鏈追蹤證據可以跨平台重建保存。
+
+#### 2.3.3 GitOps 同步與部署流程
+
+Manifest Promotion PR 合併後，Git 成為唯一 Deployment 契約。Argo CD 監控 main Branch 期望狀態，並將變更同步到 EKS。這個模式避免 CI Runner 持有長期 Cluster 變更責任，也讓 Runtime Drift 可以被自動偵測與修正。
+
+GitOps 同步設計如下：
+
+- Cluster 初始交接層只負責建立 Argo CD、AppProjects 與 Root Application，完成 Terraform 到 GitOps 的交接。
+- Root Application 採 app-of-apps 模式，建立 Cluster 平台層與 Vintage Workload Child Applications。
+- Argo CD 長期擁有 Kubernetes 平台附加元件，包括 Namespaces、Gateway API CRDs、StorageClass、External Secrets Operator、AWS Load Balancer Controller、ExternalDNS、Edge Gateway Resources、Monitoring Stack、對外 Admin 介面路由與 Vintage Workloads。
+- Application Image Tag 變更會更新 Deployment Template，觸發 Kubernetes Rollout；Service 與 HTTPRoute 維持穩定名稱，讓流量入口不因版本變更而改變。
+- GitOps Merge 後會執行對外 Smoke Test，確認 Storefront Shell 與主要 API Path 可用，提供部署驗證證據。
+
+這個設計讓 CI/CD 職責邊界清楚：CI 負責驗證、建置、掃描與提出期望狀態變更；Argo CD 負責部署、同步與 Drift Correction；Kubernetes 負責 Rollout 與 Service Routing。
+
+#### 2.3.4 Infrastructure 交付流程
+
+Infrastructure 交付流程被設計成獨立且受控的變更通道。VPC、EKS、IAM、DNS、ACM、IRSA 與 Platform Admin Secrets 都屬於高權限、高影響範圍資源，因此不與一般 Application Image Promotion 混在同一條自動部署路徑。
+
+Infrastructure 分層如下：
+
+| Layer | Owner / executor | 負責內容 | Lifecycle |
+|---|---|---|---|
+| 專案初始建置層 | Terraform / Reviewed Setup | Remote State Access、GitHub OIDC Roles、ECR、長期保留的 Runtime Secrets | 長期保留 |
+| 平台核心層 | Environment-gated Terraform Apply | VPC、EKS、Node Group、ACM/DNS Primitives、AWS-side IRSA Roles、admin Secrets | 可重建 |
+| Cluster 初始交接層 | Environment-gated Terraform Apply | Argo CD Installation、AppProjects、root Application 交接 | 平台核心層重建後重新建立 |
+| Cluster 平台層 | Argo CD | Controllers、CRDs、Namespaces、Shared Gateway、Monitoring | 持續 GitOps sync |
+| GitOps 應用層 | Argo CD | Vintage Storefront Workload Manifests | 持續 GitOps sync |
+
+Deploy 流程先產生 Refreshed Terraform Plan 作為審查證據，經 GitHub Environment 核准後才 Apply 平台核心層。EKS 與 AWS-side Prerequisites 完成後，Cluster 初始交接層再安裝 Argo CD 並交接 root Application。最後由平台 Smoke Test 驗證 Namespace、Gateway、HTTPRoute、Argo CD Application Health 與 Public Endpoints。
+
+Destroy 流程採反向順序：先暫停或 Prune GitOps Resources，保留 AWS Load Balancer Controller 與 ExternalDNS 足夠時間清理 ALB/DNS 連帶資源，再清理 PVC/EBS，最後 Destroy Cluster 初始交接層與平台核心層。專案初始建置層保留，確保 ECR、OIDC Roles、State Access 與長期保留的 Secrets 可支援下次重建。
+
+#### 2.3.5 Rollback 與維運證據
+
+Rollback 使用與 Deployment 相同的 GitOps 控制面。Operator 選定服務與既有 ECR Image Tag 後，Pipeline 會驗證目標 Artifact 存在、產生 Manifest Diff、執行 Render Validation，然後建立 Rollback PR。PR 合併後，Argo CD 將執行期狀態收斂到指定 Image Tag。
+
+這個機制讓 Rollback 也具備審查紀錄與可追蹤性：每次回復都有原因、目標版本、Manifest diff、Validation Result 與後續 Smoke Test 證據。整體 SDLC 審查證據包含 PR diff、Baseline Summary、Docker Build Result、Vulnerability Scan Report、Terraform Plan、Promotion / Rollback diff、Argo CD Sync Health 與 Public Smoke Result。
+
+### 2.4 可觀測性基礎
+
+Hiraya 的 observability layer 目標是讓 operator 能用 dashboard 觀察服務狀態，可觀測性目前由 Prometheus 與 Grafana 基礎設計組成。
+
+Argo CD 透過 Monitoring Application 安裝 kube-prometheus-stack Helm Chart 至 `monitoring` Namespace：
 
 - Prometheus、Grafana、Alertmanager 皆設為 `ClusterIP`。
-- `gitops/apps/vintage/k8s/grafana-dashboard.yml` 以 ConfigMap 方式預載 Vintage dashboard。
-- Dashboard 涵蓋 request rate、response time、active requests、error rate、Pod CPU/Memory、Pod restart、service health 等指標。
-
-Hiraya 的 observability layer 目標是讓 operator 能用 dashboard 與 logs 觀察服務狀態，並為後續 AIOps 功能保留可查詢的 evidence source。本章僅描述目前已納入平台設計的監控與日誌基礎；尚未完整實作的 AIOps 功能移至第五章作為後續深化方向討論。
-
-#### Prometheus / Grafana
-
-目前 dev platform 不部署 Fluent Bit，也不建立專用的 Pod log forwarding Log Group。AIOps 的 `fetch_logs` 應等未來 logging design 明確定義允許查詢的 CloudWatch Logs group 後再啟用相關能力。
-
-#### CloudWatch Logs
-
-Fluent Bit module 將 Kubernetes pod logs forward 到 CloudWatch Logs：
-
-- Log group：`/eks/vintage/pods`
-- Retention：14 天
-- Namespace：`amazon-cloudwatch`
-- IAM integration：IRSA role for `aws-for-fluent-bit`
-
-CloudWatch Logs 是後續 AIOps 設計中的主要 evidence source。透過集中式日誌，Kira 可以查詢特定 service、namespace、time range 的錯誤訊息，並整理成診斷脈絡。
+- Vintage Dashboard 以 ConfigMap 方式預載至 Grafana。
+- Dashboard 涵蓋 Request Rate、Response Time、Active Requests、Error Rate、Pod CPU/Memory、Pod Restart、Service Health 等指標。
 
 ---
 
 ## 三、AWS Well-Architected Framework 六大支柱對應
 
-本專題以 AWS Well-Architected Framework 作為架構說明語言，呈現設計取捨與工程能力。以下內容不是單純檢查表，而是說明 Hiraya 如何在 dev portfolio 範圍內對應六大支柱。
+Hiraya 以 AWS Well-Architected Framework 作為架構原則，呈現設計取捨與工程能力。以下說明系統如何在 Hiraya 的設計中對應六大支柱。
 
 ### 3.1 卓越營運（Operational Excellence）
 
-Terraform 將 durable bootstrap、Platform Core AWS/EKS foundation、Cluster Bootstrap Argo CD handoff 模組化管理；Argo CD 負責 Cluster Platform 與 workload manifests。GitHub Actions 負責建置映像與更新 manifests，Argo CD 負責將 GitOps 狀態同步至 Kubernetes。AIOps Assistant 透過 Bedrock Agent 將 logs、metrics、EKS health 串成診斷流程，協助工程師用資料驅動方式排查問題。
+Terraform 將長期保留的初始建置、平台核心層 AWS/EKS Foundation、Cluster 初始交接層的 Argo CD 交接進行模組化管理；Argo CD 負責長期同步 Cluster 平台層與 Workload Manifests。GitHub Actions 負責建置 Image 與更新 Manifests，Argo CD 負責將 GitOps 狀態同步至 Kubernetes。Prometheus 與 Grafana 提供監控基礎，協助工程師用資料驅動方式排查問題。
 
 展示重點：
 
-- Terraform 將 bootstrap resources 與 platform resources 分層。
+- Terraform 將長期保留的初始建置、AWS foundation 與 Argo CD 交接分層管理。
 - GitHub Actions 提供 PR validation、image promotion、infra plan/apply/destroy。
-- Argo CD 讓 cluster state 持續回到 GitOps desired state。
-- Deploy smoke 與 rollback workflow 讓部署後驗證與回復流程可被展示。
+- Argo CD 讓 Cluster 狀態持續回到 GitOps 期望狀態。
+- Deploy Smoke 與 Rollback workflow 讓部署後驗證與回復流程可被展示。
 
-使用服務與工具：Terraform, GitHub Actions, EKS, ECR, Argo CD, Route 53, ExternalDNS, AWS Load Balancer Controller, Prometheus, Grafana, CloudWatch Logs
+使用服務與工具：Terraform, GitHub Actions, EKS, ECR, Argo CD, Route 53, ExternalDNS, AWS Load Balancer Controller, External Secrets Operator, AWS Secrets Manager, Prometheus, Grafana
 
 ### 3.2 安全性（Security）
 
-安全性設計聚焦在最小暴露面、短期憑證與雲端原生身份整合。Worker nodes 與 services 位於 private subnets，對外入口集中在 shared ALB/Gateway；GitHub Actions 使用 OIDC assume AWS IAM roles，而不是保存長期 access keys。
+安全性設計聚焦在最小暴露面、短期憑證、Secret 外部化與雲端原生身份整合。Worker Nodes 與 Services 位於 Private Subnets，對外入口集中在 Shared ALB/Gateway；GitHub Actions 使用 OIDC Assume AWS IAM Roles，而不是保存長期 Access Keys。
 
 展示重點：
 
-- Private EKS worker subnets 降低工作負載直接暴露風險。
-- Application Services 維持 `ClusterIP`，只透過 Gateway route 對外。
+- Private EKS Worker Subnets 降低工作負載直接暴露風險。
+- Application Services 維持 `ClusterIP`，只透過 Gateway Route 對外。
 - ACM 提供 HTTPS certificate，Route 53 與 ExternalDNS 管理 DNS。
-- ECR immutable tags 與 scan-on-push 提升映像供應鏈安全性。
-- IRSA 讓 Kubernetes service accounts 取得 scoped AWS permissions。
+- ECR Immutable tags 與 scan-on-push 提升 Image 供應鏈安全性。
+- IRSA 讓 Kubernetes Service Accounts 取得 Scoped AWS Permissions。
+- AWS Secrets Manager 保存 Vintage DB Runtime Secret、Grafana Admin Secret 與 Argo CD Admin Secret，避免將密碼 Committed 到 Git。
+- External Secrets Operator 透過 Scoped read-only IRSA 從 Secrets Manager Materialize Kubernetes Secrets。
 
-延伸強化方向：secrets 可由 GitOps 明文轉向 AWS Secrets Manager、SOPS、Sealed Secrets 或 External Secrets；EKS API public CIDR 可進一步收斂；Trivy scan 可由 advisory 演進為 blocking gate。
+延伸強化方向：Secret Rotation 可進一步自動化並納入 CloudTrail Audit；EKS API Public CIDR 可進一步收斂；Trivy Scan 可由提示型檢查演進為阻擋型檢查門檻。
 
-使用服務與工具：IAM, OIDC, IRSA, EKS private subnets, ACM, ALB, Route 53, ECR Image Scanning, Kubernetes Secret
+使用服務與工具：IAM, OIDC, IRSA, AWS Secrets Manager, External Secrets Operator, EKS Private Subnets, ACM, ALB, Route 53, ECR Image Scanning, Kubernetes Secret
 
 ### 3.3 可靠性（Reliability）
 
-可靠性設計以可重建環境、GitOps self-healing 與部署後驗證為核心。EKS managed node group 跨三個 private subnets，Argo CD 自動同步 manifests，PostgreSQL 透過 EBS PVC 保留 dev data，deploy smoke 檢查 public storefront 是否可用。
+可靠性設計以可重建環境、GitOps Self-healing 與部署後驗證為核心。EKS Managed Node Group 跨三個 Private Subnets，Argo CD 自動同步 Manifests，PostgreSQL 透過 EBS PVC 保留 Dev Data，Deploy Smoke 檢查 Public Storefront 是否可用。
 
 展示重點：
 
-- Managed node group 提供跨 AZ 的 Kubernetes worker capacity。
-- GitOps automated sync 可修正非 Git 來源的漂移。
-- StatefulSet + EBS PVC 展示 Kubernetes persistent storage。
-- Infra destroy workflow 包含 EBS/PVC 清理步驟，降低 teardown 殘留。
-- Rollback workflow 以 PR 方式回到指定 ECR image tag。
+- Managed Node Group 提供跨 AZ 的 Kubernetes Worker Capacity。
+- GitOps Automated Sync 可修正非 Git 來源的漂移。
+- StatefulSet + EBS PVC 展示 Kubernetes Persistent Storage。
+- Infra Destroy Workflow 包含 EBS/PVC 清理步驟，降低 Teardown 殘留。
+- Rollback Workflow 以 PR 方式回到指定 ECR Image Tag。
 
-延伸強化方向：critical services 可增加 replicas、readiness/liveness probes、PodDisruptionBudget、resource requests/limits 與 HPA；資料庫延伸策略集中於附錄 A。
+延伸強化方向：Critical Services 可增加 Replicas、Readiness/Liveness Probes、PodDisruptionBudget、Resource Requests/Limits 與 HPA。
 
-使用服務與工具：EKS Managed Node Group, EBS CSI, Argo CD, GitHub Actions deploy smoke, CloudWatch Logs
+使用服務與工具：EKS Managed Node Group, EBS CSI, Argo CD, GitHub Actions Deploy Smoke
 
 ### 3.4 效能效率（Performance Efficiency）
 
-效能效率體現在服務拆分、shared ingress、合理的 dev node sizing 與 metrics-driven operation。Gateway 統一前端 API entrypoint，backend services 可獨立 build 與 deploy；Spot `t3.medium` node group 在成本與 demo 容量之間取得平衡。
+效能效率體現在服務拆分、Shared Ingress、合理的 Dev Node Sizing 與 Metrics-driven Operation。Gateway 統一前端 API Entrypoint，Backend Services 可獨立 Build 與 Deploy；Spot `t3.medium` Node Group 在成本與 Demo 容量之間取得平衡。
 
 展示重點：
 
-- 微服務拆分讓 service ownership 與 image pipeline 更清楚。
-- Gateway aggregation 減少前端直接依賴多個 backend endpoints。
-- nginx same-origin `/api` proxy 降低瀏覽器 CORS 與 routing 複雜度。
+- 微服務拆分讓服務歸屬與 Image Pipeline 更清楚。
+- Gateway Aggregation 減少前端直接依賴多個 Backend Endpoints。
+- nginx Same-origin `/api` Proxy 降低瀏覽器 CORS 與 Routing 複雜度。
 - Prometheus/Grafana 提供效能觀測入口。
 
-延伸強化方向：擴充 ServiceMonitor coverage 至所有 active backend services；加入 resource requests/limits 讓 scheduler 與 autoscaling 更準確；以 dashboard 資料做 right-sizing。
+延伸強化方向：擴充 ServiceMonitor Coverage 至所有 Active Backend Services；加入 Resource Requests/Limits 讓 Scheduler 與 autoscaling 更準確；以 Dashboard 資料做 Right-sizing。
 
 使用服務與工具：EKS, Prometheus, Grafana, kube-prometheus-stack, Gateway API, ALB
 
 ### 3.5 成本最佳化（Cost Optimization）
 
-專題採取 dev-only disposable platform，以 portfolio demo 成本控制為前提。Durable resources 只保留 ECR 與 IAM 等基礎資源，EKS/VPC/controllers 可透過 workflow destroy。Node group 使用 Spot capacity，public ingress 採 shared ALB，避免每個服務各自建立 LoadBalancer。
+Hiraya 採取 dev-only 可重建平台，以成本控制為前提。長期保留資源只保留 ECR、IAM 與必要 Secrets Manager Secrets 等基礎資源，EKS/VPC/Controllers 可透過 Workflow Destroy。Node Group 使用 Spot Capacity，Public Ingress 採 Shared ALB，避免每個服務各自建立 LoadBalancer。
 
 展示重點：
 
-- Spot managed node group 降低 compute cost。
-- Shared ALB/Gateway 降低 ingress resource 重複建立。
-- S3 Gateway Endpoint 減少 private subnets 存取 S3 時經 NAT 的依賴。
-- CloudWatch Logs retention 設定為 14 天，控制 log storage 成本。
-- Infra destroy workflow 支援 demo 後清除 disposable platform。
+- Spot Managed Node Group 降低 Compute Cost。
+- Shared ALB/Gateway 降低 Ingress Resource 重複建立。
+- S3 Gateway Endpoint 減少 Private Subnets 存取 S3 時經 NAT 的依賴。
+- Infra Destroy Workflow 支援 Demo 後清除可重建平台。
 
-成本取捨：EKS control plane、NAT Gateway、ALB、CloudWatch Logs 與 Route 53 仍會產生成本；因此本專題將 destroy workflow 視為成本治理的一部分。
+成本取捨：EKS Control Plane、NAT Gateway、ALB、Secrets Manager 與 Route 53 仍會產生成本；因此 Destroy Workflow 是成本治理的一部分。
 
-使用服務與工具：EKS, EC2 Spot Managed Node Group, NAT Gateway, ALB, ECR, CloudWatch Logs, Terraform destroy workflow
+使用服務與工具：EKS, EC2 Spot Managed Node Group, NAT Gateway, ALB, ECR, AWS Secrets Manager, Terraform Destroy Workflow
 
 ### 3.6 永續性（Sustainability）
 
-永續性在本 portfolio 中對應到避免閒置資源、減少重複建置與讓環境可關閉。GitOps、immutable image 與 IaC 讓環境能在需要展示時重建，不需要長期維持所有資源常開。
+永續性在 Hiraya 中對應到避免閒置資源、減少重複建置與讓環境可關閉。GitOps、Immutable Image 與 IaC 讓環境能在需要展示時重建，不需要長期維持所有資源常開。
 
 展示重點：
 
-- Disposable platform 降低閒置雲端資源。
-- Shared ingress 減少重複 LoadBalancer。
-- Spot capacity 與 max node count 限制 dev compute 上限。
-- Observability data 可作為後續 right-sizing 依據。
-- ECR lifecycle policy 可作為後續映像清理方向。
+- 可重建 Platform 降低閒置雲端資源。
+- Shared Ingress 減少重複 LoadBalancer。
+- Spot Capacity 與 Max Node Count 限制 dev 運算資源上限。
+- Observability 可作為後續 Right-sizing 依據。
+- ECR Lifecycle Policy 可作為後續 Image 清理方向。
 
 使用服務與工具：EKS, EC2 Spot, ECR lifecycle, Prometheus, Grafana, Terraform
 
 ---
 
-## 四、Portfolio 展示重點
+## 附錄 A、技術回顧
 
-Hiraya 作為 DevOps portfolio，最適合以「一次完整交付流程」來呈現：
+Hiraya 最適合以「一次完整交付流程」來呈現：
 
 1. **從 GitHub PR 開始**
-   展示 app baseline、test、build、GitOps render validation 與 service catalog 驅動的變更判斷。
+   展示 app baseline、test、build、GitOps render validation 與 服務目錄驅動的變更判斷。
 
-2. **建立並推送容器映像**
+2. **建立並推送 container image**
    展示 Buildx、ECR immutable tag、Trivy scan 與 AWS OIDC role assumption。
 
 3. **透過 PR promotion 更新 GitOps manifest**
    展示 image tag promotion 不直接寫入 main，而是由 GitHub App 建立可審查的 PR。
 
 4. **由 Argo CD 同步到 EKS**
-   展示 GitOps desired state、sync status、self-heal 與 Kubernetes workloads。
+   展示 GitOps 期望狀態、sync status、self-heal 與 Kubernetes workloads。
 
 5. **透過 public URL 驗證部署結果**
    展示 `https://hiraya.noidilin.dev`、Gateway API、ExternalDNS、ALB 與 deploy smoke。
 
-6. **在 Grafana / CloudWatch 觀察服務狀態**
-   展示 dashboard、pod logs 與 operator diagnosis workflow。
+6. **在 Grafana 觀察服務狀態**
+   展示 dashboard、metrics 與基本維運觀察流程。
 
 7. **示範 rollback path**
    展示以既有 ECR image tag 建立 rollback PR，讓回復流程同樣可審查與可追蹤。
 
-這條 demo storyline 能清楚說明專案不是單一 web app，而是一個完整的 cloud-native delivery platform。
+這條 demo storyline 能清楚說明 Hiraya 不是單一 web app，而是一個完整的 cloud-native delivery platform。
 
 ### 技術亮點摘要
 
 - **AWS EKS private workload architecture**：private worker nodes + shared public ALB/Gateway。
-- **Terraform IaC layering**：bootstrap durable resources 與 platform disposable resources 分離。
+- **Terraform IaC layering**：長期保留的初始建置、AWS foundation 與 Argo CD 交接 分離。
 - **GitHub Actions CI/CD**：PR baseline、image pipeline、infra pipeline、deploy smoke、rollback workflow。
-- **GitOps with Argo CD**：GitOps application 自動 sync、prune、self-heal。
-- **Supply chain practices**：ECR immutable tags、scan on push、Trivy advisory scan、OIDC credentials。
-- **Observability foundation**：Prometheus/Grafana dashboard + Fluent Bit to CloudWatch Logs。
-- **AIOps roadmap**：Kira 作為尚未完整實作的 Bedrock Agent-based SRE assistant，規劃連接 logs、metrics 與 diagnosis workflow。
+- **GitOps 管理的 cluster 平台**：Argo CD 在初始建置後長期管理 Helm-based 平台附加元件 與 workload manifests。
+- **供應鏈安全實務**：ECR immutable tags、scan on push、Trivy 提示型掃描、OIDC credentials。
+- **Secrets management**：AWS Secrets Manager + External Secrets Operator 管理 DB、Grafana 與 Argo CD admin credentials。
+- **Observability foundation**：Prometheus/Grafana dashboard。
 
 ---
 
-## 五、AIOps 功能規劃與後續深化方向
+## 附錄 B、後續深化方向
 
-第五章聚焦尚未完整實作的 AIOps feature。它不放在第二章的已實作平台架構中，而是作為下一階段深化方向：先說明 Kira 的目標與預期診斷流程，再列出其他 production-grade improvement direction。
+為了更接近 production-grade reference architecture，可優先深化以下方向：
 
-### 5.1 AIOps feature：Kira
-
-Kira 是本專題規劃中的 AI-assisted SRE assistant。它的目標不是取代 operator，而是幫助 operator 更快完成以下工作：
-
-1. 收集 CloudWatch Logs、CloudWatch Metrics 與 EKS health evidence。
-2. 將錯誤訊息、時間線與服務狀態整理成 Diagnosis Session。
-3. 產生可能根因、影響範圍與修復建議。
-4. 將分析結果回饋給 operator，由人類決定是否採取修復行動。
-
-目前 `app/aiops/` 保留可展示的原型元素，但尚未視為正式完成的 platform feature：
-
-- Streamlit UI
-- Bedrock Agent deploy script
-- IAM setup script
-- Lambda action tools
-- OpenAPI schemas
-
-正式設計方向以 ADR 0002 為準：Kira 應查詢 **CloudWatch Logs + CloudWatch Metrics**，其中 metrics 由 ADOT 從 cluster 內部 export 到 CloudWatch。這個方向避免把 Prometheus 直接暴露給外部工具，也讓 AIOps integration 更貼近 AWS-native operation model。
-
-AIOps 在 portfolio 中的價值，是把傳統 DevOps pipeline、observability 與 incident diagnosis 串成一個完整故事：
-
-`Service change → CI/CD → GitOps deploy → Monitoring/logging → Incident evidence → Kira diagnosis → Operator decision`
-
-### 5.2 AIOps 優先實作方向
-
-1. **CloudWatch metric path**
-   依 ADR 0002 實作 ADOT → CloudWatch Metrics，讓 Kira 的 Lambda tools 查詢 CloudWatch Logs / Metrics / EKS APIs，而不是直接依賴 Prometheus endpoint。
-
-2. **Bedrock Agent action boundary**
-   將 Lambda tools 限定為 read-only diagnosis actions，例如查詢 log、查詢 metrics、讀取 deployment 狀態與整理事件時間線，避免 AI assistant 直接執行破壞性修復。
-
-3. **Diagnosis Session model**
-   定義一次診斷需要保存的欄位：incident window、affected service、evidence links、hypothesis、recommended action 與 operator decision，讓 AIOps 輸出可審查、可回顧。
-
-4. **Demo integration**
-   將 Kira flow 與既有 storefront / Grafana / CloudWatch demo 串接，讓 portfolio 能展示「部署 → 觀測 → 診斷」的完整流程。
-
-### 5.3 其他後續深化方向
-
-為了讓 portfolio 更接近 production-grade reference architecture，可在 AIOps 之外優先深化以下方向：
-
-1. **Secrets management**
-   將 GitOps 中的資料庫密碼與 connection string 移出明文 manifests，導入 AWS Secrets Manager、External Secrets、SOPS 或 Sealed Secrets。
+1. **Secret rotation and audit**
+   在已導入 AWS Secrets Manager 與 External Secrets Operator 的基礎上，補齊定期 rotation、CloudTrail audit review、least-privilege policy review 與 credential access runbook。
 
 2. **Runtime reliability**
    為 frontend、gateway 與 active backend services 加入 readiness/liveness probes、resource requests/limits、HPA、PDB 與多副本策略。
 
 3. **Observability coverage**
-   將 ServiceMonitor coverage 從 gateway 擴展到所有 active backend services，並整理 low-cardinality metrics 供 Grafana 與 Kira 使用。
+   將 ServiceMonitor coverage 從 gateway 擴展到所有 active backend services，並整理 low-cardinality metrics 供 Grafana dashboard 使用。
 
 4. **Security hardening**
-   收斂 EKS API public CIDR、加入 Kubernetes NetworkPolicy、讓 Trivy scan 逐步成為 blocking gate，並強化 Argo CD / Grafana credential handling。
+   收斂 EKS API public CIDR、加入 Kubernetes NetworkPolicy、讓 Trivy scan 逐步成為 阻擋型檢查門檻，並強化 Argo CD / Grafana public access policy。
 
-5. **Application modernization**
-   延續 Hiraya Furugi frontend rebrand / Vite migration，使 storefront UI 更適合 portfolio presentation，同時驗證現有 CI/CD pipeline 對實際功能改版的支援能力。
-
-透過這些深化方向，Hiraya 可以從 dev portfolio 進一步演進為更完整的 cloud-native platform reference，持續展示 DevOps、SRE 與 AIOps 的整合能力。
+透過這些深化方向，Hiraya 可以進一步演進為更完整的 cloud-native platform reference，持續展示 DevOps 與 SRE 的整合能力。
 
 ---
 
-## 附錄 A、資料庫與資料持久化策略
+## 附錄 C、資料庫與資料持久化策略
 
 資料層相關討論集中於本附錄，避免在主架構章節中混合已實作平台能力與資料庫延伸選項。主文僅保留 `vintage-postgres` 作為 microservice dependency 與可靠性/成本討論中的必要引用。
 
 ### A.1 目前 dev database 設計
 
-資料層使用 Kubernetes 內部 PostgreSQL StatefulSet，目的在於讓 dev environment 可完整重建，並同時展示 persistent volume、StorageClass 與 GitOps bootstrap 的整合方式。
+資料層使用 Kubernetes 內部 PostgreSQL StatefulSet，目的在於讓 dev environment 可完整重建，並同時展示 persistent volume、StorageClass 與 GitOps 初始建置流程的整合方式。
 
 | 項目 | 設計 |
 |---|---|
@@ -455,20 +438,20 @@ AIOps 在 portfolio 中的價值，是把傳統 DevOps pipeline、observability 
 
 資料初始化由 GitOps 管理：
 
-- `gitops/k8s/database/vintage_full.sql` 保存 dev seed data。
+- Dev seed data 以 SQL dump 形式納入 GitOps 管理。
 - Kustomize 產生 `vintage-db-dump` ConfigMap。
 - Restore Job 等待 PostgreSQL ready 後匯入資料。
 - Argo CD sync wave 確保 database、restore job 與 application deployment 依序建立。
 
-此設計展示了「環境可重建」的能力：當 disposable platform 被 destroy 後重新 apply，GitOps 可以再次建立 namespace、database、restore job 與 application workloads，使 demo environment 回到預期狀態。
+此設計呈現「環境可重建」的能力：當可重建平台被 destroy 後重新 apply，GitOps 可以再次建立 namespace、database、restore job 與 application workloads，使 demo environment 回到預期狀態。
 
 ### A.2 設計取捨與 production data layer option
 
-本 portfolio 目前選擇 in-cluster PostgreSQL，是為了在 dev 成本、可展示性與可銷毀平台之間取得平衡。它適合展示 Kubernetes StatefulSet、EBS CSI、PVC、restore job 與 GitOps sync wave，但不應被解讀為 production-grade database architecture。
+目前選擇 in-cluster PostgreSQL，是為了在 dev 成本、可展示性與可重建平台之間取得平衡。它適合展示 Kubernetes StatefulSet、EBS CSI、PVC、restore job 與 GitOps sync wave，但不應被解讀為 production-grade database architecture。
 
 若要展示更完整 AWS architecture，可將 in-cluster PostgreSQL 延伸為 Amazon RDS 或 Aurora，並導入以下能力：
 
-- Secrets Manager 或 External Secrets 管理 database credentials。
+- Secrets Manager + External Secrets Operator 管理 database credentials，並定義 rotation / restore drill 流程。
 - Automated backup、point-in-time recovery 與 restore drill。
 - Migration tool 管理 schema change，而不是只依賴 seed SQL restore。
 - Least-privilege IAM 與 network policy / security group boundary。
