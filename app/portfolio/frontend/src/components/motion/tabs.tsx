@@ -75,7 +75,7 @@ const listClasses: Record<Variant, string> = {
 export function TabsList({ children, className }: { children: ReactNode; className?: string }) {
   const { variant } = useTabs()
   return (
-    <div role="tablist" className={cn(listClasses[variant], className)}>
+    <div role="group" className={cn(listClasses[variant], className)}>
       {children}
     </div>
   )
@@ -99,8 +99,7 @@ export function TabsTrigger({
     return (
       <button
         type="button"
-        role="tab"
-        aria-selected={active}
+        aria-pressed={active}
         onClick={() => setValue(value)}
         className={cn(
           "relative isolate -mb-px inline-flex min-h-[44px] items-center px-3 pb-2.5 pt-1 text-sm font-medium transition-colors",
@@ -132,8 +131,7 @@ export function TabsTrigger({
       ) : null}
       <button
         type="button"
-        role="tab"
-        aria-selected={active}
+        aria-pressed={active}
         onClick={() => setValue(value)}
         className={cn(
           "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium outline-none transition-colors",

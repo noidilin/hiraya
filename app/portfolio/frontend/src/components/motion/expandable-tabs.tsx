@@ -408,12 +408,7 @@ export function ExpandableTabs({
               {leadingControls}
             </div>
           ) : null}
-          <div
-            role="tablist"
-            aria-label="Navigation tabs"
-            aria-orientation="horizontal"
-            className={cn("flex items-center gap-1", classNames?.tabList)}
-          >
+          <div className={cn("flex items-center gap-1", classNames?.tabList)}>
             {items.map((item) => {
               const isActive = item.id === visualActiveId
               const activeTabWidth = getActiveTabWidth(item)
@@ -423,8 +418,6 @@ export function ExpandableTabs({
                 <motion.button
                   key={item.id}
                   type="button"
-                  role="tab"
-                  aria-selected={isActive}
                   aria-current={!active && item.id === currentValue ? "page" : undefined}
                   aria-label={item.label}
                   onClick={() => setActive(active?.id === item.id ? null : item.id)}

@@ -109,18 +109,18 @@ export function PresentationViewer({
   }, [getTopicHref, onTopicSelect])
 
   const openKeyPointDialog = useCallback((target: TopicTarget) => {
+    setKeyPointDialogTarget(target)
+    setIsKeyPointDialogOpen(true)
+  }, [])
+
+  const continueFromKeyPoints = () => {
+    const target = keyPointDialogTarget
+
     setShownKeyPointTopicIds((current) => {
       const next = new Set(current)
       next.add(activeTopicKey)
       return next
     })
-    setKeyPointDialogTarget(target)
-    setIsKeyPointDialogOpen(true)
-  }, [activeTopicKey])
-
-  const continueFromKeyPoints = () => {
-    const target = keyPointDialogTarget
-
     setIsKeyPointDialogOpen(false)
     setKeyPointDialogTarget(undefined)
     navigateToTopicTarget(target)

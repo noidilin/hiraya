@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type FocusEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 
 type PixelTransitionProps = {
@@ -117,6 +117,14 @@ export function PixelTransition({
     else if (!once) animatePixels(false)
   }
 
+  const handleFocus = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) handleEnter()
+  }
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) handleLeave()
+  }
+
   return (
     <div
       className={`relative w-full max-w-full overflow-hidden rounded-lg border border-white/15 bg-zinc-950 text-white outline-none ${className}`}
@@ -124,8 +132,8 @@ export function PixelTransition({
       onMouseEnter={!isTouchDevice ? handleEnter : undefined}
       onMouseLeave={!isTouchDevice ? handleLeave : undefined}
       onClick={isTouchDevice ? handleClick : undefined}
-      onFocus={!isTouchDevice ? handleEnter : undefined}
-      onBlur={!isTouchDevice ? handleLeave : undefined}
+      onFocus={!isTouchDevice ? handleFocus : undefined}
+      onBlur={!isTouchDevice ? handleBlur : undefined}
       tabIndex={0}
     >
       <div style={{ paddingTop: aspectRatio }} />

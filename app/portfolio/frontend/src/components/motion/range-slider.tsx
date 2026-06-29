@@ -57,9 +57,11 @@ export function RangeSlider({
   const [internal, setInternal] = useState(defaultValue)
   const [active, setActive] = useState(false)
   const controlled = value !== undefined
-  const span = Math.max(max - min, step)
+  const range = Math.max(max - min, 0)
+  const safeRange = range === 0 ? 1 : range
+  const safeStep = step > 0 ? step : 1
   const current = clamp(controlled ? value : internal, min, max)
-  const percent = ((current - min) / span) * 100
+  const percent = ((current - min) / safeRange) * 100
 
   const target = useMotionValue(percent)
   useEffect(() => {
@@ -70,19 +72,19 @@ export function RangeSlider({
   const left = useMotionTemplate`${pos}%`
   const thumbX = useTransform(pos, (position) => `${-position}%`)
 
-  const steps = Math.floor((max - min) / step)
+  const steps = Math.floor(range / safeStep)
   const ticks =
     showTicks && steps > 0 && steps <= 50
-      ? Array.from({ length: steps + 1 }, (_, index) => min + index * step)
+      ? Array.from({ length: steps + 1 }, (_, index) => min + index * safeStep)
       : []
 
   const commit = useCallback(
     (next: number) => {
-      const snapped = clamp(Math.round((next - min) / step) * step + min, min, max)
+      const snapped = clamp(Math.round((next - min) / safeStep) * safeStep + min, min, max)
       if (!controlled) setInternal(snapped)
       onValueChange?.(snapped)
     },
-    [controlled, onValueChange, min, max, step],
+    [controlled, onValueChange, min, max, safeStep],
   )
 
   const valueFromX = useCallback(
@@ -123,10 +125,10 @@ export function RangeSlider({
     (event: KeyboardEvent<HTMLDivElement>) => {
       if (disabled) return
       const map: Record<string, number> = {
-        ArrowRight: current + step,
-        ArrowUp: current + step,
-        ArrowLeft: current - step,
-        ArrowDown: current - step,
+        ArrowRight: current + safeStep,
+        ArrowUp: current + safeStep,
+        ArrowLeft: current - safeStep,
+        ArrowDown: current - safeStep,
         Home: min,
         End: max,
       }
@@ -135,7 +137,7 @@ export function RangeSlider({
         commit(map[event.key])
       }
     },
-    [disabled, current, step, min, max, commit],
+    [disabled, current, safeStep, min, max, commit],
   )
 
   return (
@@ -158,7 +160,7 @@ export function RangeSlider({
 
       <div className="pointer-events-none absolute inset-x-2 inset-y-0">
         {ticks.map((tick) => {
-          const tickPercent = ((tick - min) / span) * 100
+          const tickPercent = ((tick - min) / safeRange) * 100
           const isActiveTick = tick <= current
 
           return (

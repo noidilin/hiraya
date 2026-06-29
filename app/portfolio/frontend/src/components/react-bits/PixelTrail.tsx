@@ -158,8 +158,11 @@ export function PixelTrail({
       <Canvas
         {...canvasProps}
         gl={glProps}
-        className={`absolute z-[1] ${className}`}
-        style={gooeyFilter ? { filter: `url(#${gooeyFilter.id})` } : undefined}
+        className={['absolute z-[1]', canvasProps.className, className].filter(Boolean).join(' ')}
+        style={{
+          ...canvasProps.style,
+          ...(gooeyFilter ? { filter: `url(#${gooeyFilter.id})` } : {}),
+        }}
       >
         <Scene
           gridSize={gridSize}
