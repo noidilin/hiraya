@@ -4,11 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-  defaultLabLocale,
   resolveLabLocaleContent,
-  type LabLocaleKey,
   type LabTopic,
 } from '@/content/labContentTypes'
+import { defaultAppLocale, type AppLocale } from '@/i18n/locales'
 import { labPresentationUiContent } from '@/content/labVisualContent'
 
 import { VisualSlotRenderer } from './visual-slot-renderer'
@@ -17,7 +16,7 @@ type TopicContentProps = {
   topic: LabTopic
   chapterIndex: number
   chapterTitle: string
-  locale?: LabLocaleKey
+  locale?: AppLocale
 }
 
 function SourceReferenceButton({
@@ -70,7 +69,7 @@ export function TopicContent({
   topic,
   chapterIndex,
   chapterTitle,
-  locale = defaultLabLocale,
+  locale = defaultAppLocale,
 }: TopicContentProps) {
   const topicContent = resolveLabLocaleContent(topic.content, locale)
   const uiContent = resolveLabLocaleContent(labPresentationUiContent, locale)

@@ -1,0 +1,151 @@
+export const resources = {
+  en: {
+    translation: {
+      app: {
+        eyebrow: 'Lazy CI/CD lab',
+        title: 'Interactive CI/CD starter',
+        description:
+          'A bilingual teaching surface for CI/CD concepts, now with richer motion primitives for visual explanations.',
+        simulate: 'Simulate run',
+        reset: 'Reset',
+        runs: 'Runs simulated with Zustand: {{count}}',
+      },
+      common: {
+        language: {
+          switchToTraditionalChinese: 'Switch locale to Traditional Chinese',
+          switchToEnglish: 'Switch locale to English',
+        },
+        nav: {
+          chapters: 'Chapters',
+          openChapters: 'Open chapters',
+          hiraya: 'Hiraya',
+          openHiraya: 'Open Hiraya',
+          repository: 'Hiraya repository',
+          openRepository: 'Open Hiraya repository on GitHub',
+        },
+      },
+      guide: {
+        launcher: {
+          ask: 'Ask Hiraya Guide',
+          minimize: 'Minimize Guide',
+        },
+        panel: {
+          eyebrow: 'assistant panel',
+          title: 'Hiraya Guide',
+          close: 'Close',
+          closeAria: 'Close Hiraya Guide',
+          inputPlaceholder: 'Ask about Hiraya architecture or CI/CD...',
+          send: 'Send message',
+          cited: 'cited',
+          thinking: 'Asking curated knowledge...',
+          retrieving: 'retrieving',
+          ready: 'ready',
+          starterInfrastructure: 'How does Hiraya deploy infrastructure?',
+          starterSecurity: 'What security gates are implemented?',
+          starterScope: 'What is intentionally out of scope for the guide?',
+        },
+      },
+      stack: {
+        title: 'Frontend tooling',
+        items: [
+          'Vite + React + TypeScript',
+          'TanStack Router + Query',
+          'Zustand',
+          'shadcn/ui + Tailwind',
+          'GSAP + React Flow + Remotion',
+          'i18next + react-i18next',
+          'React Bits visual components',
+        ],
+      },
+      flow: {
+        commit: 'Commit',
+        test: 'Test',
+        deploy: 'Deploy',
+        timeline: 'CI/CD timeline',
+      },
+      visuals: {
+        title: 'Motion palette',
+        transitionBefore: 'Code enters the pipeline',
+        transitionAfter: 'Release reaches production',
+        trailTitle: 'Pointer trail',
+        trailSubtitle: 'Pixel Trail',
+        gridTitle: 'Shape Grid',
+        gridSubtitle: 'Canvas background layer',
+      },
+    },
+  },
+  'zh-TW': {
+    translation: {
+      app: {
+        eyebrow: 'Lazy CI/CD 實驗室',
+        title: '互動式 CI/CD 入門',
+        description: '支援繁中與英文的教學介面，加入更多動態視覺元件來說明 CI/CD 流程。',
+        simulate: '模擬執行',
+        reset: '重設',
+        runs: 'Zustand 模擬執行次數：{{count}}',
+      },
+      common: {
+        language: {
+          switchToTraditionalChinese: '切換語言為繁體中文',
+          switchToEnglish: '切換語言為英文',
+        },
+        nav: {
+          chapters: '章節',
+          openChapters: '開啟章節',
+          hiraya: 'Hiraya',
+          openHiraya: '開啟 Hiraya',
+          repository: 'Hiraya repository',
+          openRepository: '在 GitHub 開啟 Hiraya repository',
+        },
+      },
+      guide: {
+        launcher: {
+          ask: '詢問 Hiraya Guide',
+          minimize: '最小化 Guide',
+        },
+        panel: {
+          eyebrow: 'assistant panel',
+          title: 'Hiraya Guide',
+          close: '關閉',
+          closeAria: '關閉 Hiraya Guide',
+          inputPlaceholder: '詢問 Hiraya architecture 或 CI/CD...',
+          send: '送出訊息',
+          cited: '引用',
+          thinking: '正在查詢整理好的知識...',
+          retrieving: '查詢中',
+          ready: '就緒',
+          starterInfrastructure: 'Hiraya 如何部署 infrastructure？',
+          starterSecurity: '目前實作哪些 security gates？',
+          starterScope: 'Guide 刻意不處理哪些範圍？',
+        },
+      },
+      stack: {
+        title: '前端工具',
+        items: [
+          'Vite + React + TypeScript',
+          'TanStack Router + Query',
+          'Zustand',
+          'shadcn/ui + Tailwind',
+          'GSAP + React Flow + Remotion',
+          'i18next + react-i18next',
+          'React Bits 視覺元件',
+        ],
+      },
+      flow: {
+        commit: '提交',
+        test: '測試',
+        deploy: '部署',
+        timeline: 'CI/CD 時間軸',
+      },
+      visuals: {
+        title: '動態視覺庫',
+        transitionBefore: '程式碼進入流水線',
+        transitionAfter: '版本抵達正式環境',
+        trailTitle: '游標軌跡',
+        trailSubtitle: 'Pixel Trail',
+        gridTitle: 'Shape Grid',
+        gridSubtitle: 'Canvas 背景層',
+      },
+    },
+  },
+} as const

@@ -1,6 +1,6 @@
 import { CheckCircle2, Image, MonitorPlay, Network, TimerReset, type LucideIcon } from 'lucide-react'
 
-import type { HirayaMediaSlot } from '@/content/hirayaContent'
+import type { HirayaMediaSlot } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
 

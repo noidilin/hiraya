@@ -1,4 +1,4 @@
-import type { HirayaContentTable } from '@/content/hirayaContent'
+import type { HirayaContentTable } from '@/content/hiraya/types'
 
 export function HirayaContentTableView({ table }: { table: HirayaContentTable }) {
   return (

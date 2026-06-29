@@ -1,11 +1,10 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 
 import {
-  defaultLabLocale,
   resolveLabLocaleContent,
-  type LabLocaleKey,
   type LabVisualSlotKey,
 } from '@/content/labContentTypes'
+import { defaultAppLocale, type AppLocale } from '@/i18n/locales'
 import { labPresentationUiContent, labVisualSlotContent } from '@/content/labVisualContent'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +15,7 @@ type VisualComponent = LazyExoticComponent<ComponentType<{ className?: string }>
 type VisualSlotRendererProps = {
   visualSlot: LabVisualSlotKey
   stage2Notes?: string
-  locale?: LabLocaleKey
+  locale?: AppLocale
   footer?: ReactNode
 }
 
@@ -159,7 +158,7 @@ const visualSlotComponents: Partial<Record<LabVisualSlotKey, VisualComponent>> =
 export function VisualSlotRenderer({
   visualSlot,
   stage2Notes,
-  locale = defaultLabLocale,
+  locale = defaultAppLocale,
   footer,
 }: VisualSlotRendererProps) {
   const SlotComponent = visualSlotComponents[visualSlot]

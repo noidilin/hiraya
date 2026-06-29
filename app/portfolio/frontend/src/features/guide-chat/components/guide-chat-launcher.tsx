@@ -1,5 +1,6 @@
 import { Bot, X } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { GuideChatPanel } from './guide-chat-panel'
 import { useGuideChat } from '../hooks/use-guide-chat'
@@ -7,6 +8,7 @@ import { useGuideChat } from '../hooks/use-guide-chat'
 export function GuideChatLauncher() {
   const [isOpen, setIsOpen] = useState(false)
   const guideChat = useGuideChat()
+  const { t } = useTranslation()
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
@@ -26,7 +28,7 @@ export function GuideChatLauncher() {
         aria-controls="hiraya-guide-panel"
       >
         {isOpen ? <X className="size-4" /> : <Bot className="size-4 text-primary" />}
-        {isOpen ? 'Minimize Guide' : 'Ask Hiraya Guide'}
+        {isOpen ? t('guide.launcher.minimize') : t('guide.launcher.ask')}
       </button>
     </div>
   )

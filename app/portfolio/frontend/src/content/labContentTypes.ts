@@ -1,8 +1,6 @@
-export const labLocaleKeys = ['en', 'zhTW'] as const
+import { appLanguages, defaultAppLocale, type AppLocale } from '@/i18n/locales'
 
-export type LabLocaleKey = (typeof labLocaleKeys)[number]
-
-export const defaultLabLocale: LabLocaleKey = 'en'
+export const appLocaleKeys = appLanguages.map((language) => language.code)
 
 export type LabLocaleContent = {
   title: string
@@ -39,16 +37,13 @@ export type LabPresentationUiLocaleContent = {
 
 export type LabLocalizedContent<TContent extends object> = {
   en: TContent
-} & Partial<Record<Exclude<LabLocaleKey, 'en'>, Partial<TContent>>>
-
-export const isLabLocaleKey = (locale: string): locale is LabLocaleKey =>
-  labLocaleKeys.some((localeKey) => localeKey === locale)
+} & Partial<Record<Exclude<AppLocale, 'en'>, Partial<TContent>>>
 
 export function resolveLabLocaleContent<TContent extends object>(
   content: LabLocalizedContent<TContent>,
-  locale: LabLocaleKey = defaultLabLocale,
+  locale: AppLocale = defaultAppLocale,
 ): TContent {
-  if (locale === defaultLabLocale) {
+  if (locale === defaultAppLocale) {
     return content.en
   }
 

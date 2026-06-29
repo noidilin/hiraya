@@ -8,6 +8,7 @@ let container: HTMLDivElement
 let root: Root
 
 async function renderGuideChat() {
+  await import('@/i18n')
   const { GuideChatLauncher } = await import('./components/guide-chat-launcher')
   await act(async () => {
     root.render(<GuideChatLauncher />)

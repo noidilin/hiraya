@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import type { HirayaContentSection } from '@/content/hirayaContent'
+import type { HirayaContentSection } from '@/content/hiraya/types'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 

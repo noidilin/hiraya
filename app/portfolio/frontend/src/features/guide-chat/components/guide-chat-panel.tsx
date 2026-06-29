@@ -1,5 +1,6 @@
 import { ArrowUp, Loader2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   ChatContainerContent,
@@ -17,12 +18,6 @@ import { cn } from '@/lib/utils'
 
 import { LoadingBubble, MessageBubble } from './message-bubble'
 import type { ChatMessage } from '../types'
-
-const starterQuestions = [
-  'How does Hiraya deploy infrastructure?',
-  'What security gates are implemented?',
-  'What is intentionally out of scope for the guide?',
-]
 
 type GuideChatPanelProps = {
   messages: ChatMessage[]
@@ -45,24 +40,34 @@ export function GuideChatPanel({
   onSend,
   onClose,
 }: GuideChatPanelProps) {
+  const { t } = useTranslation()
+  const starterQuestions = useMemo(
+    () => [
+      t('guide.panel.starterInfrastructure'),
+      t('guide.panel.starterSecurity'),
+      t('guide.panel.starterScope'),
+    ],
+    [t],
+  )
+
   return (
     <aside id="hiraya-guide-panel" className="flex h-[min(720px,calc(100svh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border bg-card/95 shadow-2xl backdrop-blur-md">
       <div className="border-b px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">assistant panel</p>
-            <h2 className="text-xl font-semibold">Hiraya Guide</h2>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">{t('guide.panel.eyebrow')}</p>
+            <h2 className="text-xl font-semibold">{t('guide.panel.title')}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <StatusToken state={isSending ? 'active' : 'idle'}>{isSending ? 'retrieving' : 'ready'}</StatusToken>
+            <StatusToken state={isSending ? 'active' : 'idle'}>{isSending ? t('guide.panel.retrieving') : t('guide.panel.ready')}</StatusToken>
             {onClose ? (
               <button
                 type="button"
                 className="rounded-lg border bg-background px-2.5 py-1.5 text-xs text-muted-foreground transition duration-150 hover:bg-accent hover:text-foreground"
                 onClick={onClose}
-                aria-label="Close Hiraya Guide"
+                aria-label={t('guide.panel.closeAria')}
               >
-                Close
+                {t('guide.panel.close')}
               </button>
             ) : null}
           </div>
@@ -102,15 +107,15 @@ export function GuideChatPanel({
           disabled={isSending}
           className="rounded-lg border-input bg-background p-2"
         >
-          <PromptInputTextarea placeholder="Ask about Hiraya architecture or CI/CD..." />
+          <PromptInputTextarea placeholder={t('guide.panel.inputPlaceholder')} />
           <PromptInputActions className="justify-end px-1 pb-1">
-            <PromptInputAction tooltip="Send message">
+            <PromptInputAction tooltip={t('guide.panel.send')}>
               <button
                 type="button"
                 className="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition duration-150 hover:bg-chart-4 disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={!canSend}
                 onClick={() => onSend()}
-                aria-label="Send message"
+                aria-label={t('guide.panel.send')}
               >
                 {isSending ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
               </button>
@@ -120,7 +125,7 @@ export function GuideChatPanel({
 
         {latestCitations.length > 0 ? (
           <p className="font-mono text-[11px] text-muted-foreground">
-            cited: {latestCitations[0]?.title} · {latestCitations[0]?.source}
+            {t('guide.panel.cited')}: {latestCitations[0]?.title} · {latestCitations[0]?.source}
           </p>
         ) : null}
       </div>
