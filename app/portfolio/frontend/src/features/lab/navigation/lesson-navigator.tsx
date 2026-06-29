@@ -31,9 +31,6 @@ type LessonNavigatorProps = {
 const progressRadius = 15
 const progressCircumference = 2 * Math.PI * progressRadius
 
-function capitalizeFirst(value: string) {
-  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value
-}
 
 function ChapterIcon({ index }: { index: number }) {
   return (
@@ -114,7 +111,7 @@ export function LessonNavigator({
               <div className="mb-1.5 flex min-w-0 items-start justify-between gap-3 px-1">
                 <div className="min-w-0">
                   <h2 className="truncate text-sm font-semibold leading-5 text-foreground">
-                    {capitalizeFirst(chapterContent.title)}
+                    {chapterContent.title}
                   </h2>
                   <p className="mt-0.5 font-mono text-[10px] uppercase leading-4 tracking-normal text-muted-foreground">
                     {chapterProgress}/{chapter.topics.length} topics

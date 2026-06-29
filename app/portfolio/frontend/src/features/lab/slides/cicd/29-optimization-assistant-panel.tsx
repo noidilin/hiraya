@@ -132,7 +132,7 @@ export function OptimizationAssistantPanelSlideVisual({ className }: VisualProps
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] leading-4 text-muted-foreground">
               <StatusBadge tone={riskTone}>{selected.risk} risk</StatusBadge>
-              <span aria-live="polite">
+              <span>
                 AI suggests saving {delta} minutes; {confidence}.
               </span>
             </div>
@@ -221,7 +221,7 @@ export function OptimizationAssistantPanelSlideVisual({ className }: VisualProps
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] leading-4 text-muted-foreground">
               <StatusBadge tone={riskTone}>{selected.risk} risk</StatusBadge>
-              <span aria-live="polite">
+              <span>
                 AI suggests saving {delta} minutes; {confidence}.
               </span>
             </div>

@@ -163,12 +163,12 @@ export function TradeoffFrameSlideVisual({ className }: VisualProps) {
               const pos = mode === 'safer' ? scenario.safePos : scenario.fastPos
 
               return (
-                <button
+                <div
                   key={scenario.id}
-                  type="button"
                   style={pos}
+                  role="group"
                   className={cn(
-                    'absolute flex max-w-[7.5rem] -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-md border bg-card/95 px-1.5 py-1 text-left shadow-sm outline-none transition-[left,top,background-color,border-color] duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                    'absolute flex max-w-[7.5rem] -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-md border bg-card/95 px-1.5 py-1 text-left shadow-sm transition-[left,top,background-color,border-color] duration-300 motion-reduce:transition-none',
                     toneClasses[activeTone].border,
                   )}
                   aria-label={`${scenario.label}: ${mode === 'safer' ? scenario.safer : scenario.faster}`}
@@ -177,7 +177,7 @@ export function TradeoffFrameSlideVisual({ className }: VisualProps) {
                   <span className="min-w-0 truncate text-[10px] font-semibold leading-3 text-foreground">
                     {scenario.label}
                   </span>
-                </button>
+                </div>
               )
             })}
           </div>

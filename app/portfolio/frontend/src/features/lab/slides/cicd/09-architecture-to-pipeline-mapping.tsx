@@ -134,7 +134,7 @@ export function ArchitectureToPipelineMappingSlideVisual(props: CicdSlideVisualP
             steps: architectureBoundaries.map((boundary) => ({
               value: boundary.id,
               label: boundary.label,
-              shortLabel: boundary.label.replace(' boundary', '').replace('Schema/', 'Schema'),
+              shortLabel: boundary.id === 'database' ? 'Schema/database' : boundary.label.replace(' boundary', ''),
               description: `${boundary.label} highlights ${boundary.stages.join(', ')} with scope ${boundary.scope}.`,
               status: boundary.scope,
             })),

@@ -49,15 +49,15 @@ export function OperatingModelComparisonSlideVisual(props: CicdSlideVisualProps)
           <caption className="sr-only">Hosted versus self-hosted CI/CD responsibility matrix</caption>
           <thead className="bg-muted/60">
             <tr>
-              <th className="border-b border-r border-border px-2 py-2 text-[9px] font-semibold uppercase">responsibility</th>
-              <th className="border-b border-r border-border px-2 py-2 text-[9px] font-semibold uppercase">hosted CI/CD</th>
-              <th className="border-b border-border px-2 py-2 text-[9px] font-semibold uppercase">self-hosted CI/CD</th>
+              <th scope="col" className="border-b border-r border-border px-2 py-2 text-[9px] font-semibold uppercase">responsibility</th>
+              <th scope="col" className="border-b border-r border-border px-2 py-2 text-[9px] font-semibold uppercase">hosted CI/CD</th>
+              <th scope="col" className="border-b border-border px-2 py-2 text-[9px] font-semibold uppercase">self-hosted CI/CD</th>
             </tr>
           </thead>
           <tbody>
             {operatingRows.map(([row, hosted, selfHosted]) => (
               <tr key={row}>
-                <th className="border-b border-r border-border px-2 py-2 text-[11px] font-semibold">
+                <th scope="row" className="border-b border-r border-border px-2 py-2 text-[11px] font-semibold">
                   <span className="flex items-center gap-2">
                     <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground" aria-hidden="true" />
                     {row}

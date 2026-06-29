@@ -6,7 +6,7 @@ Use this guideline when a CI/CD slide visual adopts `@xyflow/react` through `Sli
 
 Treat `SlideFlowCanvas` as the main spatial stage for the visual component shell. It is not a small embedded widget. The canvas should receive most of the shell body, especially on desktop where height is the scarce resource.
 
-Design against the shared canonical board in `src/components/lab/slides/cicd/shared/flow-canvas.tsx`:
+Design against the shared canonical board in `src/features/lab/slides/cicd/shared/flow-canvas.tsx`:
 
 - Width: `736px`
 - Height: `416px`
@@ -63,7 +63,7 @@ Do not put normal UI inside React Flow only because the slide adopted React Flow
 
 ## Node And Edge Design
 
-- Use the pre-built semantic node components in `src/components/lab/visuals/flow/` for CI/CD maps.
+- Use the pre-built semantic node components in `src/features/lab/visuals/flow/` for CI/CD maps.
 - Type slide nodes as `SlideFlowCanvasNode` when using `SlideFlowCanvas`; it already includes the visual node kit.
 - Use the built-in semantic node `type` values instead of creating ad hoc card-shaped text nodes:
   - `flowStage` for validate, build, deploy, verify, and other pipeline steps
