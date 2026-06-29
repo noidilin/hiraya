@@ -56,6 +56,8 @@ interface ServiceMatrix {
 }
 
 
+const rootLockfilePath = 'pnpm-lock.yaml';
+
 const imageFanoutImpactPatterns = [
   '.github/workflows/app-pr-baseline.yml',
   '.github/workflows/image-ci.yml',
@@ -211,7 +213,6 @@ function isGlobalChange(file: string, catalogPath: string, root: string): boolea
   return file === catalogRelativePath
     || file === '.github/utils/services.json'
     || file === 'package.json'
-    || file === 'pnpm-lock.yaml'
     || file === 'pnpm-workspace.yaml'
     || file === '.dockerignore'
     || imageFanoutImpactPatterns.some((pattern) => globMatches(pattern, file));
@@ -288,6 +289,9 @@ function selectServices(catalog: ServiceCatalog, changedFiles: string[] | undefi
 
   const selected = new Set<string>();
   for (const file of changedFiles) {
+    if (file === rootLockfilePath) {
+      continue;
+    }
     for (const service of catalog.services) {
       if (service.pathOwnership?.some((pattern) => globMatches(pattern, file))) {
         selected.add(service.name);

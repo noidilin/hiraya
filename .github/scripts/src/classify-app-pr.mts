@@ -67,6 +67,8 @@ interface Classification {
   reason: string;
 }
 
+const rootLockfilePath = 'pnpm-lock.yaml';
+
 const appBaselineGlobalImpactPatterns = [
   '.github/actions/setup-node-pnpm/**',
   '.github/workflows/app-pr-baseline.yml',
@@ -295,8 +297,11 @@ function isBotManifestPromotionOnly(files: string[], options: CliOptions): boole
 }
 
 function findAppBaselineImpactReason(files: string[], catalog: ServiceCatalog, options: CliOptions): string | undefined {
-  const patterns = appBaselineImpactPatterns(catalog, options);
+  const patterns = appBaselineImpactPatterns(catalog, options).filter((pattern) => pattern !== rootLockfilePath);
   for (const file of files) {
+    if (file === rootLockfilePath) {
+      continue;
+    }
     const matchedPattern = patterns.find((pattern) => globMatches(pattern, file));
     if (matchedPattern) {
       return `${file} matched ${matchedPattern}`;
@@ -312,6 +317,9 @@ function selectChangedImageServices(files: string[], catalog: ServiceCatalog, op
 
   const selected = new Set<string>();
   for (const file of files) {
+    if (file === rootLockfilePath) {
+      continue;
+    }
     for (const service of catalog.services) {
       if (service.pathOwnership?.some((pattern) => globMatches(pattern, file))) {
         selected.add(service.name);

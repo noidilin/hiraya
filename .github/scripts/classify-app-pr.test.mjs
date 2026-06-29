@@ -52,8 +52,10 @@ async function createRepoFixture() {
 
   await writeFile(path.join(root, 'README.md'), 'hello\n');
   await mkdir(path.join(root, 'app/microservices/frontend/src'), { recursive: true });
+  await writeFile(path.join(root, 'app/microservices/frontend/package.json'), `${JSON.stringify({ name: 'frontend' }, null, 2)}\n`);
   await writeFile(path.join(root, 'app/microservices/frontend/src/App.tsx'), 'export default function App() { return null; }\n');
   await mkdir(path.join(root, 'app/microservices/backend/services/auth/src'), { recursive: true });
+  await writeFile(path.join(root, 'app/microservices/backend/services/auth/package.json'), `${JSON.stringify({ name: 'auth-service' }, null, 2)}\n`);
   await writeFile(path.join(root, 'app/microservices/backend/services/auth/src/index.ts'), 'export {};\n');
   await writeFile(path.join(root, 'package.json'), `${JSON.stringify({ name: 'hiraya' }, null, 2)}\n`);
   await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
@@ -201,6 +203,39 @@ test('treats root package manager inputs as all service image inputs', async () 
 
   assert.equal(classification.pr_kind, 'microservice_related');
   assert.deepEqual(serviceNames(classification), ['frontend', 'auth']);
+});
+
+test('classifies portfolio-only root lockfile changes as non-app', async () => {
+  const fixture = await createRepoFixture();
+  const portfolioFile = path.join(fixture.root, 'app/portfolio/frontend/src/App.tsx');
+  await mkdir(path.dirname(portfolioFile), { recursive: true });
+  await writeFile(portfolioFile, 'export const portfolioOnly = true;\n');
+  await writeFile(path.join(fixture.root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\nportfolio dependency refresh\n');
+  const head = await commitChange(fixture.root, 'portfolio lockfile');
+
+  const classification = classify({ ...fixture, head });
+
+  assert.equal(classification.pr_kind, 'non_app');
+  assert.equal(classification.run_app_baseline, false);
+  assert.equal(classification.has_changed_service_images, false);
+  assert.deepEqual(serviceNames(classification), []);
+});
+
+test('uses microservice paths next to root lockfile changes to plan only affected image builds', async () => {
+  const fixture = await createRepoFixture();
+  await writeFile(path.join(fixture.root, 'app/microservices/frontend/package.json'), `${JSON.stringify({
+    name: 'frontend',
+    dependencies: { '@example/ui': '1.0.0' },
+  }, null, 2)}\n`);
+  await writeFile(path.join(fixture.root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\nfrontend dependency refresh\n');
+  const head = await commitChange(fixture.root, 'frontend lockfile');
+
+  const classification = classify({ ...fixture, head });
+
+  assert.equal(classification.pr_kind, 'microservice_related');
+  assert.equal(classification.run_app_baseline, true);
+  assert.equal(classification.has_changed_service_images, true);
+  assert.deepEqual(serviceNames(classification), ['frontend']);
 });
 
 test('fast-paths Hiraya bot GitOps image-tag-only manifest promotions', async () => {

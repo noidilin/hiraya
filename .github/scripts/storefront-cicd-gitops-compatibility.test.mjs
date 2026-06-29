@@ -68,7 +68,6 @@ test('Vintage replacement keeps exactly one existing frontend service catalog en
       'app/microservices/frontend/**',
       'app/microservices/shared/**',
       'package.json',
-      'pnpm-lock.yaml',
       'pnpm-workspace.yaml',
       '.dockerignore',
     ],

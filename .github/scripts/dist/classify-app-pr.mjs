@@ -3,6 +3,7 @@ import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
+const rootLockfilePath = 'pnpm-lock.yaml';
 const appBaselineGlobalImpactPatterns = [
     '.github/actions/setup-node-pnpm/**',
     '.github/workflows/app-pr-baseline.yml',
@@ -214,8 +215,11 @@ function isBotManifestPromotionOnly(files, options) {
     return true;
 }
 function findAppBaselineImpactReason(files, catalog, options) {
-    const patterns = appBaselineImpactPatterns(catalog, options);
+    const patterns = appBaselineImpactPatterns(catalog, options).filter((pattern) => pattern !== rootLockfilePath);
     for (const file of files) {
+        if (file === rootLockfilePath) {
+            continue;
+        }
         const matchedPattern = patterns.find((pattern) => globMatches(pattern, file));
         if (matchedPattern) {
             return `${file} matched ${matchedPattern}`;
@@ -229,6 +233,9 @@ function selectChangedImageServices(files, catalog, options) {
     }
     const selected = new Set();
     for (const file of files) {
+        if (file === rootLockfilePath) {
+            continue;
+        }
         for (const service of catalog.services) {
             if (service.pathOwnership?.some((pattern) => globMatches(pattern, file))) {
                 selected.add(service.name);
