@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-user-service:adfc4804393e7f4c63c5045e75f7821b1bb3721d
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-user-service:beedfdc1e81bd6e797640451e5a951b298536680
           ports:
             - containerPort: 3006
           env:
