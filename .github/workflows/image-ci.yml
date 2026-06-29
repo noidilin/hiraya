@@ -7,10 +7,9 @@ on:
     paths:
       - "app/microservices/**"
       - "package.json"
-      - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - ".dockerignore"
       - ".github/workflows/image-ci.yml"
-      - ".github/scripts/**"
       - ".github/utils/services.json"
 
 permissions:

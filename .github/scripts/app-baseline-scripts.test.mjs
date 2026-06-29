@@ -284,12 +284,13 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   const detectChangesJob = workflow.split('\n  app-baseline:')[0];
 
   assert.doesNotMatch(workflow, /-\s*["']?gitops\/\*\*["']?/, 'main image CI should not rerun from its generated GitOps manifest PR merges');
-  assert.match(workflow, /\.github\/scripts\/\*\*/, 'main image CI should rerun when baseline helper scripts change');
+  assert.doesNotMatch(workflow, /^\s+-\s*["']?\.github\/scripts\/\*\*["']?$/m, 'main image CI should not start for unrelated helper script changes');
   assert.match(workflow, /\.github\/utils\/services\.json/, 'main image CI should use service catalog changes as inputs');
   assert.doesNotMatch(workflow, /dorny\/paths-filter/, 'main image CI should not duplicate service mappings through legacy path filters');
   assert.match(workflow, /package\.json/, 'main image CI should run when the root package changes');
-  assert.match(workflow, /pnpm-lock\.yaml/, 'main image CI should run when the root lockfile changes');
+  assert.doesNotMatch(workflow, /^\s+-\s*["']?pnpm-lock\.yaml["']?$/m, 'main image CI should not start for portfolio-only root lockfile changes');
   assert.match(workflow, /pnpm-workspace\.yaml/, 'main image CI should run when the root workspace changes');
+  assert.match(workflow, /\.dockerignore/, 'main image CI should run when Docker build ignore rules change');
   assert.match(workflow, /node \.github\/scripts\/dist\/detect-changed-services\.mjs --catalog \.github\/utils\/services\.json --root \. --files-from \/tmp\/hiraya-main-changed-files\.txt --github-output "\$GITHUB_OUTPUT"/);
   assert.match(detectChangesJob, /node-version-file: package\.json[\s\S]*?detect-changed-services/, 'changed-service planning should pin Node from the root toolchain without installing dependencies');
   assert.doesNotMatch(detectChangesJob, /pnpm install/, 'changed-service planning should not install dependencies');
