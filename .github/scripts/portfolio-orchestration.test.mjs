@@ -58,11 +58,8 @@ test('Portfolio orchestration workflow coordinates app deploy, knowledge sync, a
   assert.match(workflow, /concurrency:[\s\S]*group: hiraya-portfolio-deploy-dev/, 'workflow should prevent overlapping Portfolio deploys');
   assert.match(workflow, /detect-changes:/, 'workflow should classify changed paths');
   assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, 'workflow should define the Terraform state bucket for backend generation');
-  assert.match(workflow, /knowledge-sync:[\s\S]*staging_dir="\$\{RUNNER_TEMP\}\/portfolio-knowledge-staging"[\s\S]*aws s3 sync "\$staging_dir\/" "s3:\/\/\$\{KNOWLEDGE_BUCKET\}\/\$\{KNOWLEDGE_PREFIX\}" --delete/, 'knowledge sync should mirror staged curated docs with delete');
-  for (const doc of ['PROJECT_BRIEF.md', 'ARCHITECTURE.md', 'CICD.md', 'SECURITY_GATES.md', 'TEAM_ROLES.md', 'DECISIONS.md']) {
-    assert.match(workflow, new RegExp(`cp docs/portfolio/${doc} "\\$staging_dir/"`), `${doc} should be copied into the staging directory`);
-  }
-  assert.doesNotMatch(workflow, /cp docs\/portfolio\/README\.md|aws s3 sync docs\/portfolio\//, 'knowledge sync should not stage or sync README.md');
+  assert.match(workflow, /knowledge-sync:[\s\S]*staging_dir="\$\{RUNNER_TEMP\}\/portfolio-knowledge-staging"[\s\S]*stage-portfolio-knowledge\.mjs --root \. --output "\$staging_dir"[\s\S]*aws s3 sync "\$staging_dir\/" "s3:\/\/\$\{KNOWLEDGE_BUCKET\}\/\$\{KNOWLEDGE_PREFIX\}" --delete/, 'knowledge sync should mirror staged chunked curated docs with delete');
+  assert.doesNotMatch(workflow, /cp docs\/portfolio\/README\.md|cp docs\/portfolio\/[A-Z_]+\.md|aws s3 sync docs\/portfolio\//, 'knowledge sync should not directly sync raw docs or README.md');
   assert.match(workflow, /generate-portfolio-citation-manifest\.mjs/, 'workflow should generate citation manifest from Markdown frontmatter');
   assert.match(workflow, /aws bedrock-agent start-ingestion-job/, 'workflow should start Bedrock ingestion');
   assert.match(workflow, /aws bedrock-agent get-ingestion-job/, 'workflow should poll Bedrock ingestion');
@@ -110,9 +107,10 @@ test('citation manifest generator maps curated Markdown to safe source labels ou
   const manifest = JSON.parse(await readFile(output, 'utf8'));
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.documents, undefined);
-  assert.equal(Object.keys(manifest.sources).length, 12);
+  assert.equal(Object.keys(manifest.sources).length, 18);
   assert.deepEqual(manifest.sources['docs/portfolio/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
   assert.deepEqual(manifest.sources['knowledge/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
+  assert.deepEqual(manifest.sources['knowledge/CICD/001.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
   assert.equal(manifest.sources['knowledge/README.md'], undefined);
   assert.equal(manifest.sources['knowledge/EXTRA.md'], undefined);
 });
