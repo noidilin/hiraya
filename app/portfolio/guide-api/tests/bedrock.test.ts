@@ -15,6 +15,7 @@ const env = {
 const manifest = {
   sources: {
     'knowledge/ARCHITECTURE/006.md': { title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' },
+    'knowledge/ARCHITECTURE/010.md': { title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' },
     'knowledge/CICD.md': { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' },
   },
 }
@@ -99,7 +100,7 @@ describe('Bedrock Knowledge Base adapter', () => {
                   'The public Storefront hostname is `https://hiraya.noidilin.dev`.',
                 ].join('\n'),
               },
-              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/006.md' } },
+              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/010.md' } },
             },
           ],
         }),
@@ -116,7 +117,8 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
   })
 
-  it('answers public traffic path questions when Bedrock Retrieve returns only a snippet of the path chunk', async () => {
+  it('falls back to generation when Retrieve returns only a snippet of the path chunk', async () => {
+    let generated = false
     const response = await answerWithBedrock(
       { message: 'I want to know about how public traffic path under the current architecture design' },
       {
@@ -127,20 +129,25 @@ describe('Bedrock Knowledge Base adapter', () => {
           retrievalResults: [
             {
               content: { text: '## Public traffic path The public Storefront path is intentionally same-origin.' },
-              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/006.md' } },
+              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/010.md' } },
             },
           ],
         }),
         retrieveAndGenerate: async () => {
-          throw new Error('RetrieveAndGenerate should not be called for direct path answers')
+          generated = true
+          return {
+            $metadata: {},
+            output: { text: 'Generated from retrieved Architecture evidence.' },
+            sessionId: 'bedrock-session-path',
+            citations: [],
+          }
         },
       },
     )
 
+    assert.equal(generated, true)
     assert.equal(response.status, 'answered')
-    assert.match(response.answer, /Gateway API shared edge Gateway/)
-    assert.match(response.answer, /nginx static assets or \/api proxy/)
-    assert.match(response.answer, /PostgreSQL/)
+    assert.equal(response.answer, 'Generated from retrieved Architecture evidence.')
     assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
   })
 

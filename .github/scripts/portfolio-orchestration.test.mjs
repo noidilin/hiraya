@@ -6,6 +6,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { chunkMarkdown } from './stage-portfolio-knowledge.mjs';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const workflowPath = path.resolve(scriptsDir, '../workflows/portfolio-deploy.yml');
@@ -80,6 +81,13 @@ test('Portfolio deploy workflows define backend state bucket before generating b
     assert.match(workflow, /^\s+TF_STATE_BUCKET: devops-hiraya-dev-tf-state/m, `${path.basename(workflowFile)} should define TF_STATE_BUCKET`);
     assert.match(workflow, /write-terraform-backend\.sh portfolio/, `${path.basename(workflowFile)} should generate the Portfolio backend config`);
   }
+});
+
+test('Portfolio knowledge staging enforces chunk byte limits for multibyte text', () => {
+  const chunks = chunkMarkdown(`${'あ'.repeat(400)}.`);
+
+  assert.ok(chunks.length > 1);
+  assert.ok(chunks.every((chunk) => Buffer.byteLength(chunk, 'utf8') <= 900));
 });
 
 test('citation manifest generator maps curated Markdown to safe source labels outside the knowledge prefix', async () => {

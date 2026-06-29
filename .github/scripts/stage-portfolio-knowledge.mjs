@@ -40,6 +40,24 @@ function stripFrontmatter(content) {
   return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 }
 
+function splitByUtf8Bytes(text) {
+  const parts = [];
+  let current = '';
+
+  for (const char of text) {
+    const candidate = current + char;
+    if (Buffer.byteLength(candidate, 'utf8') > maxChunkBytes) {
+      if (current) parts.push(current);
+      current = char;
+      continue;
+    }
+    current = candidate;
+  }
+
+  if (current) parts.push(current);
+  return parts;
+}
+
 function splitOversizedBlock(block) {
   const sentences = block.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [block];
   const chunks = [];
@@ -56,9 +74,7 @@ function splitOversizedBlock(block) {
       current = sentence.trim();
       continue;
     }
-    for (let index = 0; index < sentence.length; index += maxChunkBytes) {
-      chunks.push(sentence.slice(index, index + maxChunkBytes));
-    }
+    chunks.push(...splitByUtf8Bytes(sentence));
     current = '';
   }
 
