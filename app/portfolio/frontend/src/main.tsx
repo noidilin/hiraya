@@ -7,6 +7,7 @@ import './i18n'
 import './index.css'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { GuideChatLauncher } from '@/features/guide-chat/components/guide-chat-launcher'
 import { router } from '@/router'
 
 const queryClient = new QueryClient()
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <RouterProvider router={router} />
+        <GuideChatLauncher />
       </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>,
