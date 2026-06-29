@@ -23,6 +23,7 @@ import {
   type HirayaRouteId,
 } from '@/content/hirayaContent'
 import { defaultLabLocale, type LabLocaleKey } from '@/content/labContentTypes'
+import { GuideChatLauncher } from '@/features/guide-chat/components/guide-chat-launcher'
 import { HirayaFlow } from '@/features/hiraya/components/hiraya-flow'
 import { HirayaHero } from '@/features/hiraya/components/hiraya-hero'
 import { HirayaMediaSlotGrid } from '@/features/hiraya/components/hiraya-media-slot'
@@ -124,6 +125,7 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
     >
       <HirayaHero page={activePage} icon={ActiveIcon} />
       <HirayaPageContent page={activePage} />
+      <GuideChatLauncher />
     </AppPageShell>
   )
 }
