@@ -253,15 +253,10 @@ resource "aws_bedrockagent_data_source" "guide" {
 
   vector_ingestion_configuration {
     chunking_configuration {
-      chunking_strategy = "FIXED_SIZE"
-
-      fixed_size_chunking_configuration {
-        # S3 Vectors stores Bedrock chunk text in filterable metadata, which has a
-        # 2048-byte record limit. Keep chunks small enough that Markdown sections
-        # do not fail ingestion and leave the vector index partially populated.
-        max_tokens         = 20
-        overlap_percentage = 1
-      }
+      # Curated Portfolio knowledge is pre-split by
+      # .github/scripts/stage-portfolio-knowledge.mjs so S3 Vectors metadata stays
+      # small while retrieval keeps coherent Markdown context.
+      chunking_strategy = "NONE"
     }
   }
 }
