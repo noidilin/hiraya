@@ -84,11 +84,12 @@ async function buildManifest(root) {
     }
 
     const relativePath = `docs/portfolio/${fileName}`;
+    const publicSource = `curated/${fileName}`;
     const content = await readFile(path.join(docsDir, fileName), 'utf8');
     const frontmatter = parseFrontmatter(fileName, content);
     const citation = {
       title: frontmatter.title,
-      source: relativePath,
+      source: publicSource,
     };
     sources[`knowledge/${fileName}`] = citation;
     sources[relativePath] = citation;

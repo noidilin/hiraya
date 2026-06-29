@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
 import http from 'node:http';
@@ -12,6 +12,7 @@ const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const workflowPath = path.resolve(scriptsDir, '../workflows/portfolio-deploy.yml');
 const infraWorkflowPath = path.resolve(scriptsDir, '../workflows/portfolio-infra-deploy.yml');
 const manifestScriptPath = path.join(scriptsDir, 'generate-portfolio-citation-manifest.mjs');
+const stageScriptPath = path.join(scriptsDir, 'stage-portfolio-knowledge.mjs');
 const smokeScriptPath = path.join(scriptsDir, 'portfolio-public-smoke.mjs');
 
 function listen(handler) {
@@ -90,6 +91,65 @@ test('Portfolio knowledge staging enforces chunk byte limits for multibyte text'
   assert.ok(chunks.every((chunk) => Buffer.byteLength(chunk, 'utf8') <= 900));
 });
 
+test('Portfolio knowledge staging omits synthetic source and chunk headers', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'hiraya-knowledge-staging-'));
+  const docsDir = path.join(root, 'docs/portfolio');
+  await mkdir(docsDir, { recursive: true });
+  const docs = {
+    'PROJECT_BRIEF.md': ['Project Brief', 'project_brief'],
+    'ARCHITECTURE.md': ['Architecture Overview', 'architecture'],
+    'CICD.md': ['CI/CD Workflow', 'cicd'],
+    'SECURITY_GATES.md': ['Security Gates', 'security_gates'],
+    'TEAM_ROLES.md': ['Team Roles', 'team_roles'],
+    'DECISIONS.md': ['Key Decisions', 'decisions'],
+  };
+  for (const [fileName, [title, category]] of Object.entries(docs)) {
+    await writeFile(path.join(docsDir, fileName), `---\ntitle: ${title}\naudience: portfolio_visitor\ncategory: ${category}\nlast_reviewed: 2026-06-27\n---\n\n# ${title}\n\n${fileName} staged Markdown body.\n`);
+  }
+  const output = path.join(root, 'staged');
+
+  const result = spawnSync(process.execPath, [stageScriptPath, '--root', root, '--output', output], { encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr);
+  const stagedDirs = await readdir(output, { withFileTypes: true });
+  const stagedBodies = [];
+  for (const dirent of stagedDirs.filter((entry) => entry.isDirectory())) {
+    const chunkFiles = await readdir(path.join(output, dirent.name));
+    for (const chunkFile of chunkFiles) {
+      stagedBodies.push(await readFile(path.join(output, dirent.name, chunkFile), 'utf8'));
+    }
+  }
+  assert.equal(stagedBodies.length, 6);
+  for (const body of stagedBodies) {
+    assert.doesNotMatch(body, /^source:/, 'staged chunks should not index synthetic source headers');
+    assert.doesNotMatch(body, /^chunk:\s+\d+\/\d+$/m, 'staged chunks should not index synthetic chunk counters');
+    assert.match(body, /^# /, 'staged chunks should keep Markdown body content');
+  }
+  assert.ok(stagedBodies.some((body) => body.includes('CICD.md staged Markdown body.')));
+});
+
+test('Guide smoke and ingested knowledge target only the Hiraya microservice project', async () => {
+  const smoke = await readFile(smokeScriptPath, 'utf8');
+  const docsDir = path.resolve(scriptsDir, '../../docs/portfolio');
+  const ingestedDocs = [
+    'PROJECT_BRIEF.md',
+    'ARCHITECTURE.md',
+    'CICD.md',
+    'SECURITY_GATES.md',
+    'TEAM_ROLES.md',
+    'DECISIONS.md',
+  ];
+
+  assert.match(smoke, /DEFAULT_POSITIVE_QUESTION = 'How does Hiraya deploy Storefront changes\?'/, 'positive Guide smoke should ask about the Hiraya microservice workload');
+  assert.doesNotMatch(smoke, /How does Hiraya deploy portfolio changes\?/i, 'positive Guide smoke should not require KB evidence about the presentation surface');
+
+  for (const fileName of ingestedDocs) {
+    const markdown = await readFile(path.join(docsDir, fileName), 'utf8');
+    const indexedBody = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+    assert.doesNotMatch(indexedBody, /portfolio/i, `${fileName} indexed body should not teach Hiraya Guide about the presentation surface`);
+  }
+});
+
 test('citation manifest generator maps curated Markdown to safe source labels outside the knowledge prefix', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'hiraya-citation-manifest-'));
   const docsDir = path.join(root, 'docs/portfolio');
@@ -116,9 +176,9 @@ test('citation manifest generator maps curated Markdown to safe source labels ou
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.documents, undefined);
   assert.equal(Object.keys(manifest.sources).length, 18);
-  assert.deepEqual(manifest.sources['docs/portfolio/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
-  assert.deepEqual(manifest.sources['knowledge/CICD.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
-  assert.deepEqual(manifest.sources['knowledge/CICD/001.md'], { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' });
+  assert.deepEqual(manifest.sources['docs/portfolio/CICD.md'], { title: 'CI/CD Workflow', source: 'curated/CICD.md' });
+  assert.deepEqual(manifest.sources['knowledge/CICD.md'], { title: 'CI/CD Workflow', source: 'curated/CICD.md' });
+  assert.deepEqual(manifest.sources['knowledge/CICD/001.md'], { title: 'CI/CD Workflow', source: 'curated/CICD.md' });
   assert.equal(manifest.sources['knowledge/README.md'], undefined);
   assert.equal(manifest.sources['knowledge/EXTRA.md'], undefined);
 });
@@ -145,7 +205,7 @@ test('Portfolio public smoke checks shell, health, answered citations, and refus
       if (parsed.message.includes('payroll')) {
         response.end(JSON.stringify({ status: 'refused', answer: 'I can only answer from curated project knowledge.', citations: [] }));
       } else {
-        response.end(JSON.stringify({ status: 'answered', answer: 'Portfolio deploys are coordinated.', citations: [{ title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' }] }));
+        response.end(JSON.stringify({ status: 'answered', answer: 'Storefront deploys are coordinated through GitHub Actions and GitOps.', citations: [{ title: 'CI/CD Workflow', source: 'curated/CICD.md' }] }));
       }
       return;
     }
