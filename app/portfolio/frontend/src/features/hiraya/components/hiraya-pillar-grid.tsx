@@ -1,6 +1,6 @@
 import { ShieldCheck } from 'lucide-react'
 
-import type { HirayaWellArchitectedPillar } from '@/content/hirayaContent'
+import type { HirayaWellArchitectedPillar } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
 

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { BookOpenText, Languages, Sparkles } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { GithubIcon } from "@/components/app/icons"
 import { Dock, DockItem, DockSeparator } from "@/components/motion/dock"
@@ -9,12 +10,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { firstLabTopic } from "@/content/labChapters"
-import { type LabLocaleKey } from "@/content/labContentTypes"
+import { type AppLocale } from "@/i18n/locales"
 import { cn } from "@/lib/utils"
 
 type GlobalDockProps = {
-  locale: LabLocaleKey
-  onLocaleChange: (locale: LabLocaleKey) => void
+  locale: AppLocale
+  onLocaleChange: (locale: AppLocale) => void
   isLessonsActive?: boolean
   isHirayaActive?: boolean
   lessonsHref?: string
@@ -47,10 +48,11 @@ export function GlobalDock({
   lessonsHref = defaultLessonsHref,
   className,
 }: GlobalDockProps) {
-  const nextLocale: LabLocaleKey = locale === "en" ? "zhTW" : "en"
+  const { t } = useTranslation()
+  const nextLocale: AppLocale = locale === "en" ? "zh-TW" : "en"
   const localeLabel = locale === "en" ? "EN" : "TW"
   const localeAriaLabel =
-    locale === "en" ? "Switch locale to Traditional Chinese" : "Switch locale to English"
+    locale === "en" ? t("common.language.switchToTraditionalChinese") : t("common.language.switchToEnglish")
 
   return (
     <Dock size={32} className={cn("gap-1 rounded-xl bg-card/92 px-1 py-0.5 shadow-xl", className)}>
@@ -70,11 +72,11 @@ export function GlobalDock({
 
       <DockSeparator className="mx-0.5 h-5" />
 
-      <DockTooltip label="Chapters">
-        <DockItem aria-label="Open chapters" active={isLessonsActive}>
+      <DockTooltip label={t("common.nav.chapters")}>
+        <DockItem aria-label={t("common.nav.openChapters")} active={isLessonsActive}>
           <Link
             to={lessonsHref}
-            aria-label="Open chapters"
+            aria-label={t("common.nav.openChapters")}
             aria-current={isLessonsActive ? "page" : undefined}
             className="grid size-full place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
@@ -83,11 +85,11 @@ export function GlobalDock({
         </DockItem>
       </DockTooltip>
 
-      <DockTooltip label="Hiraya">
-        <DockItem aria-label="Open Hiraya" active={isHirayaActive}>
+      <DockTooltip label={t("common.nav.hiraya")}>
+        <DockItem aria-label={t("common.nav.openHiraya")} active={isHirayaActive}>
           <Link
             to="/hiraya"
-            aria-label="Open Hiraya"
+            aria-label={t("common.nav.openHiraya")}
             aria-current={isHirayaActive ? "page" : undefined}
             className="grid size-full place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
@@ -96,13 +98,13 @@ export function GlobalDock({
         </DockItem>
       </DockTooltip>
 
-      <DockTooltip label="Hiraya repository">
-        <DockItem aria-label="Open Hiraya repository">
+      <DockTooltip label={t("common.nav.repository")}>
+        <DockItem aria-label={t("common.nav.repository")}>
           <a
             href={githubHref}
             target="_blank"
             rel="noreferrer noopener"
-            aria-label="Open Hiraya repository on GitHub"
+            aria-label={t("common.nav.openRepository")}
             className="grid size-full place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <GithubIcon className="size-3.5" />

@@ -1,4 +1,4 @@
-import type { HirayaMetric } from '@/content/hirayaContent'
+import type { HirayaMetric } from '@/content/hiraya/types'
 
 function HirayaMetricTile({ metric }: { metric: HirayaMetric }) {
   return (

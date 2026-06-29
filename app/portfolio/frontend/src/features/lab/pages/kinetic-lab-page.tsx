@@ -7,7 +7,7 @@ import { LessonActionBar, LessonNavigator } from '@/features/lab/navigation/less
 import { PresentationViewer } from '@/features/lab/presentation/presentation-viewer'
 import type { PresentationNavigationControls } from '@/features/lab/presentation/presentation-viewer'
 import { firstLabTopic, labChapters } from '@/content/labChapters'
-import { defaultLabLocale, type LabLocaleKey } from '@/content/labContentTypes'
+import { useAppLocale } from '@/i18n/use-app-locale'
 
 type KineticLabPageProps = {
   activeChapterId?: string
@@ -20,7 +20,7 @@ const getTopicHref = (chapterId: string, topicId: string) => `/chapters/${chapte
 
 export function KineticLabPage({ activeChapterId, activeTopicId }: KineticLabPageProps) {
   const navigate = useNavigate()
-  const [locale, setLocale] = useState<LabLocaleKey>(defaultLabLocale)
+  const { locale, setLocale } = useAppLocale()
   const [lessonNavigation, setLessonNavigation] = useState<PresentationNavigationControls>()
   const resolvedChapter = labChapters.find((chapter) => chapter.id === activeChapterId) ?? labChapters[0]
   const resolvedTopic =

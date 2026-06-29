@@ -1,6 +1,6 @@
 import { BadgeCheck } from 'lucide-react'
 
-import type { HirayaProofPoint } from '@/content/hirayaContent'
+import type { HirayaProofPoint } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader } from './hiraya-section'
 

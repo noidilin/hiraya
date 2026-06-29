@@ -1,6 +1,6 @@
 import { Activity, Boxes, GitBranch, ShieldCheck, Terminal, Zap, type LucideIcon } from 'lucide-react'
 
-import type { HirayaFlowStep } from '@/content/hirayaContent'
+import type { HirayaFlowStep } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader } from './hiraya-section'
 

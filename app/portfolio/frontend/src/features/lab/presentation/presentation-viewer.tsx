@@ -14,12 +14,11 @@ import {
 } from '@/components/ui/dialog'
 import { labChapters } from '@/content/labChapters'
 import {
-  defaultLabLocale,
   resolveLabLocaleContent,
   type LabChapter,
-  type LabLocaleKey,
   type LabTopic,
 } from '@/content/labContentTypes'
+import { defaultAppLocale, type AppLocale } from '@/i18n/locales'
 import { labPresentationUiContent } from '@/content/labVisualContent'
 import { cn } from '@/lib/utils'
 
@@ -46,7 +45,7 @@ type PresentationViewerProps = {
   activeTopicId: string
   getTopicHref?: (chapterId: string, topicId: string) => string | undefined
   onTopicSelect?: (chapterId: string, topicId: string) => void
-  locale?: LabLocaleKey
+  locale?: AppLocale
   className?: string
   onNavigationControlsChange?: (controls: PresentationNavigationControls | undefined) => void
 }
@@ -61,7 +60,7 @@ export function PresentationViewer({
   activeTopicId,
   getTopicHref,
   onTopicSelect,
-  locale = defaultLabLocale,
+  locale = defaultAppLocale,
   className,
   onNavigationControlsChange,
 }: PresentationViewerProps) {

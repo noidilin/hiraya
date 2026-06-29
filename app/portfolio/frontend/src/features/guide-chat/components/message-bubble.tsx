@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { statusLabel } from '@/lib/guide-api'
 import { cn } from '@/lib/utils'
@@ -30,11 +31,13 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
 }
 
 export function LoadingBubble() {
+  const { t } = useTranslation()
+
   return (
     <div className="flex justify-start">
       <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3.5 py-3 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin text-primary" />
-        Asking curated knowledge...
+        {t('guide.panel.thinking')}
       </div>
     </div>
   )

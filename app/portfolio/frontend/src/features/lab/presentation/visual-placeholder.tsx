@@ -2,19 +2,18 @@ import { Boxes } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import {
-  defaultLabLocale,
   resolveLabLocaleContent,
-  type LabLocaleKey,
   type LabVisualLocaleContent,
   type LabVisualSlotKey,
 } from '@/content/labContentTypes'
+import { defaultAppLocale, type AppLocale } from '@/i18n/locales'
 import { labPresentationUiContent, labVisualSlotContent } from '@/content/labVisualContent'
 import { cn } from '@/lib/utils'
 
 type VisualPlaceholderProps = {
   visualSlot: LabVisualSlotKey
   stage2Notes?: string
-  locale?: LabLocaleKey
+  locale?: AppLocale
   visualContent?: LabVisualLocaleContent
   className?: string
 }
@@ -22,7 +21,7 @@ type VisualPlaceholderProps = {
 export function VisualPlaceholder({
   visualSlot,
   stage2Notes,
-  locale = defaultLabLocale,
+  locale = defaultAppLocale,
   visualContent,
   className,
 }: VisualPlaceholderProps) {

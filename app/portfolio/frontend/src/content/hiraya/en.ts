@@ -1,109 +1,6 @@
-const hirayaSourceDoc = 'docs/presentation-en.md'
+import { hirayaSourceDoc, type HirayaEvidenceItem, type HirayaPageContent } from './types'
 
-export const hirayaRouteIds = ['brief', 'arch', 'cost', 'sdlc', 'waf'] as const
-
-export type HirayaRouteId = (typeof hirayaRouteIds)[number]
-
-export type HirayaRouteAlias =
-  | HirayaRouteId
-  | 'architecture'
-  | 'cost-analysis'
-  | 'sdlc-pipeline'
-  | 'well-architected'
-
-export type HirayaContentTable = {
-  columns: readonly string[]
-  rows: readonly (readonly string[])[]
-}
-
-export type HirayaContentSection = {
-  id: string
-  eyebrow?: string
-  title: string
-  body?: string
-  bullets?: readonly string[]
-  tags?: readonly string[]
-  table?: HirayaContentTable
-}
-
-export type HirayaMetric = {
-  label: string
-  value: string
-  note: string
-}
-
-export type HirayaProofPoint = {
-  id: string
-  title: string
-  summary: string
-  evidenceRefs?: readonly string[]
-}
-
-export type HirayaMediaSlot = {
-  id: string
-  type: 'intro-video' | 'screenshot-hover' | 'diagram-frame'
-  status: 'planned' | 'placeholder' | 'ready'
-  title: string
-  description: string
-  evidenceRefs?: readonly string[]
-}
-
-export type HirayaEvidenceItem = {
-  id: string
-  priority: 'P0' | 'P1' | 'P2'
-  title: string
-  suggestedFormat: 'screenshot' | 'short-video' | 'video'
-  portfolioValue: string
-  checklistSource: 'docs/evidence-checklist.md'
-}
-
-export type HirayaFlowStep = {
-  id: string
-  title: string
-  summary: string
-  evidence?: readonly string[]
-}
-
-export type HirayaWellArchitectedPillar = {
-  id: string
-  title: string
-  stance: string
-  highlights: readonly string[]
-  futureHardening?: readonly string[]
-  tools: readonly string[]
-}
-
-export type HirayaPageContent = {
-  id: HirayaRouteId
-  sourceDoc: typeof hirayaSourceDoc
-  sourceSection: string
-  navLabel: string
-  shortLabel: string
-  eyebrow: string
-  title: string
-  summary: string
-  thesis: string
-  metrics?: readonly HirayaMetric[]
-  proofPoints?: readonly HirayaProofPoint[]
-  mediaSlots?: readonly HirayaMediaSlot[]
-  sections: readonly HirayaContentSection[]
-  flow?: readonly HirayaFlowStep[]
-  pillars?: readonly HirayaWellArchitectedPillar[]
-}
-
-export const hirayaRouteAliases: Record<HirayaRouteAlias, HirayaRouteId> = {
-  brief: 'brief',
-  arch: 'arch',
-  architecture: 'arch',
-  cost: 'cost',
-  'cost-analysis': 'cost',
-  sdlc: 'sdlc',
-  'sdlc-pipeline': 'sdlc',
-  waf: 'waf',
-  'well-architected': 'waf',
-}
-
-export const hirayaEvidenceItems = [
+export const hirayaEvidenceItemsEn = [
   {
     id: 'p0-cicd-delivery-flow',
     priority: 'P0',
@@ -186,7 +83,7 @@ export const hirayaEvidenceItems = [
   },
 ] as const satisfies readonly HirayaEvidenceItem[]
 
-export const hirayaPages = [
+export const hirayaPagesEn = [
   {
     id: 'brief',
     sourceDoc: hirayaSourceDoc,
@@ -775,47 +672,3 @@ export const hirayaPages = [
   },
 ] as const satisfies readonly HirayaPageContent[]
 
-export const hirayaImplementationPlan = [
-  {
-    id: 'content-source-of-truth',
-    title: 'Create a typed Hiraya content source',
-    outcome:
-      'Use this file as the stable content contract for the five Hiraya routes: brief, arch, cost, sdlc, and waf.',
-  },
-  {
-    id: 'route-normalization',
-    title: 'Normalize route ids and aliases',
-    outcome:
-      'Map existing route names such as architecture, cost-analysis, sdlc-pipeline, and well-architected to the shorter requested route ids.',
-  },
-  {
-    id: 'page-composition',
-    title: 'Replace hardcoded page copy with content-driven sections',
-    outcome:
-      'Render metrics, section bullets, tables, SDLC flow steps, and Well-Architected pillars from the content model.',
-  },
-  {
-    id: 'visual-upgrade',
-    title: 'Attach route-specific visuals',
-    outcome:
-      'Turn the architecture, capacity, SDLC, and WAF structures into dense route visuals instead of static prose blocks.',
-  },
-  {
-    id: 'verification',
-    title: 'Verify responsive layout and routing',
-    outcome:
-      'Run typecheck/build and inspect /hiraya/brief, /hiraya/arch, /hiraya/cost, /hiraya/sdlc, and /hiraya/waf at desktop and mobile widths.',
-  },
-] as const
-
-export const defaultHirayaRouteId: HirayaRouteId = 'brief'
-
-export function resolveHirayaRouteId(routeId: string | undefined): HirayaRouteId {
-  return hirayaRouteAliases[(routeId ?? defaultHirayaRouteId) as HirayaRouteAlias] ?? defaultHirayaRouteId
-}
-
-export function findHirayaPage(routeId: string | undefined): HirayaPageContent {
-  const resolvedRouteId = resolveHirayaRouteId(routeId)
-
-  return hirayaPages.find((page) => page.id === resolvedRouteId) ?? hirayaPages[0]
-}

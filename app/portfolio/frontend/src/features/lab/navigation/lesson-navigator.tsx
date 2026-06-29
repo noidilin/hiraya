@@ -11,18 +11,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { labChapters, labTopicOrder } from "@/content/labChapters"
 import {
-  defaultLabLocale,
   resolveLabLocaleContent,
   type LabChapter,
-  type LabLocaleKey,
 } from "@/content/labContentTypes"
+import { defaultAppLocale, type AppLocale } from "@/i18n/locales"
 import { cn } from "@/lib/utils"
 
 type LessonNavigatorProps = {
   chapters?: readonly LabChapter[]
   activeChapterId: string
   activeTopicId: string
-  locale?: LabLocaleKey
+  locale?: AppLocale
   controls?: PresentationNavigationControls
   getTopicHref?: (chapterId: string, topicId: string) => string | undefined
   onTopicSelect?: (chapterId: string, topicId: string) => void
@@ -83,7 +82,7 @@ export function LessonNavigator({
   chapters = labChapters,
   activeChapterId,
   activeTopicId,
-  locale = defaultLabLocale,
+  locale = defaultAppLocale,
   getTopicHref,
   onTopicSelect,
 }: LessonNavigatorProps) {

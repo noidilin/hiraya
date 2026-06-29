@@ -23,7 +23,7 @@ export const labPresentationUiContent = {
     continueLabel: 'Continue',
     emptyStateLabel: 'No presentation content is available.',
   },
-  zhTW: {
+  'zh-TW': {
     chapterLabel: '章節',
     slideLabel: '投影片',
     coreIdeaLabel: '核心概念',
@@ -49,7 +49,7 @@ export const labVisualSlotContent = {
       summary: 'Contrasts local code writing with the larger shared delivery loop.',
       ariaLabel: 'Delivery loop comparison visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'trusted-pipeline-path': {
     en: {
@@ -57,7 +57,7 @@ export const labVisualSlotContent = {
       summary: 'Shows how source, build, deploy, and verify stages create release evidence.',
       ariaLabel: 'Trusted pipeline path visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'ai-assisted-change-funnel': {
     en: {
@@ -65,7 +65,7 @@ export const labVisualSlotContent = {
       summary: 'Frames generated work as input that still has to pass validation gates.',
       ariaLabel: 'AI-assisted change funnel visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'six-stage-loop': {
     en: {
@@ -73,7 +73,7 @@ export const labVisualSlotContent = {
       summary: 'Shows validate, build, infrastructure, deploy, verify, and feedback as one trusted loop.',
       ariaLabel: 'Six-stage delivery loop visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'benefit-evidence-path': {
     en: {
@@ -81,7 +81,7 @@ export const labVisualSlotContent = {
       summary: 'Connects delivery benefits to the evidence a pipeline preserves.',
       ariaLabel: 'Benefit evidence path visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'simple-vs-production-reality': {
     en: {
@@ -89,7 +89,7 @@ export const labVisualSlotContent = {
       summary: 'Compares the easy mental model with real production constraints.',
       ariaLabel: 'Simple model versus production reality visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'chapter-takeaway': {
     en: {
@@ -97,7 +97,7 @@ export const labVisualSlotContent = {
       summary: 'A compact bridge from the chapter idea into the next chapter.',
       ariaLabel: 'Chapter takeaway visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'system-skill-map': {
     en: {
@@ -105,7 +105,7 @@ export const labVisualSlotContent = {
       summary: 'Maps CI/CD work across application, platform, cloud, and context skills.',
       ariaLabel: 'System skill map visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'architecture-to-pipeline-mapping': {
     en: {
@@ -113,7 +113,7 @@ export const labVisualSlotContent = {
       summary: 'Shows how application boundaries shape validation and deployment flow.',
       ariaLabel: 'Architecture to pipeline mapping visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'coupled-validation-model': {
     en: {
@@ -121,7 +121,7 @@ export const labVisualSlotContent = {
       summary: 'Compares a focused UI change with a schema-coupled change that expands validation across app, database, config, and promotion gates.',
       ariaLabel: 'Coupled validation model visual comparing focused UI checks with broad schema, config, and promotion validation',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'affected-service-graph': {
     en: {
@@ -129,7 +129,7 @@ export const labVisualSlotContent = {
       summary: 'Highlights how one service change can affect shared dependencies and downstream checks.',
       ariaLabel: 'Affected service graph visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'operating-model-comparison': {
     en: {
@@ -137,7 +137,7 @@ export const labVisualSlotContent = {
       summary: 'Contrasts hosted CI/CD convenience with self-hosted operational control.',
       ariaLabel: 'Operating model comparison visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'artifact-to-runtime-map': {
     en: {
@@ -145,7 +145,7 @@ export const labVisualSlotContent = {
       summary: 'Connects built artifacts to registries, infrastructure, and runtime environments.',
       ariaLabel: 'Artifact to runtime map visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'permission-lanes': {
     en: {
@@ -153,7 +153,7 @@ export const labVisualSlotContent = {
       summary: 'Shows how pipeline stages should have different powers and responsibilities.',
       ariaLabel: 'Permission lanes visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'speed-trust-balance': {
     en: {
@@ -161,7 +161,7 @@ export const labVisualSlotContent = {
       summary: 'Frames optimization as useful speed that preserves pipeline confidence.',
       ariaLabel: 'Speed and trust balance visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'release-operations-loop': {
     en: {
@@ -169,7 +169,7 @@ export const labVisualSlotContent = {
       summary: 'Shows deployment verification and operational feedback returning to the team.',
       ariaLabel: 'Release operations loop visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'evidence-chain': {
     en: {
@@ -177,7 +177,7 @@ export const labVisualSlotContent = {
       summary: 'Connects artifacts, logs, tests, approvals, and deployment outcomes.',
       ariaLabel: 'Evidence chain visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'qualitative-checklist': {
     en: {
@@ -185,7 +185,7 @@ export const labVisualSlotContent = {
       summary: 'Represents review signals that cannot be captured by duration metrics alone.',
       ariaLabel: 'Qualitative checklist visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'system-fit-frame': {
     en: {
@@ -193,7 +193,7 @@ export const labVisualSlotContent = {
       summary: 'Evaluates whether a delivery system matches the team and product context.',
       ariaLabel: 'System fit frame visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'tradeoff-frame': {
     en: {
@@ -201,7 +201,7 @@ export const labVisualSlotContent = {
       summary: 'Frames CI/CD decisions as tradeoffs instead of universal best practices.',
       ariaLabel: 'Tradeoff frame visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'release-health-frame': {
     en: {
@@ -209,7 +209,7 @@ export const labVisualSlotContent = {
       summary: 'Groups release signals into a health picture the team can act on.',
       ariaLabel: 'Release health frame visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'duration-breakdown': {
     en: {
@@ -217,7 +217,7 @@ export const labVisualSlotContent = {
       summary: 'Separates pipeline time into useful feedback, waiting, and bottlenecks.',
       ariaLabel: 'Duration breakdown visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'delivery-recovery-metrics': {
     en: {
@@ -225,7 +225,7 @@ export const labVisualSlotContent = {
       summary: 'Connects deployment frequency, lead time, failure rate, and recovery time.',
       ariaLabel: 'Delivery and recovery metrics visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'trust-efficiency-metrics': {
     en: {
@@ -233,7 +233,7 @@ export const labVisualSlotContent = {
       summary: 'Balances speed signals with confidence, traceability, and reliability.',
       ariaLabel: 'Trust and efficiency metrics visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'security-audit-confidence': {
     en: {
@@ -241,7 +241,7 @@ export const labVisualSlotContent = {
       summary: 'Shows evidence that supports security review, audit trails, and accountability.',
       ariaLabel: 'Security and audit confidence visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'metric-constellation': {
     en: {
@@ -249,7 +249,7 @@ export const labVisualSlotContent = {
       summary: 'Collects multiple release signals into one readable confidence model.',
       ariaLabel: 'Metric constellation visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'ai-delivery-loop-orbit': {
     en: {
@@ -257,7 +257,7 @@ export const labVisualSlotContent = {
       summary: 'Positions AI assistance around drafting, inspecting, and summarizing delivery work.',
       ariaLabel: 'AI delivery loop orbit visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'ai-architecture-review': {
     en: {
@@ -265,7 +265,7 @@ export const labVisualSlotContent = {
       summary: 'Shows AI as a review assistant around architecture and pipeline boundaries.',
       ariaLabel: 'AI architecture review visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'optimization-assistant-panel': {
     en: {
@@ -273,7 +273,7 @@ export const labVisualSlotContent = {
       summary: 'Frames AI help as optimization suggestions that still need validation.',
       ariaLabel: 'Optimization assistant panel visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'responsibility-authority-map': {
     en: {
@@ -281,7 +281,7 @@ export const labVisualSlotContent = {
       summary: 'Separates AI assistance from human release authority and risk acceptance.',
       ariaLabel: 'Responsibility and authority map visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'security-evidence-gates': {
     en: {
@@ -289,7 +289,7 @@ export const labVisualSlotContent = {
       summary: 'Connects AI-generated security work to the evidence needed before release.',
       ariaLabel: 'Security evidence gates visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'suggestion-evidence-decision': {
     en: {
@@ -297,7 +297,7 @@ export const labVisualSlotContent = {
       summary: 'Shows the handoff from AI suggestion to pipeline evidence to human decision.',
       ariaLabel: 'Suggestion, evidence, decision visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
   'ai-accelerator-takeaway': {
     en: {
@@ -305,6 +305,6 @@ export const labVisualSlotContent = {
       summary: 'Summarizes AI as an accelerator that must stay attached to trusted CI/CD evidence.',
       ariaLabel: 'AI accelerator takeaway visual',
     },
-    zhTW: {},
+    'zh-TW': {},
   },
 } satisfies Record<LabVisualSlotKey, LabLocalizedContent<LabVisualLocaleContent>>

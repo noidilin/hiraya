@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Terminal } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import type { HirayaPageContent } from '@/content/hirayaContent'
+import type { HirayaPageContent } from '@/content/hiraya/types'
 
 export function HirayaHero({ page, icon: Icon }: { page: HirayaPageContent; icon: LucideIcon }) {
   return (

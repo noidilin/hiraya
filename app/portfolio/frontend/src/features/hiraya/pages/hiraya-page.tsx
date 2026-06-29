@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { AppPageShell } from '@/components/app/layout/app-page-shell'
 import { GlobalDock } from '@/components/app/navigation/global-dock'
@@ -17,13 +17,13 @@ import {
 } from '@/components/motion/expandable-action-bar'
 import {
   findHirayaPage,
-  hirayaPages,
+  getHirayaPages,
   resolveHirayaRouteId,
   type HirayaPageContent as HirayaPageContentModel,
   type HirayaRouteId,
-} from '@/content/hirayaContent'
-import { defaultLabLocale, type LabLocaleKey } from '@/content/labContentTypes'
+} from '@/content/hiraya/content'
 import { GuideChatLauncher } from '@/features/guide-chat/components/guide-chat-launcher'
+import { useAppLocale } from '@/i18n/use-app-locale'
 import { HirayaFlow } from '@/features/hiraya/components/hiraya-flow'
 import { HirayaHero } from '@/features/hiraya/components/hiraya-hero'
 import { HirayaMediaSlotGrid } from '@/features/hiraya/components/hiraya-media-slot'
@@ -63,7 +63,7 @@ function HirayaPageContent({ page }: { page: HirayaPageContentModel }) {
   )
 }
 
-function HirayaActionBar({ activePageId }: { activePageId: HirayaRouteId }) {
+function HirayaActionBar({ activePageId, pages }: { activePageId: HirayaRouteId; pages: readonly HirayaPageContentModel[] }) {
   const navigate = useNavigate()
 
   const navigateToPage = useCallback(
@@ -75,7 +75,7 @@ function HirayaActionBar({ activePageId }: { activePageId: HirayaRouteId }) {
 
   const actionItems = useMemo<ExpandableActionBarItem[]>(
     () =>
-      hirayaPages.map((page) => {
+      pages.map((page) => {
         const Icon = hirayaPageIcons[page.id]
 
         return {
@@ -86,7 +86,7 @@ function HirayaActionBar({ activePageId }: { activePageId: HirayaRouteId }) {
           onClick: () => navigateToPage(page.id),
         }
       }),
-    [activePageId, navigateToPage],
+    [activePageId, navigateToPage, pages],
   )
 
   return (
@@ -108,16 +108,17 @@ function HirayaActionBar({ activePageId }: { activePageId: HirayaRouteId }) {
 }
 
 export function HirayaPage({ activePageId }: HirayaPageProps) {
-  const [locale, setLocale] = useState<LabLocaleKey>(defaultLabLocale)
+  const { locale, setLocale } = useAppLocale()
   const resolvedPageId = resolveHirayaRouteId(activePageId)
-  const activePage = findHirayaPage(activePageId)
+  const pages = getHirayaPages(locale)
+  const activePage = findHirayaPage(activePageId, locale)
   const ActiveIcon = hirayaPageIcons[resolvedPageId]
 
   return (
     <AppPageShell
       dock={
         <>
-          <HirayaActionBar activePageId={resolvedPageId} />
+          <HirayaActionBar activePageId={resolvedPageId} pages={pages} />
           <GlobalDock locale={locale} onLocaleChange={setLocale} isHirayaActive />
         </>
       }
