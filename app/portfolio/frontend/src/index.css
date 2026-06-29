@@ -171,6 +171,71 @@
     border: 1px dashed color-mix(in oklch, var(--primary), transparent 34%);
     animation: kinetic-orbit 18s linear infinite;
   }
+
+  .flow-node-breathe {
+    transform-origin: center;
+  }
+
+  .flow-node-breathe::before {
+    animation: flow-node-breathe 2.6s linear infinite;
+    border: 1px solid currentColor;
+    border-radius: inherit;
+    content: "";
+    inset: -0.375rem;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: scale(0.94);
+    transform-origin: center;
+    will-change: opacity, transform;
+  }
+
+  .flow-node-slow-scale {
+    animation: flow-node-slow-scale 2.4s ease-in-out infinite;
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .flow-node-orbit-marker {
+    animation: kinetic-orbit 6.5s linear infinite;
+    pointer-events: none;
+    transform-origin: center;
+  }
+
+  .flow-node-orbit-marker::after {
+    background: currentColor;
+    border: 2px solid var(--card);
+    border-radius: 9999px;
+    box-shadow: 0 0 0 4px color-mix(in oklch, currentColor, transparent 82%);
+    content: "";
+    height: 0.5rem;
+    position: absolute;
+    right: -0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.5rem;
+  }
+
+  .flow-node-progress-sweep {
+    isolation: isolate;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .flow-node-progress-sweep::after {
+    animation: flow-node-progress-sweep 1.25s linear infinite;
+    background: color-mix(in oklch, var(--primary-foreground), var(--card) 18%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    inset: -60% auto -60% 0;
+    opacity: 0.62;
+    position: absolute;
+    transform: translateX(-130%) skewX(-18deg);
+    transform-origin: center;
+    width: 42%;
+    will-change: transform;
+  }
 }
 
 @keyframes kinetic-flow {
@@ -203,6 +268,49 @@
   }
 }
 
+@keyframes flow-node-breathe {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  25% {
+    opacity: 0.24;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.2;
+    transform: scale(1.07);
+  }
+
+  75% {
+    opacity: 0.08;
+    transform: scale(1.14);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes flow-node-progress-sweep {
+  to {
+    transform: translateX(340%) skewX(-18deg);
+  }
+}
+
+@keyframes flow-node-slow-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.045);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -219,7 +327,11 @@
 
   .status-pulse-active,
   .status-spin-active,
-  .orbit-ring {
+  .orbit-ring,
+  .flow-node-breathe::before,
+  .flow-node-slow-scale,
+  .flow-node-orbit-marker,
+  .flow-node-progress-sweep::after {
     animation: none;
     transform: none;
   }
