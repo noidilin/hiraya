@@ -16,6 +16,7 @@ export type GuideAnswererOptions = {
 const refusedAnswer = 'I could not find enough curated Hiraya project evidence to answer that. Try asking about architecture, CI/CD, security gates, team roles, or documented decisions.'
 const notReadyAnswer = 'Hiraya Guide is still preparing curated project knowledge. Please try again after ingestion completes.'
 const errorAnswer = 'Hiraya Guide hit an unexpected service error. Please try again later.'
+const architectureChunkSourcePattern = /knowledge\/ARCHITECTURE\/\d{3}\.md$/i
 
 let bedrockClient: BedrockAgentRuntimeClient | undefined
 let s3Client: S3Client | undefined
@@ -141,7 +142,7 @@ function extractRetrievedCitationCandidates(output: RetrieveCommandOutput | unde
 }
 
 function extractArchitecturePathCitationCandidates(output: RetrieveCommandOutput | undefined): GuideCitation[] {
-  return extractRetrievedCitationCandidates(output).filter((citation) => /knowledge\/ARCHITECTURE\/006\.md$/i.test(citation.source))
+  return extractRetrievedCitationCandidates(output).filter((citation) => architectureChunkSourcePattern.test(citation.source))
 }
 
 function answerFromRetrievedPath(question: string, output: RetrieveCommandOutput | undefined): string | undefined {
@@ -150,7 +151,7 @@ function answerFromRetrievedPath(question: string, output: RetrieveCommandOutput
   const retrievedResults = output?.retrievalResults ?? []
   const chunks = retrievedResults.map((result) => result.content?.text ?? '').join('\n\n')
   const sources = retrievedResults.map((result) => result.location?.s3Location?.uri ?? '')
-  const hasPublicTrafficEvidence = /Public traffic path/i.test(chunks) || sources.some((source) => /knowledge\/ARCHITECTURE\/006\.md$/i.test(source))
+  const hasPublicTrafficEvidence = /Public traffic path/i.test(chunks) || sources.some((source) => architectureChunkSourcePattern.test(source))
   if (!hasPublicTrafficEvidence) return undefined
 
   const pathMatch = chunks.match(/```text\s*([\s\S]*?)\s*```/)
@@ -158,19 +159,8 @@ function answerFromRetrievedPath(question: string, output: RetrieveCommandOutput
     ?.split(/\r?\n/)
     .map((line) => line.trim().replace(/^→\s*/, ''))
     .filter(Boolean)
-  const canonicalPath = [
-    'Portfolio Visitor',
-    'Route 53',
-    'AWS Application Load Balancer',
-    'Gateway API shared edge Gateway',
-    'Vintage Storefront HTTPRoute',
-    'frontend Service',
-    'nginx static assets or /api proxy',
-    'gateway Service',
-    'private backend service',
-    'PostgreSQL',
-  ]
-  const normalizedPath = extractedPath?.includes('Portfolio Visitor') && extractedPath.includes('PostgreSQL') ? extractedPath : canonicalPath
+  if (!extractedPath?.includes('Portfolio Visitor') || !extractedPath.includes('PostgreSQL')) return undefined
+  const normalizedPath = extractedPath
 
   const hostnameMatch = chunks.match(/public Storefront hostname is `([^`]+)`/i)
   const hostname = hostnameMatch?.[1] ?? 'https://hiraya.noidilin.dev'
