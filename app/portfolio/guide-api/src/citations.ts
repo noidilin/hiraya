@@ -8,7 +8,7 @@ type RawCitation = Partial<GuideCitation> & Record<string, unknown>
 
 const fallbackCitation: GuideCitation = {
   title: 'Project Brief',
-  source: 'docs/portfolio/PROJECT_BRIEF.md',
+  source: 'curated/PROJECT_BRIEF.md',
 }
 
 export function localAnsweredCitation(): GuideCitation {
@@ -25,7 +25,7 @@ export function normalizeCitations(rawCitations: RawCitation[], manifest?: Citat
     if (!manifestCitation && isKnowledgeStorageSource(rawSource)) continue
 
     const title = (manifestCitation?.title ?? stringValue(citation.title)).trim()
-    const source = (manifestCitation?.source ?? rawSource).trim()
+    const source = sanitizePublicSource(manifestCitation?.source ?? rawSource)
 
     if (!title || !source) continue
 
@@ -47,6 +47,10 @@ function lookupManifestCitation(source: string, manifest: CitationManifest | und
 
 function isKnowledgeStorageSource(source: string): boolean {
   return /^s3:\/\/[^/]+\/knowledge\//.test(source) || /^knowledge\//.test(source)
+}
+
+function sanitizePublicSource(source: string): string {
+  return source.trim().replace(/^docs\/portfolio\//, 'curated/')
 }
 
 function stringValue(value: unknown): string {

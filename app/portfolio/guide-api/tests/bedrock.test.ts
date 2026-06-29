@@ -14,9 +14,9 @@ const env = {
 
 const manifest = {
   sources: {
-    'knowledge/ARCHITECTURE/006.md': { title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' },
-    'knowledge/ARCHITECTURE/010.md': { title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' },
-    'knowledge/CICD.md': { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' },
+    'knowledge/ARCHITECTURE/006.md': { title: 'Architecture Overview', source: 'curated/ARCHITECTURE.md' },
+    'knowledge/ARCHITECTURE/010.md': { title: 'Architecture Overview', source: 'curated/ARCHITECTURE.md' },
+    'knowledge/CICD.md': { title: 'CI/CD Workflow', source: 'curated/CICD.md' },
   },
 }
 
@@ -38,19 +38,22 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(response.status, 'answered')
     assert.equal(response.answer, 'Hiraya deploys infrastructure through reviewed Terraform and GitHub Actions gates.')
     assert.equal(response.sessionId, 'bedrock-session-1')
-    assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' }])
+    assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'curated/CICD.md' }])
     assert.equal(observed?.sessionId, 'session-1')
     const config = observed?.retrieveAndGenerateConfiguration?.knowledgeBaseConfiguration
     assert.equal(config?.knowledgeBaseId, 'KB123')
     assert.equal(config?.generationConfiguration?.inferenceConfig?.textInferenceConfig?.maxTokens, 500)
     assert.equal(config?.generationConfiguration?.guardrailConfiguration?.guardrailId, 'gr-123')
-    assert.match(config?.generationConfiguration?.promptTemplate?.textPromptTemplate ?? '', /preserve the ordered steps/i)
+    const prompt = config?.generationConfiguration?.promptTemplate?.textPromptTemplate ?? ''
+    assert.match(prompt, /preserve the ordered steps/i)
+    assert.match(prompt, /Hiraya microservice project/i)
+    assert.doesNotMatch(prompt, /portfolio-facing|portfolio/i)
     assert.equal(config?.retrievalConfiguration?.vectorSearchConfiguration?.numberOfResults, 4)
   })
 
   it('uses Retrieve citations when RetrieveAndGenerate omits retrieved references', async () => {
     const response = await answerWithBedrock(
-      { message: 'How does Hiraya deploy portfolio changes?' },
+      { message: 'How does Hiraya deploy Storefront changes?' },
       {
         env,
         citationManifest: manifest,
@@ -65,7 +68,7 @@ describe('Bedrock Knowledge Base adapter', () => {
         }),
         retrieveAndGenerate: async () => ({
           $metadata: {},
-          output: { text: 'Hiraya deploys portfolio changes through GitHub Actions gates.' },
+          output: { text: 'Hiraya deploys Storefront changes through GitHub Actions gates.' },
           sessionId: 'bedrock-session-2',
           citations: [{ generatedResponsePart: { textResponsePart: { text: 'answer', span: { start: 0, end: 6 } } }, retrievedReferences: [] }],
         }),
@@ -73,8 +76,9 @@ describe('Bedrock Knowledge Base adapter', () => {
     )
 
     assert.equal(response.status, 'answered')
-    assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' }])
+    assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'curated/CICD.md' }])
     assert.doesNotMatch(JSON.stringify(response), /raw retrieved chunk/)
+    assert.doesNotMatch(JSON.stringify(response), /portfolio/i)
   })
 
   it('answers public traffic path questions from retrieved Architecture path evidence', async () => {
@@ -92,7 +96,7 @@ describe('Bedrock Knowledge Base adapter', () => {
                   '## Public traffic path',
                   'The public Storefront path is intentionally same-origin. A browser does not call backend services directly.',
                   '```text',
-                  'Portfolio Visitor',
+                  'User Browser',
                   '  → Route 53',
                   '  → AWS Application Load Balancer',
                   '  → PostgreSQL',
@@ -111,10 +115,11 @@ describe('Bedrock Knowledge Base adapter', () => {
     )
 
     assert.equal(response.status, 'answered')
-    assert.match(response.answer, /1\. Portfolio Visitor/)
+    assert.match(response.answer, /1\. User Browser/)
+    assert.doesNotMatch(response.answer, /portfolio/i)
     assert.match(response.answer, /Route 53/)
     assert.match(response.answer, /PostgreSQL/)
-    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
+    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'curated/ARCHITECTURE.md' }])
   })
 
   it('falls back to generation when Retrieve returns only a snippet of the path chunk', async () => {
@@ -148,7 +153,48 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(generated, true)
     assert.equal(response.status, 'answered')
     assert.equal(response.answer, 'Generated from retrieved Architecture evidence.')
-    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
+    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'curated/ARCHITECTURE.md' }])
+  })
+
+  it('refuses questions about the presentation surface without calling Bedrock', async () => {
+    let called = false
+    const response = await answerWithBedrock(
+      { message: 'How does Hiraya deploy portfolio changes?' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieveAndGenerate: async () => {
+          called = true
+          return answeredOutput()
+        },
+      },
+    )
+
+    assert.equal(called, false)
+    assert.equal(response.status, 'refused')
+    assert.equal(response.citations.length, 0)
+    assert.match(response.answer, /Hiraya microservice project/)
+    assert.doesNotMatch(response.answer, /portfolio/i)
+  })
+
+  it('refuses private credential questions without calling Bedrock', async () => {
+    let called = false
+    const response = await answerWithBedrock(
+      { message: 'What is the private payroll password for Hiraya?' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieveAndGenerate: async () => {
+          called = true
+          return answeredOutput()
+        },
+      },
+    )
+
+    assert.equal(called, false)
+    assert.equal(response.status, 'refused')
+    assert.equal(response.citations.length, 0)
+    assert.doesNotMatch(response.answer, /payroll password/i)
   })
 
   it('refuses generated text when Bedrock returns an insufficient evidence answer', async () => {

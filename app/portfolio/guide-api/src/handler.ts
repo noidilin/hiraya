@@ -92,6 +92,24 @@ async function answerGuideQuestion(request: GuideChatRequest): Promise<GuideChat
     }
   }
 
+  if (isOutOfScopeSurfaceQuestion(request.message)) {
+    return {
+      status: 'refused',
+      answer: 'I can only answer questions about the Hiraya microservice project: Vintage Storefront, AWS EKS architecture, CI/CD, GitOps, security gates, team roles, and documented decisions.',
+      sessionId: request.sessionId ?? newSessionId(),
+      citations: [],
+    }
+  }
+
+  if (isSensitiveSecretQuestion(request.message)) {
+    return {
+      status: 'refused',
+      answer: 'I could not find enough curated Hiraya project evidence to answer that. Try asking about architecture, CI/CD, security gates, team roles, or documented decisions.',
+      sessionId: request.sessionId ?? newSessionId(),
+      citations: [],
+    }
+  }
+
   if (process.env.BEDROCK_KNOWLEDGE_BASE_ID && process.env.BEDROCK_MODEL_ARN) {
     return answerWithBedrock(request)
   }
@@ -126,6 +144,14 @@ function secretsMatch(actual: string | undefined, expected: string): boolean {
   const actualBytes = Buffer.from(actual)
   const expectedBytes = Buffer.from(expected)
   return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
+}
+
+function isOutOfScopeSurfaceQuestion(question: string): boolean {
+  return /\bportfolio\b|static\s+(site|app)|presentation\s+site|guide\s+api\s+lambda|lazyhiraya|this\s+(site|website|page|chat)/i.test(question)
+}
+
+function isSensitiveSecretQuestion(question: string): boolean {
+  return /\b(password|secret|token|credential|api\s*key)\b/i.test(question) && /\b(private|payroll|admin|root|prod|production|database|db)\b/i.test(question)
 }
 
 function json(statusCode: number, payload: unknown): HttpResponse {
