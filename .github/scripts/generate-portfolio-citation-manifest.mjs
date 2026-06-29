@@ -2,6 +2,7 @@
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { chunkMarkdown } from './stage-portfolio-knowledge.mjs';
 
 const requiredDocuments = [
   'PROJECT_BRIEF.md',
@@ -91,6 +92,12 @@ async function buildManifest(root) {
     };
     sources[`knowledge/${fileName}`] = citation;
     sources[relativePath] = citation;
+
+    const documentName = path.basename(fileName, '.md');
+    const chunks = chunkMarkdown(content);
+    for (const [index] of chunks.entries()) {
+      sources[`knowledge/${documentName}/${String(index + 1).padStart(3, '0')}.md`] = citation;
+    }
   }
 
   return {

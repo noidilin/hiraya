@@ -14,6 +14,7 @@ const env = {
 
 const manifest = {
   sources: {
+    'knowledge/ARCHITECTURE/006.md': { title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' },
     'knowledge/CICD.md': { title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' },
   },
 }
@@ -42,6 +43,7 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(config?.knowledgeBaseId, 'KB123')
     assert.equal(config?.generationConfiguration?.inferenceConfig?.textInferenceConfig?.maxTokens, 500)
     assert.equal(config?.generationConfiguration?.guardrailConfiguration?.guardrailId, 'gr-123')
+    assert.match(config?.generationConfiguration?.promptTemplate?.textPromptTemplate ?? '', /preserve the ordered steps/i)
     assert.equal(config?.retrievalConfiguration?.vectorSearchConfiguration?.numberOfResults, 4)
   })
 
@@ -72,6 +74,74 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.equal(response.status, 'answered')
     assert.deepEqual(response.citations, [{ title: 'CI/CD Workflow', source: 'docs/portfolio/CICD.md' }])
     assert.doesNotMatch(JSON.stringify(response), /raw retrieved chunk/)
+  })
+
+  it('answers public traffic path questions from retrieved Architecture path evidence', async () => {
+    const response = await answerWithBedrock(
+      { message: 'I want to know about how public traffic path under the current architecture design' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieve: async () => ({
+          $metadata: {},
+          retrievalResults: [
+            {
+              content: {
+                text: [
+                  '## Public traffic path',
+                  'The public Storefront path is intentionally same-origin. A browser does not call backend services directly.',
+                  '```text',
+                  'Portfolio Visitor',
+                  '  → Route 53',
+                  '  → AWS Application Load Balancer',
+                  '  → PostgreSQL',
+                  '```',
+                  'The public Storefront hostname is `https://hiraya.noidilin.dev`.',
+                ].join('\n'),
+              },
+              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/006.md' } },
+            },
+          ],
+        }),
+        retrieveAndGenerate: async () => {
+          throw new Error('RetrieveAndGenerate should not be called for direct path answers')
+        },
+      },
+    )
+
+    assert.equal(response.status, 'answered')
+    assert.match(response.answer, /1\. Portfolio Visitor/)
+    assert.match(response.answer, /Route 53/)
+    assert.match(response.answer, /PostgreSQL/)
+    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
+  })
+
+  it('answers public traffic path questions when Bedrock Retrieve returns only a snippet of the path chunk', async () => {
+    const response = await answerWithBedrock(
+      { message: 'I want to know about how public traffic path under the current architecture design' },
+      {
+        env,
+        citationManifest: manifest,
+        retrieve: async () => ({
+          $metadata: {},
+          retrievalResults: [
+            {
+              content: { text: '## Public traffic path The public Storefront path is intentionally same-origin.' },
+              location: { type: 'S3', s3Location: { uri: 's3://bucket/knowledge/ARCHITECTURE/006.md' } },
+            },
+          ],
+        }),
+        retrieveAndGenerate: async () => {
+          throw new Error('RetrieveAndGenerate should not be called for direct path answers')
+        },
+      },
+    )
+
+    assert.equal(response.status, 'answered')
+    assert.match(response.answer, /Gateway API shared edge Gateway/)
+    assert.match(response.answer, /nginx static assets or \/api proxy/)
+    assert.match(response.answer, /PostgreSQL/)
+    assert.deepEqual(response.citations, [{ title: 'Architecture Overview', source: 'docs/portfolio/ARCHITECTURE.md' }])
   })
 
   it('refuses generated text when Bedrock returns an insufficient evidence answer', async () => {

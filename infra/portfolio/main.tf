@@ -256,8 +256,11 @@ resource "aws_bedrockagent_data_source" "guide" {
       chunking_strategy = "FIXED_SIZE"
 
       fixed_size_chunking_configuration {
-        max_tokens         = 200
-        overlap_percentage = 15
+        # S3 Vectors stores Bedrock chunk text in filterable metadata, which has a
+        # 2048-byte record limit. Keep chunks small enough that Markdown sections
+        # do not fail ingestion and leave the vector index partially populated.
+        max_tokens         = 20
+        overlap_percentage = 1
       }
     }
   }
@@ -425,7 +428,7 @@ resource "aws_lambda_function" "guide_api" {
       BEDROCK_GUARDRAIL_ID           = aws_bedrock_guardrail.guide.guardrail_id
       BEDROCK_GUARDRAIL_VERSION      = aws_bedrock_guardrail_version.guide.version
       BEDROCK_MAX_OUTPUT_TOKENS      = "700"
-      BEDROCK_RETRIEVAL_RESULT_LIMIT = "5"
+      BEDROCK_RETRIEVAL_RESULT_LIMIT = "8"
       KNOWLEDGE_VERSION              = "initial"
     }
   }

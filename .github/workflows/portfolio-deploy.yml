@@ -152,14 +152,7 @@ jobs:
           manifest_path="${RUNNER_TEMP}/citations.json"
           staging_dir="${RUNNER_TEMP}/portfolio-knowledge-staging"
           node .github/scripts/generate-portfolio-citation-manifest.mjs --root . --output "$manifest_path"
-          rm -rf "$staging_dir"
-          mkdir -p "$staging_dir"
-          cp docs/portfolio/PROJECT_BRIEF.md "$staging_dir/"
-          cp docs/portfolio/ARCHITECTURE.md "$staging_dir/"
-          cp docs/portfolio/CICD.md "$staging_dir/"
-          cp docs/portfolio/SECURITY_GATES.md "$staging_dir/"
-          cp docs/portfolio/TEAM_ROLES.md "$staging_dir/"
-          cp docs/portfolio/DECISIONS.md "$staging_dir/"
+          node .github/scripts/stage-portfolio-knowledge.mjs --root . --output "$staging_dir"
           aws s3 sync "$staging_dir/" "s3://${KNOWLEDGE_BUCKET}/${KNOWLEDGE_PREFIX}" --delete --cache-control "no-cache"
           aws s3 cp "$manifest_path" "s3://${KNOWLEDGE_BUCKET}/${CITATION_MANIFEST_KEY}" --content-type "application/json" --cache-control "no-cache"
 
@@ -184,7 +177,23 @@ jobs:
               --output text)
             case "$status" in
               COMPLETE)
-                echo "Bedrock ingestion job ${job_id} completed."
+                failure_count=$(aws bedrock-agent get-ingestion-job \
+                  --knowledge-base-id "$KNOWLEDGE_BASE_ID" \
+                  --data-source-id "$DATA_SOURCE_ID" \
+                  --ingestion-job-id "$job_id" \
+                  --query 'length(ingestionJob.failureReasons || `[]`)' \
+                  --output text)
+                if [[ "$failure_count" != "0" ]]; then
+                  aws bedrock-agent get-ingestion-job \
+                    --knowledge-base-id "$KNOWLEDGE_BASE_ID" \
+                    --data-source-id "$DATA_SOURCE_ID" \
+                    --ingestion-job-id "$job_id" \
+                    --query 'ingestionJob.failureReasons' \
+                    --output json
+                  echo "Bedrock ingestion job ${job_id} completed with hidden failure reasons." >&2
+                  exit 1
+                fi
+                echo "Bedrock ingestion job ${job_id} completed without failure reasons."
                 exit 0
                 ;;
               FAILED|STOPPED)
