@@ -7,19 +7,19 @@ last_reviewed: 2026-06-27
 
 # Key Architecture Decisions
 
-Hiraya records important choices as ADRs and curated explanations so a Portfolio Visitor can understand not only what exists, but why the platform is shaped this way. The key decisions below explain the EKS project as an end-to-end DevOps system rather than a single app demo.
+Hiraya records important choices as ADRs and curated explanations so a technical reviewer can understand not only what exists, but why the platform is shaped this way. The key decisions below explain the EKS project as an end-to-end DevOps system rather than a single app demo.
 
 ## Use EKS for the workload demonstration
 
 Vintage Storefront remains the main EKS and GitOps workload. This keeps Kubernetes scheduling, service discovery, ingress, image promotion, controller integration, and operational dashboards visible in the project.
 
-The trade-off is cost and complexity. A simpler portfolio could use only static hosting or a single container service, but that would not demonstrate the platform skills Hiraya is intended to show.
+The trade-off is cost and complexity. A simpler application could use only static hosting or a single container service, but that would not demonstrate the platform skills Hiraya is intended to show.
 
 ## Keep the dev runtime disposable
 
 The EKS cluster and in-cluster runtime are treated as disposable dev infrastructure. The project can destroy Platform Core and Cluster Bootstrap to control cost while keeping Project Bootstrap resources such as ECR repositories, GitHub OIDC roles, Terraform state access, and durable workload secrets.
 
-This decision favors reproducibility over preserving runtime state. For a portfolio-scale dev platform, being able to rebuild cleanly from code is more valuable than maintaining a long-lived cluster at all times.
+This decision favors reproducibility over preserving runtime state. For a cost-conscious dev platform, being able to rebuild cleanly from code is more valuable than maintaining a long-lived cluster at all times.
 
 ## Split Terraform and GitOps ownership
 
@@ -64,10 +64,10 @@ This prevents the project from pretending to have an active log-analysis pipelin
 
 ## Keep Hiraya Guide curated, not raw
 
-Hiraya Guide answers from reviewed Markdown in `docs/portfolio/`. It should not ingest a raw repository snapshot, report JSON, live AWS data, prompts, retrieved chunks, or operational secrets.
+Hiraya Guide answers from reviewed Curated Project Knowledge. It should not ingest a raw repository snapshot, report JSON, live AWS data, prompts, retrieved chunks, or operational secrets.
 
-This choice makes the assistant safer and easier to evaluate. The trade-off is that the corpus must be maintained intentionally; the benefit is that Portfolio Visitors receive clear explanations rather than noisy implementation dumps.
+This choice makes the assistant safer and easier to evaluate. The trade-off is that the corpus must be maintained intentionally; the benefit is that users receive clear explanations of the Hiraya microservice project rather than noisy implementation dumps.
 
 ## Present polished truth, not production claims
 
-Hiraya is written confidently because it is a portfolio project, but the documentation should still distinguish implemented controls from target-state and deferred hardening work. That honesty is part of the design: a strong DevOps project should show engineering judgment, not just a polished diagram.
+Hiraya is written confidently as a microservice delivery project, but the documentation should still distinguish implemented controls from target-state and deferred hardening work. That honesty is part of the design: a strong DevOps project should show engineering judgment, not just a polished diagram.
