@@ -55,7 +55,7 @@ test('Portfolio Stack uses Terraform-managed S3 Vectors for the Bedrock Knowledg
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*dimension\s+=\s+1024/, 'S3 Vectors index should match Titan Text Embeddings V2 default dimensions');
   assert.match(main, /resource "aws_s3vectors_index" "knowledge"[\s\S]*distance_metric\s+=\s+"cosine"/, 'S3 Vectors index should use cosine distance');
   assert.match(main, /storage_configuration[\s\S]*type\s+=\s+"S3_VECTORS"[\s\S]*s3_vectors_configuration[\s\S]*index_arn\s+=\s+aws_s3vectors_index\.knowledge\.index_arn/, 'Bedrock KB should use S3 Vectors storage');
-  assert.match(main, /vector_ingestion_configuration[\s\S]*chunking_strategy\s+=\s+"FIXED_SIZE"[\s\S]*max_tokens\s+=\s+200/, 'S3 Vectors ingestion should use small fixed-size chunks to stay below filterable metadata limits');
+  assert.match(main, /vector_ingestion_configuration[\s\S]*chunking_strategy\s+=\s+"FIXED_SIZE"[\s\S]*max_tokens\s+=\s+20[\s\S]*overlap_percentage\s+=\s+1/, 'S3 Vectors ingestion should use tiny fixed-size chunks to stay below filterable metadata limits');
   assert.doesNotMatch(main, /aws_opensearchserverless_|OPENSEARCH_SERVERLESS|aoss:/, 'OpenSearch Serverless resources and permissions should be removed');
   assert.match(main, /aws:SourceAccount/, 'Bedrock KB role trust should include confused-deputy SourceAccount protection');
   assert.match(main, /aws:SourceArn/, 'Bedrock KB role trust should include confused-deputy SourceArn protection');
