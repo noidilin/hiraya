@@ -25,7 +25,6 @@ import {
   type ExpandableActionBarItem,
 } from "@/components/motion/expandable-action-bar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { defaultLabLocale, type LabLocaleKey } from "@/content/labContentTypes"
 import { cn } from "@/lib/utils"
 
@@ -229,14 +228,14 @@ function Hero({ activePage }: { activePage: HirayaNavItem }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button className="rounded-full" size="lg">
+          <span className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">
             <Terminal className="size-4" aria-hidden="true" />
-            Launch console
-          </Button>
-          <Button className="rounded-full" variant="outline" size="lg">
+            Console ready
+          </span>
+          <span className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card/75 px-4 text-sm font-medium text-foreground">
             <Icon className="size-4" aria-hidden="true" />
             {activePage.title}
-          </Button>
+          </span>
         </div>
       </div>
     </section>

@@ -55,6 +55,7 @@ export function AiDeliveryLoopOrbitSlideVisual({ className }: VisualProps) {
         <div className="flex h-full min-h-[28rem] w-full items-center justify-center">
           <div
             className="relative aspect-square w-[min(36rem,100%)] max-h-full"
+            role="img"
             aria-label="AI assistance surrounds but does not replace the authoritative gates, artifacts, verification, and release evidence loop"
           >
             <div aria-hidden="true" className="orbit-ring absolute left-1/2 top-1/2 size-[88%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70" />

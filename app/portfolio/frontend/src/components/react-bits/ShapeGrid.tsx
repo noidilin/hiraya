@@ -254,7 +254,9 @@ export function ShapeGrid({
       }
     }
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     const updateAnimation = () => {
       const effectiveSpeed = Math.max(speed, 0.1)
@@ -347,6 +349,11 @@ export function ShapeGrid({
           y: Math.floor(adjustedY / squareSize),
         })
       }
+
+      if (reducedMotion) {
+        updateCellOpacities()
+        drawGrid()
+      }
     }
 
     const handleMouseLeave = () => {
@@ -357,11 +364,21 @@ export function ShapeGrid({
         }
       }
       hoveredSquareRef.current = null
+
+      if (reducedMotion) {
+        updateCellOpacities()
+        drawGrid()
+      }
     }
 
     canvas.addEventListener('mousemove', handleMouseMove)
     canvas.addEventListener('mouseleave', handleMouseLeave)
-    requestRef.current = requestAnimationFrame(updateAnimation)
+    if (reducedMotion) {
+      updateCellOpacities()
+      drawGrid()
+    } else {
+      requestRef.current = requestAnimationFrame(updateAnimation)
+    }
 
     return () => {
       window.removeEventListener('resize', resizeCanvas)

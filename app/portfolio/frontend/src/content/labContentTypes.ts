@@ -29,6 +29,12 @@ export type LabPresentationUiLocaleContent = {
   stage2BadgeLabel: string
   visualPlaceholderLabel: string
   visualLoadingLabel: string
+  previousLabel: string
+  nextLabel: string
+  checkpointDescription: string
+  stayLabel: string
+  continueLabel: string
+  emptyStateLabel: string
 }
 
 export type LabLocalizedContent<TContent extends object> = {

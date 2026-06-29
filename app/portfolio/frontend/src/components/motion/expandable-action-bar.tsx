@@ -381,7 +381,11 @@ export function ExpandableActionBar({
       >
         {items.map((item) => (
           <span
-            className={cn("whitespace-nowrap", classNames?.label)}
+            className={cn(
+              "whitespace-nowrap font-medium",
+              size === "sm" ? "text-xs" : "text-sm",
+              classNames?.label,
+            )}
             key={item.id}
             ref={setMeasureRef(item.id)}
           >

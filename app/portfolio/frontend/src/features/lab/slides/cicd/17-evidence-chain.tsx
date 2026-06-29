@@ -24,7 +24,7 @@ export function EvidenceChainSlideVisual({ className }: VisualProps) {
     <FamilyShell
       className={className}
       title="Release evidence chain"
-      code="EVIDENCE_03"
+      code="EVIDENCE_17"
       status="check is not enough"
       ariaLabel="Release evidence chain showing why a green check is incomplete without artifacts logs tests approvals outcomes and recovery"
       railDensity="dense"
@@ -76,12 +76,11 @@ export function EvidenceChainSlideVisual({ className }: VisualProps) {
               <div
                 key={code}
                 role="group"
-                tabIndex={0}
                 className={cn(
-                  'flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 rounded-md border border-border bg-background/80 px-1.5 py-3 shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 rounded-md border border-border bg-background/80 px-1.5 py-3 shadow-none',
                   activeIndex === index && 'border-primary/30 bg-accent/60 text-primary ring-1 ring-primary/10',
                 )}
-                aria-label={`${label} evidence answers: ${question}${activeIndex === index ? ' Current footer-selected node.' : ''}`}
+                aria-label={`${label} evidence answers: ${question}${activeIndex === index ? ' Current highlighted node.' : ''}`}
               >
                 <span className="font-mono text-[9px] font-semibold uppercase tracking-normal">{code}</span>
                 <span className="max-w-full truncate text-[10px] leading-3">{label}</span>

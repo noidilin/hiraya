@@ -126,15 +126,19 @@ function sameWidths(a: Record<string, number>, b: Record<string, number>) {
 }
 
 function useContentSize() {
-  const ref = useRef<HTMLDivElement | null>(null)
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
   const [size, setSize] = useState<Size | null>(null)
 
-  const measure = useCallback(() => {
-    const el = ref.current
-    if (!el) return
-    const next = { width: el.offsetWidth, height: el.offsetHeight }
-    setSize((current) => (sameSize(current, next) ? current : next))
+  const ref = useCallback((nextNode: HTMLDivElement | null) => {
+    setNode(nextNode)
+    if (!nextNode) setSize(null)
   }, [])
+
+  const measure = useCallback(() => {
+    if (!node) return
+    const next = { width: node.offsetWidth, height: node.offsetHeight }
+    setSize((current) => (sameSize(current, next) ? current : next))
+  }, [node])
 
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(measure)
@@ -143,20 +147,19 @@ function useContentSize() {
   }, [measure])
 
   useEffect(() => {
-    const el = ref.current
-    if (!el || typeof ResizeObserver === "undefined") return
+    if (!node || typeof ResizeObserver === "undefined") return
     let frame: number | undefined
     const scheduleMeasure = () => {
       if (frame !== undefined) cancelAnimationFrame(frame)
       frame = requestAnimationFrame(measure)
     }
     const observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(el)
+    observer.observe(node)
     return () => {
       observer.disconnect()
       if (frame !== undefined) cancelAnimationFrame(frame)
     }
-  }, [measure])
+  }, [node, measure])
 
   return [ref, size] as const
 }
@@ -271,7 +274,7 @@ export function ExpandableTabs({
 }: ExpandableTabsProps) {
   const reduce = useReducedMotion()
   const rootRef = useRef<HTMLDivElement>(null)
-  const [sizerRef, size] = useContentSize()
+  const [activePanelRef, activePanelSize] = useContentSize()
   const [barRef, barSize] = useMeasuredSize()
   const { setLabelMeasureRef, widths: labelWidths } = useLabelWidths(items)
 
@@ -317,14 +320,15 @@ export function ExpandableTabs({
     ),
     height: Math.max(closedHeight, (barSize?.height ?? 0) + ROOT_BORDER),
   }
-  const openSize = size
+  const barReserve = (barSize?.height ?? barMinHeight) + PANEL_DOCK_GAP
+  const openSize = activePanelSize
     ? {
         width: Math.max(
-          size.width + ROOT_BORDER,
+          activePanelSize.width + 16 + ROOT_BORDER,
           closedSize.width,
           (barSize?.width ?? 0) + ROOT_BORDER,
         ),
-        height: Math.max(size.height + ROOT_BORDER, closedSize.height),
+        height: Math.max(activePanelSize.height + 8 + barReserve + ROOT_BORDER, closedSize.height),
       }
     : closedSize
   const targetSize = active ? openSize : closedSize
@@ -361,28 +365,11 @@ export function ExpandableTabs({
         )}
       >
         <div
-          ref={sizerRef}
-          aria-hidden
-          inert
-          className={cn(
-            "pointer-events-none invisible absolute left-0 top-0 grid w-max px-2 pt-2",
-            classNames?.panel,
-          )}
-          style={{ paddingBottom: (barSize?.height ?? barMinHeight) + PANEL_DOCK_GAP }}
-        >
-          {items.map((item) => (
-            <div key={item.id} className="col-start-1 row-start-1 w-max">
-              {item.content}
-            </div>
-          ))}
-        </div>
-
-        <div
           className={cn(
             "absolute left-0 right-0 top-0 z-10 overflow-hidden px-2 pt-2",
             classNames?.panel,
           )}
-          style={{ bottom: (barSize?.height ?? barMinHeight) + PANEL_DOCK_GAP }}
+          style={{ bottom: barReserve }}
         >
           <AnimatePresence mode="popLayout" initial={false}>
             {active ? (
@@ -395,6 +382,7 @@ export function ExpandableTabs({
                 transition={
                   reduce ? { duration: 0.15, ease: EASE_OUT } : CONTENT_SPRING
                 }
+                ref={activePanelRef}
                 className="w-max"
                 style={{
                   transformOrigin: "top center",

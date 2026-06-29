@@ -93,9 +93,8 @@ export function AffectedServiceGraphSlideVisual(props: CicdSlideVisualProps) {
                 <div
                   key={node.id}
                   role="listitem"
-                  tabIndex={0}
                   aria-label={`${node.label}: service_a to ${node.kind}. ${included ? (node.included ? 'Included in selected checks.' : 'Included by test-all fallback.') : 'Outside targeted radius.'}`}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card/75 px-2 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card/75 px-2 py-1.5"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-[11px] leading-4">{node.label}</span>
@@ -110,10 +109,9 @@ export function AffectedServiceGraphSlideVisual(props: CicdSlideVisualProps) {
               )
             })}
             <div
-              tabIndex={0}
               role="group"
               aria-label={`${includedCount} of ${serviceGraphNodes.length} dependency checks selected. ${mode === 'all' ? 'Every dependency is included because targeting confidence is low.' : 'Direct contracts, config, and downstream behavior are included; queue and deploy lock stay visible but outside radius.'}`}
-              className="rounded-md border border-border bg-card/75 px-2 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-md border border-border bg-card/75 px-2 py-1.5"
             >
               <p className="font-mono text-[8px] font-semibold uppercase leading-3 text-muted-foreground">selected checks</p>
               <p className="text-[11px] leading-4 text-foreground">

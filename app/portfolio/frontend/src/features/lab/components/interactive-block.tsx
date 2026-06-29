@@ -21,6 +21,7 @@ export function InteractiveBlock({
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     [],
   )

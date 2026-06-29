@@ -22,8 +22,11 @@ export function KineticLabPage({ activeChapterId, activeTopicId }: KineticLabPag
   const navigate = useNavigate()
   const [locale, setLocale] = useState<LabLocaleKey>(defaultLabLocale)
   const [lessonNavigation, setLessonNavigation] = useState<PresentationNavigationControls>()
-  const resolvedChapterId = activeChapterId ?? firstLabTopic.chapterId
-  const resolvedTopicId = activeTopicId ?? firstLabTopic.topicId
+  const resolvedChapter = labChapters.find((chapter) => chapter.id === activeChapterId) ?? labChapters[0]
+  const resolvedTopic =
+    resolvedChapter?.topics.find((topic) => topic.id === activeTopicId) ?? resolvedChapter?.topics[0]
+  const resolvedChapterId = resolvedChapter?.id ?? firstLabTopic.chapterId
+  const resolvedTopicId = resolvedTopic?.id ?? firstLabTopic.topicId
 
   const navigateToTopic = useCallback((chapterId: string, topicId: string) => {
     void navigate({

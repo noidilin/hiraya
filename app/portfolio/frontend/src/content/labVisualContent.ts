@@ -16,6 +16,12 @@ export const labPresentationUiContent = {
     stage2BadgeLabel: 'Stage 2',
     visualPlaceholderLabel: 'Visual placeholder',
     visualLoadingLabel: 'Loading visual',
+    previousLabel: 'Previous',
+    nextLabel: 'Next',
+    checkpointDescription: 'Checkpoint before moving to the next slide.',
+    stayLabel: 'Stay',
+    continueLabel: 'Continue',
+    emptyStateLabel: 'No presentation content is available.',
   },
   zhTW: {
     chapterLabel: '章節',
@@ -27,6 +33,12 @@ export const labPresentationUiContent = {
     stage2BadgeLabel: '第二階段',
     visualPlaceholderLabel: '視覺占位',
     visualLoadingLabel: '載入視覺元件',
+    previousLabel: '上一張',
+    nextLabel: '下一張',
+    checkpointDescription: '前往下一張投影片前的檢查點。',
+    stayLabel: '停留',
+    continueLabel: '繼續',
+    emptyStateLabel: '沒有可用的簡報內容。',
   },
 } satisfies LabLocalizedContent<LabPresentationUiLocaleContent>
 

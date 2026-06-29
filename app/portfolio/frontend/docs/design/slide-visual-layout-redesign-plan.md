@@ -39,7 +39,7 @@ Desktop composition:
 
 The outer slot already provides substantially more vertical room:
 
-- `src/components/lab/presentation/visual-slot-renderer.tsx`
+- `src/features/lab/presentation/visual-slot-renderer.tsx`
 - Current shell class: `min-h-[40rem] md:min-h-[34rem] md:h-[calc(100svh-12rem)] md:max-h-[56rem]`
 
 Several slide internals still behave like compact reference previews:
@@ -52,17 +52,17 @@ Several slide internals still behave like compact reference previews:
 
 Primary shared files to update:
 
-- `src/components/lab/presentation/visual-slot-renderer.tsx`
-- `src/components/lab/slides/cicd/shared/system-responsibility-kit.tsx`
-- `src/components/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
-- `src/components/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
-- `src/components/lab/slides/cicd/shared/flow-canvas.tsx`
-- `src/components/lab/slides/cicd/shared/visual-state-control.tsx`
+- `src/features/lab/presentation/visual-slot-renderer.tsx`
+- `src/features/lab/slides/cicd/shared/system-responsibility-kit.tsx`
+- `src/features/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
+- `src/features/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
+- `src/features/lab/slides/cicd/shared/flow-canvas.tsx`
+- `src/features/lab/slides/cicd/shared/visual-state-control.tsx`
 
 Reference visual language:
 
-- `src/components/lab/visual-reference-gallery.tsx`
-- `src/components/lab/visuals/*`
+- `src/features/lab/pages/visual-reference-gallery.tsx`
+- `src/features/lab/visuals/*`
 - Route: `/visuals`
 
 ## Orchestration Mode
@@ -87,19 +87,19 @@ Before spawning workers, the orchestrator should read:
 - `docs/design/slide-visual-layout-redesign-plan.md`
 - `docs/design/slide-design-requirements.md`
 - `docs/design/visual-flow-canvas-guidelines.md`
-- `src/components/lab/presentation/visual-slot-renderer.tsx`
-- `src/components/lab/presentation/topic-content.tsx`
-- `src/components/lab/slides/cicd/shared/system-responsibility-kit.tsx`
-- `src/components/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
-- `src/components/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
-- `src/components/lab/slides/cicd/shared/flow-canvas.tsx`
-- `src/components/lab/slides/cicd/shared/visual-state-control.tsx`
-- `src/components/lab/visual-reference-gallery.tsx`
+- `src/features/lab/presentation/visual-slot-renderer.tsx`
+- `src/features/lab/presentation/topic-content.tsx`
+- `src/features/lab/slides/cicd/shared/system-responsibility-kit.tsx`
+- `src/features/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
+- `src/features/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
+- `src/features/lab/slides/cicd/shared/flow-canvas.tsx`
+- `src/features/lab/slides/cicd/shared/visual-state-control.tsx`
+- `src/features/lab/pages/visual-reference-gallery.tsx`
 
 The orchestrator should inspect:
 
 - `git status --short`
-- The current slide file list under `src/components/lab/slides/cicd/`
+- The current slide file list under `src/features/lab/slides/cicd/`
 - Current local `max-w-*`, `h-*`, and below-canvas detail patterns in slide files.
 
 Likely conflict zones:
@@ -107,7 +107,7 @@ Likely conflict zones:
 - Shared shell class exports and imports.
 - `SlideFlowCanvas` constants and default sizing.
 - Slide files that import shared shell helpers.
-- Shared primitive files under `src/components/lab/visuals/`.
+- Shared primitive files under `src/features/lab/visuals/`.
 - Footer and right-rail semantics.
 
 ### Task Plan UI Items
@@ -227,17 +227,17 @@ Acceptance gate:
 
 Recommended worker ownership:
 
-- `src/components/lab/slides/cicd/shared/system-responsibility-kit.tsx`
-- `src/components/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
-- `src/components/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
-- `src/components/lab/slides/cicd/shared/visual-state-control.tsx`
+- `src/features/lab/slides/cicd/shared/system-responsibility-kit.tsx`
+- `src/features/lab/slides/cicd/shared/loop-pipeline-kit.tsx`
+- `src/features/lab/slides/cicd/shared/trust-tradeoff-kit.tsx`
+- `src/features/lab/slides/cicd/shared/visual-state-control.tsx`
 - Small call-site adjustments required only to keep the build compiling.
 
 Avoid:
 
 - Broad slide-by-slide redesign.
 - React Flow node repositioning.
-- Visual primitive redesign under `src/components/lab/visuals/`.
+- Visual primitive redesign under `src/features/lab/visuals/`.
 
 Tasks:
 
@@ -257,7 +257,7 @@ Acceptance gate:
 
 Recommended worker ownership:
 
-- `src/components/lab/slides/cicd/shared/flow-canvas.tsx`
+- `src/features/lab/slides/cicd/shared/flow-canvas.tsx`
 - Minimal call-site updates in React Flow slides if required by type or prop changes.
 
 Avoid:
@@ -283,16 +283,16 @@ Acceptance gate:
 
 Recommended worker ownership:
 
-- `src/components/lab/slides/cicd/01-delivery-loop-comparison.tsx`
-- `src/components/lab/slides/cicd/02-trusted-pipeline-path.tsx`
-- `src/components/lab/slides/cicd/08-system-skill-map.tsx`
-- `src/components/lab/slides/cicd/09-architecture-to-pipeline-mapping.tsx`
-- `src/components/lab/slides/cicd/10-coupled-validation-model.tsx`
-- `src/components/lab/slides/cicd/11-affected-service-graph.tsx`
-- `src/components/lab/slides/cicd/13-artifact-to-runtime-map.tsx`
-- `src/components/lab/slides/cicd/16-release-operations-loop.tsx`
-- `src/components/lab/slides/cicd/19-system-fit-frame.tsx`
-- `src/components/lab/slides/cicd/28-ai-architecture-review.tsx`
+- `src/features/lab/slides/cicd/01-delivery-loop-comparison.tsx`
+- `src/features/lab/slides/cicd/02-trusted-pipeline-path.tsx`
+- `src/features/lab/slides/cicd/08-system-skill-map.tsx`
+- `src/features/lab/slides/cicd/09-architecture-to-pipeline-mapping.tsx`
+- `src/features/lab/slides/cicd/10-coupled-validation-model.tsx`
+- `src/features/lab/slides/cicd/11-affected-service-graph.tsx`
+- `src/features/lab/slides/cicd/13-artifact-to-runtime-map.tsx`
+- `src/features/lab/slides/cicd/16-release-operations-loop.tsx`
+- `src/features/lab/slides/cicd/19-system-fit-frame.tsx`
+- `src/features/lab/slides/cicd/28-ai-architecture-review.tsx`
 
 Avoid:
 
@@ -317,14 +317,14 @@ Acceptance gate:
 
 Recommended worker ownership:
 
-- `src/components/lab/visuals/primitive-kit.tsx`
-- `src/components/lab/visuals/concept-scene.tsx`
-- `src/components/lab/visuals/comparison-frame.tsx`
-- `src/components/lab/visuals/evidence-chain.tsx`
-- `src/components/lab/visuals/metric-constellation.tsx`
-- `src/components/lab/visuals/trust-funnel.tsx`
-- `src/components/lab/visuals/responsibility-lanes.tsx`
-- `src/components/lab/visuals/ai-assistance-orbit.tsx`
+- `src/features/lab/visuals/primitive-kit.tsx`
+- `src/features/lab/visuals/concept-scene.tsx`
+- `src/features/lab/visuals/comparison-frame.tsx`
+- `src/features/lab/visuals/evidence-chain.tsx`
+- `src/features/lab/visuals/metric-constellation.tsx`
+- `src/features/lab/visuals/trust-funnel.tsx`
+- `src/features/lab/visuals/responsibility-lanes.tsx`
+- `src/features/lab/visuals/ai-assistance-orbit.tsx`
 - Slide files from Group B where those primitives are used directly.
 
 Avoid:
@@ -349,18 +349,18 @@ Acceptance gate:
 
 Recommended worker ownership:
 
-- `src/components/lab/slides/cicd/05-benefit-evidence-path.tsx`
-- `src/components/lab/slides/cicd/12-operating-model-comparison.tsx`
-- `src/components/lab/slides/cicd/14-permission-lanes.tsx`
-- `src/components/lab/slides/cicd/17-evidence-chain.tsx`
-- `src/components/lab/slides/cicd/18-qualitative-checklist.tsx`
-- `src/components/lab/slides/cicd/21-release-health-frame.tsx`
-- `src/components/lab/slides/cicd/22-duration-breakdown.tsx`
-- `src/components/lab/slides/cicd/23-delivery-recovery-metrics.tsx`
-- `src/components/lab/slides/cicd/24-trust-efficiency-metrics.tsx`
-- `src/components/lab/slides/cicd/25-security-audit-confidence.tsx`
-- `src/components/lab/slides/cicd/26-metric-constellation.tsx`
-- `src/components/lab/slides/cicd/30-responsibility-authority-map.tsx`
+- `src/features/lab/slides/cicd/05-benefit-evidence-path.tsx`
+- `src/features/lab/slides/cicd/12-operating-model-comparison.tsx`
+- `src/features/lab/slides/cicd/14-permission-lanes.tsx`
+- `src/features/lab/slides/cicd/17-evidence-chain.tsx`
+- `src/features/lab/slides/cicd/18-qualitative-checklist.tsx`
+- `src/features/lab/slides/cicd/21-release-health-frame.tsx`
+- `src/features/lab/slides/cicd/22-duration-breakdown.tsx`
+- `src/features/lab/slides/cicd/23-delivery-recovery-metrics.tsx`
+- `src/features/lab/slides/cicd/24-trust-efficiency-metrics.tsx`
+- `src/features/lab/slides/cicd/25-security-audit-confidence.tsx`
+- `src/features/lab/slides/cicd/26-metric-constellation.tsx`
+- `src/features/lab/slides/cicd/30-responsibility-authority-map.tsx`
 
 Avoid:
 
@@ -483,7 +483,7 @@ Acceptance criteria:
 
 ### 3. Upgrade React Flow Canvas Sizing
 
-Update `src/components/lab/slides/cicd/shared/flow-canvas.tsx`.
+Update `src/features/lab/slides/cicd/shared/flow-canvas.tsx`.
 
 Current canonical board:
 
@@ -525,14 +525,14 @@ For visual primitives and non-flow slide components:
 
 Affected reference primitives may include:
 
-- `src/components/lab/visuals/primitive-kit.tsx`
-- `src/components/lab/visuals/concept-scene.tsx`
-- `src/components/lab/visuals/comparison-frame.tsx`
-- `src/components/lab/visuals/evidence-chain.tsx`
-- `src/components/lab/visuals/metric-constellation.tsx`
-- `src/components/lab/visuals/trust-funnel.tsx`
-- `src/components/lab/visuals/responsibility-lanes.tsx`
-- `src/components/lab/visuals/ai-assistance-orbit.tsx`
+- `src/features/lab/visuals/primitive-kit.tsx`
+- `src/features/lab/visuals/concept-scene.tsx`
+- `src/features/lab/visuals/comparison-frame.tsx`
+- `src/features/lab/visuals/evidence-chain.tsx`
+- `src/features/lab/visuals/metric-constellation.tsx`
+- `src/features/lab/visuals/trust-funnel.tsx`
+- `src/features/lab/visuals/responsibility-lanes.tsx`
+- `src/features/lab/visuals/ai-assistance-orbit.tsx`
 
 Acceptance criteria:
 

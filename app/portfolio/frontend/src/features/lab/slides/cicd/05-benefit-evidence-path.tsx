@@ -96,13 +96,11 @@ export function BenefitEvidencePathSlideVisual({ className }: VisualProps) {
               <div
                 key={item.id}
                 role="group"
-                tabIndex={0}
                 className={cn(
-                  'relative flex min-h-24 min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-card/70 px-2 py-3 text-left shadow-none outline-none',
-                  'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  'relative flex min-h-24 min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-card/70 px-2 py-3 text-left shadow-none',
                   isActive && 'border-primary/30 bg-accent/60 text-primary ring-1 ring-primary/10',
                 )}
-                aria-label={`${item.benefit}: ${item.evidence}. ${item.question}${isActive ? ' Current footer-selected step.' : ''}`}
+                aria-label={`${item.benefit}: ${item.evidence}. ${item.question}${isActive ? ' Current highlighted step.' : ''}`}
               >
                 {index > 0 ? (
                   <span aria-hidden="true" className="absolute -left-2 top-1/2 hidden h-px w-2 bg-border sm:block" />

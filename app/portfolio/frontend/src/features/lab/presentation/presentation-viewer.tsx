@@ -164,11 +164,11 @@ export function PresentationViewer({
     () =>
       activeChapter && activeTopic
         ? {
-            previous: buildTopicControl('Previous', previousTopic, 'previous'),
-            next: buildTopicControl('Next', nextTopic, 'next'),
+            previous: buildTopicControl(uiContent.previousLabel, previousTopic, 'previous'),
+            next: buildTopicControl(uiContent.nextLabel, nextTopic, 'next'),
           }
         : undefined,
-    [activeChapter, activeTopic, nextTopic, previousTopic, buildTopicControl],
+    [activeChapter, activeTopic, nextTopic, previousTopic, buildTopicControl, uiContent.nextLabel, uiContent.previousLabel],
   )
 
   useEffect(() => {
@@ -182,7 +182,7 @@ export function PresentationViewer({
   if (!activeChapter || !activeTopic || !activeTopicContent) {
     return (
       <Card className={cn('rounded-lg border-border/90 bg-card/90 p-6 shadow-none', className)}>
-        <p className="text-sm text-muted-foreground">No presentation content is available.</p>
+        <p className="text-sm text-muted-foreground">{uiContent.emptyStateLabel}</p>
       </Card>
     )
   }
@@ -219,7 +219,7 @@ export function PresentationViewer({
               <Hash className="size-4 text-primary" aria-hidden="true" />
               <span className="min-w-0 truncate">{activeTopicContent.title}</span>
             </DialogTitle>
-            <DialogDescription>Checkpoint before moving to the next slide.</DialogDescription>
+            <DialogDescription>{uiContent.checkpointDescription}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
@@ -252,10 +252,10 @@ export function PresentationViewer({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsKeyPointDialogOpen(false)}>
-              Stay
+              {uiContent.stayLabel}
             </Button>
             <Button type="button" onClick={continueFromKeyPoints}>
-              Continue
+              {uiContent.continueLabel}
               <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           </DialogFooter>
