@@ -296,6 +296,7 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
   assert.match(workflow, /uses: \.\/\.github\/actions\/setup-node-pnpm/, 'baseline job should use the shared root Node/pnpm setup action');
   assert.match(workflow, /app-baseline:/, 'main image CI should have an explicit baseline validation job');
   assert.match(workflow, /name: run-app-baseline-before-image-push/);
+  assert.match(workflow, /app-baseline:[\s\S]*?if: \$\{\{ needs\.detect-changes\.outputs\.has_changes == 'true' \}\}/, 'baseline job should skip when changed-service detection finds no image inputs');
   assert.match(workflow, /pnpm run app:baseline/);
   assert.match(workflow, /build-and-push:[\s\S]*?needs:\n\s+- detect-changes\n\s+- app-baseline/, 'image push job must need the baseline job');
   assert.match(workflow, /build-and-push:[\s\S]*?timeout-minutes: 25/, 'image push jobs must fail closed instead of hanging indefinitely');

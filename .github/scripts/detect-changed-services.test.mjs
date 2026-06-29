@@ -167,7 +167,6 @@ test('fans out root image build inputs, workflow, script, and catalog changes to
 
   for (const changedFile of [
     'package.json',
-    'pnpm-lock.yaml',
     'pnpm-workspace.yaml',
     '.dockerignore',
     '.github/utils/services.json',
@@ -180,6 +179,29 @@ test('fans out root image build inputs, workflow, script, and catalog changes to
       changedFile,
     );
   }
+});
+
+test('ignores portfolio-only root lockfile changes for service image planning', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+
+  const matrix = detect(catalogPath, root, [
+    'app/portfolio/frontend/package.json',
+    'app/portfolio/frontend/src/App.tsx',
+    'pnpm-lock.yaml',
+  ]);
+
+  assert.deepEqual(serviceNames(matrix), []);
+});
+
+test('uses microservice paths next to root lockfile changes to select only affected images', async () => {
+  const { root, catalogPath } = await createCatalogFixture();
+
+  const matrix = detect(catalogPath, root, [
+    'app/microservices/frontend/package.json',
+    'pnpm-lock.yaml',
+  ]);
+
+  assert.deepEqual(serviceNames(matrix), ['frontend']);
 });
 
 test('does not fan out report-only governance data changes to service images', async () => {
