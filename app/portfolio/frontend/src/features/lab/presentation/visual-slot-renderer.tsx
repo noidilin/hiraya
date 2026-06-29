@@ -21,103 +21,103 @@ type VisualSlotRendererProps = {
 }
 
 const AiAcceleratorTakeawaySlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).AiAcceleratorTakeawaySlideVisual,
+  default: (await import('@/features/lab/slides/cicd/33-ai-accelerator-takeaway')).AiAcceleratorTakeawaySlideVisual,
 }))
 const BenefitEvidencePathSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).BenefitEvidencePathSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/05-benefit-evidence-path')).BenefitEvidencePathSlideVisual,
 }))
 const ChapterTakeawaySlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ChapterTakeawaySlideVisual,
+  default: (await import('@/features/lab/slides/cicd/07-chapter-takeaway')).ChapterTakeawaySlideVisual,
 }))
 const DeliveryRecoveryMetricsSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).DeliveryRecoveryMetricsSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/23-delivery-recovery-metrics')).DeliveryRecoveryMetricsSlideVisual,
 }))
 const DurationBreakdownSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).DurationBreakdownSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/22-duration-breakdown')).DurationBreakdownSlideVisual,
 }))
 const MetricConstellationSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).MetricConstellationSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/26-metric-constellation')).MetricConstellationSlideVisual,
 }))
 const EvidenceChainSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).EvidenceChainSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/17-evidence-chain')).EvidenceChainSlideVisual,
 }))
 const ReleaseHealthFrameSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ReleaseHealthFrameSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/21-release-health-frame')).ReleaseHealthFrameSlideVisual,
 }))
 const SecurityAuditConfidenceSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SecurityAuditConfidenceSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/25-security-audit-confidence')).SecurityAuditConfidenceSlideVisual,
 }))
 const SecurityEvidenceGatesSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SecurityEvidenceGatesSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/31-security-evidence-gates')).SecurityEvidenceGatesSlideVisual,
 }))
 const SuggestionEvidenceDecisionSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SuggestionEvidenceDecisionSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/32-suggestion-evidence-decision')).SuggestionEvidenceDecisionSlideVisual,
 }))
 const TrustEfficiencyMetricsSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).TrustEfficiencyMetricsSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/24-trust-efficiency-metrics')).TrustEfficiencyMetricsSlideVisual,
 }))
 const AiDeliveryLoopOrbitSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).AiDeliveryLoopOrbitSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/27-ai-delivery-loop-orbit')).AiDeliveryLoopOrbitSlideVisual,
 }))
 const DeliveryLoopComparisonSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).DeliveryLoopComparisonSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/01-delivery-loop-comparison')).DeliveryLoopComparisonSlideVisual,
 }))
 const ReleaseOperationsLoopSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ReleaseOperationsLoopSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/16-release-operations-loop')).ReleaseOperationsLoopSlideVisual,
 }))
 const SimpleVsProductionRealitySlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SimpleVsProductionRealitySlideVisual,
+  default: (await import('@/features/lab/slides/cicd/06-simple-vs-production-reality')).SimpleVsProductionRealitySlideVisual,
 }))
 const SixStageLoopSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SixStageLoopSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/04-six-stage-loop')).SixStageLoopSlideVisual,
 }))
 const TrustedPipelinePathSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).TrustedPipelinePathSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/02-trusted-pipeline-path')).TrustedPipelinePathSlideVisual,
 }))
 const AffectedServiceGraphSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).AffectedServiceGraphSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/11-affected-service-graph')).AffectedServiceGraphSlideVisual,
 }))
 const AiArchitectureReviewSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).AiArchitectureReviewSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/28-ai-architecture-review')).AiArchitectureReviewSlideVisual,
 }))
 const ArchitectureToPipelineMappingSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ArchitectureToPipelineMappingSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/09-architecture-to-pipeline-mapping')).ArchitectureToPipelineMappingSlideVisual,
 }))
 const ArtifactToRuntimeMapSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ArtifactToRuntimeMapSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/13-artifact-to-runtime-map')).ArtifactToRuntimeMapSlideVisual,
 }))
 const CoupledValidationModelSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).CoupledValidationModelSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/10-coupled-validation-model')).CoupledValidationModelSlideVisual,
 }))
 const OperatingModelComparisonSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).OperatingModelComparisonSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/12-operating-model-comparison')).OperatingModelComparisonSlideVisual,
 }))
 const PermissionLanesSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).PermissionLanesSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/14-permission-lanes')).PermissionLanesSlideVisual,
 }))
 const QualitativeChecklistSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).QualitativeChecklistSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/18-qualitative-checklist')).QualitativeChecklistSlideVisual,
 }))
 const ResponsibilityAuthorityMapSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).ResponsibilityAuthorityMapSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/30-responsibility-authority-map')).ResponsibilityAuthorityMapSlideVisual,
 }))
 const SystemFitFrameSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SystemFitFrameSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/19-system-fit-frame')).SystemFitFrameSlideVisual,
 }))
 const SystemSkillMapSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SystemSkillMapSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/08-system-skill-map')).SystemSkillMapSlideVisual,
 }))
 const AiAssistedChangeFunnelSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).AiAssistedChangeFunnelSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/03-ai-assisted-change-funnel')).AiAssistedChangeFunnelSlideVisual,
 }))
 const OptimizationAssistantPanelSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).OptimizationAssistantPanelSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/29-optimization-assistant-panel')).OptimizationAssistantPanelSlideVisual,
 }))
 const SpeedTrustBalanceSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).SpeedTrustBalanceSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/15-speed-trust-balance')).SpeedTrustBalanceSlideVisual,
 }))
 const TradeoffFrameSlideVisual = lazy(async () => ({
-  default: (await import('@/features/lab/slides/cicd')).TradeoffFrameSlideVisual,
+  default: (await import('@/features/lab/slides/cicd/20-tradeoff-frame')).TradeoffFrameSlideVisual,
 }))
 
 const visualSlotComponents: Partial<Record<LabVisualSlotKey, VisualComponent>> = {

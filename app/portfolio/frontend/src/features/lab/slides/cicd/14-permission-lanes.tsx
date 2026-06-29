@@ -96,8 +96,16 @@ export function PermissionLanesSlideVisual(props: CicdSlideVisualProps) {
                   <th className="border-b border-r border-border px-2 py-2 text-left text-[11px] font-medium">{capability}</th>
                   {permissionStages.map((stage) => {
                     const allowed = leastPrivilegeAllows[capability]?.includes(stage)
-                    const unsafe = mode === 'unsafe' && (capability === 'Access secrets' || capability === 'Write production' || capability === 'Apply infra')
-                    const state = mode === 'least' ? (allowed ? 'allowed' : 'blocked') : unsafe ? 'unsafe' : 'allowed'
+                    const dangerous =
+                      capability === 'Access secrets' ||
+                      capability === 'Write production' ||
+                      capability === 'Apply infra'
+                    const state =
+                      mode === 'unsafe' && dangerous && !allowed
+                        ? 'unsafe'
+                        : allowed
+                          ? 'allowed'
+                          : 'blocked'
                     return (
                       <td key={`${capability}-${stage}`} className="border-b border-r border-border px-1 py-2 last:border-r-0">
                         <span

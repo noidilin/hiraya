@@ -4,8 +4,6 @@ import { createGuideClient, type GuideCitation } from '@/lib/guide-api'
 
 import type { ChatMessage } from '../types'
 
-const guideClient = createGuideClient()
-
 const initialGuideMessage: ChatMessage = {
   id: 'welcome',
   role: 'guide',
@@ -18,6 +16,7 @@ export function useGuideChat() {
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState<string>()
   const [isSending, setIsSending] = useState(false)
+  const guideClient = useMemo(() => createGuideClient(), [])
 
   const canSend = input.trim().length > 0 && !isSending
 

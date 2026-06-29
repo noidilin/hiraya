@@ -10,6 +10,34 @@ const THEMES = { light: "", dark: ".dark" } as const
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const
 type TooltipNameType = number | string
 
+function escapeCssIdentifier(value: string) {
+  const css = (globalThis as typeof globalThis & { CSS?: { escape?: (value: string) => string } }).CSS
+  const escaped = css?.escape?.(value)
+
+  if (escaped) return escaped
+
+  return value.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character.codePointAt(0)?.toString(16)} `)
+}
+
+function escapeCssString(value: string) {
+  return value.replace(/[\\"\n\r\f]/g, (character) => {
+    switch (character) {
+      case '\\':
+        return '\\\\'
+      case '"':
+        return '\\"'
+      case '\n':
+        return '\\a '
+      case '\r':
+        return '\\d '
+      case '\f':
+        return '\\c '
+      default:
+        return character
+    }
+  })
+}
+
 export type ChartConfig = Record<
   string,
   {
@@ -88,28 +116,24 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+  const cssText = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => `
+${prefix} [data-chart="${escapeCssString(id)}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    return color ? `  --color-${escapeCssIdentifier(key)}: ${color};` : null
   })
   .join("\n")}
 }
 `
-          )
-          .join("\n"),
-      }}
-    />
-  )
+    )
+    .join("\n")
+
+  return <style>{cssText}</style>
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip

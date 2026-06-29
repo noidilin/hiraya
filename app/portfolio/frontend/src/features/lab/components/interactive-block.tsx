@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,6 @@ export function InteractiveBlock({
   contentClassName,
   title,
 }: InteractiveBlockProps) {
-  const [glow, setGlow] = useState({ x: 50, y: 50 })
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== 'undefined' &&
@@ -30,8 +29,8 @@ export function InteractiveBlock({
     prefersReducedMotion
       ? undefined
       : ({
-          '--lab-glow-x': `${glow.x}%`,
-          '--lab-glow-y': `${glow.y}%`,
+          '--lab-glow-x': '50%',
+          '--lab-glow-y': '50%',
         } as CSSProperties)
 
   return (
@@ -41,10 +40,14 @@ export function InteractiveBlock({
       onPointerMove={(event) => {
         if (prefersReducedMotion) return
         const rect = event.currentTarget.getBoundingClientRect()
-        setGlow({
-          x: ((event.clientX - rect.left) / rect.width) * 100,
-          y: ((event.clientY - rect.top) / rect.height) * 100,
-        })
+        event.currentTarget.style.setProperty(
+          '--lab-glow-x',
+          `${((event.clientX - rect.left) / rect.width) * 100}%`,
+        )
+        event.currentTarget.style.setProperty(
+          '--lab-glow-y',
+          `${((event.clientY - rect.top) / rect.height) * 100}%`,
+        )
       }}
       className={cn(
         'relative overflow-hidden rounded-lg border-border/90 bg-card/90 shadow-none backdrop-blur-md',
