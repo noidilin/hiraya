@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-auth:af9a7a386b96e2a77b169d031e61e246cc5e16bb
+          image: 549475122024.dkr.ecr.ap-northeast-1.amazonaws.com/hiraya-auth:adfc4804393e7f4c63c5045e75f7821b1bb3721d
           ports:
             - containerPort: 3002
           env:
