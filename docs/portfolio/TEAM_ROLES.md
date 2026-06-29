@@ -53,9 +53,9 @@ Different changes should receive different review attention:
 
 ## Operator boundary
 
-An Operator is different from a Portfolio Visitor. A Portfolio Visitor can read about the project and ask Hiraya Guide for curated explanations. An Operator is allowed to inspect operational signals and use operational tooling when those capabilities exist.
+An Operator is different from a general user. A general user can read about the project and ask Hiraya Guide for curated explanations. An Operator is allowed to inspect operational signals and use operational tooling when those capabilities exist.
 
-This distinction matters because Hiraya Guide should not imply that public visitors have live operational access. It should explain the target operating model without exposing secrets, raw operational data, or hidden admin capabilities.
+This distinction matters because Hiraya Guide should not imply that public users have live operational access. It should explain the target operating model without exposing secrets, raw operational data, or hidden admin capabilities.
 
 ## Current implementation posture
 
@@ -65,4 +65,4 @@ The human side of the target model is less complete in code. IAM Identity Center
 
 ## Why the model matters
 
-The target team model helps Portfolio Visitors understand that Hiraya is not only a collection of services. It is a delivery system with explicit responsibility boundaries: developers change the app, automation validates and promotes artifacts, infrastructure roles mutate cloud foundations, Argo CD reconciles runtime state, and operators inspect the platform when needed.
+The target team model helps users understand that Hiraya is not only a collection of services. It is a delivery system with explicit responsibility boundaries: developers change the app, automation validates and promotes artifacts, infrastructure roles mutate cloud foundations, Argo CD reconciles runtime state, and operators inspect the platform when needed.

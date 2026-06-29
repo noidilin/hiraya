@@ -27,7 +27,7 @@ Several controls are visible in the repository and delivery path:
 
 The image delivery path builds service images from catalog-defined Docker inputs, tags images with the commit SHA, and promotes them by updating GitOps manifests. That means a deployed image can be traced back to a source commit and a manifest promotion change.
 
-Trivy scanning is present in the image workflow and reports high and critical vulnerabilities in advisory mode. This is useful evidence for a portfolio-stage pipeline, while leaving room for a later policy decision to make scan findings blocking.
+Trivy scanning is present in the image workflow and reports high and critical vulnerabilities in advisory mode. This is useful evidence for a dev-stage pipeline, while leaving room for a later policy decision to make scan findings blocking.
 
 ## Infrastructure permission boundary
 
@@ -37,15 +37,15 @@ This division reduces the need for one automation identity to own every part of 
 
 ## Public access risk posture
 
-The public Storefront route is part of the demo. Argo CD and Grafana may also be exposed as dev admin surfaces with generated credentials. This is acceptable for a portfolio-scale dev environment but is not presented as production hardening.
+The public Storefront route is part of the dev demonstration. Argo CD and Grafana may also be exposed as dev admin surfaces with generated credentials. This is acceptable for a cost-conscious dev environment but is not presented as production hardening.
 
 Production-grade hardening would add stronger admin access controls such as SSO, IP allowlisting or private access, detailed auditing, and tighter Kubernetes RBAC. The current project documents those gaps instead of implying they are solved.
 
 ## Data and secrets boundary
 
-The curated documentation and Hiraya Guide boundary intentionally avoid exposing raw operational detail. Portfolio Visitors receive reviewed explanations, not live AWS access, raw report JSON, prompts, request headers, retrieved chunks, or secrets.
+The curated documentation and Hiraya Guide boundary intentionally avoid exposing raw operational detail. Users receive reviewed explanations, not live AWS access, raw report JSON, prompts, request headers, retrieved chunks, or secrets.
 
-Storefront demo credentials are seeded for local and dev validation. The seed data is suitable for a portfolio demo and should not be confused with production identity management.
+Storefront demo credentials are seeded for local and dev validation. The seed data is suitable for a dev demonstration and should not be confused with production identity management.
 
 ## Accepted risks
 
@@ -57,7 +57,7 @@ Hiraya accepts several dev-environment risks to keep the platform understandable
 - Some checks provide visibility before becoming hard blocking gates.
 - Human AWS Identity Center assignments and fine-grained human Kubernetes RBAC are not fully codified in the repository.
 
-These are not hidden defects; they are trade-offs appropriate to a portfolio-scale dev platform.
+These are not hidden defects; they are trade-offs appropriate to a cost-conscious dev platform.
 
 ## What the project does not claim
 

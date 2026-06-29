@@ -11,7 +11,7 @@ The Hiraya EKS Project is a layered dev platform for delivering the Vintage Stor
 
 ## Architecture goals
 
-The architecture optimizes for four portfolio goals:
+The architecture optimizes for four microservice-platform goals:
 
 1. **Clear delivery path**: every major step from source code to running pods is visible in GitHub Actions, Terraform, GitOps, or Kubernetes manifests.
 2. **Disposable runtime**: expensive dev runtime layers can be rebuilt instead of manually repaired.
@@ -50,7 +50,7 @@ This split keeps Terraform focused on cloud foundations and lets Argo CD own lon
 The public Storefront path is intentionally same-origin. A browser does not call backend services directly.
 
 ```text
-Portfolio Visitor
+User Browser
   → Route 53
   → AWS Application Load Balancer
   → Gateway API shared edge Gateway
@@ -95,7 +95,7 @@ Checkout and order history:
 Browser → /api/orders/* → frontend proxy → gateway → orders → PostgreSQL
 ```
 
-These flows keep the frontend simple for Portfolio Visitors while still demonstrating private service-to-service communication inside Kubernetes.
+These flows keep the frontend simple for users while still demonstrating private service-to-service communication inside Kubernetes.
 
 ## Local development architecture
 
@@ -111,7 +111,7 @@ Prometheus and Grafana form the current observability surface. GitOps installs m
 
 The dev platform is designed to be destroyed and recreated cleanly. Routine shutdown destroys Cluster Bootstrap and Platform Core while keeping Project Bootstrap. That preserves durable state needed for later deployments while removing the costly EKS runtime.
 
-This rebuild model is a deliberate design choice: for a portfolio-scale dev environment, reproducibility and cost control matter more than preserving every runtime object in place.
+This rebuild model is a deliberate design choice: for a cost-conscious dev environment, reproducibility and cost control matter more than preserving every runtime object in place.
 
 ## Production hardening not claimed
 

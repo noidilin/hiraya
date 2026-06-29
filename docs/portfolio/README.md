@@ -1,6 +1,6 @@
 # Curated Project Knowledge
 
-Curated Project Knowledge is the reviewed Markdown source for Hiraya Guide. These files are written for Portfolio Visitors and now primarily explain the **Hiraya EKS Project**: the Vintage Storefront workload, its AWS EKS platform, CI/CD path, GitOps delivery model, security gates, and operating assumptions.
+Curated Project Knowledge is the reviewed Markdown source for Hiraya Guide. These files explain only the **Hiraya microservice project**: the Vintage Storefront workload, its AWS EKS platform, CI/CD path, GitOps delivery model, security gates, and operating assumptions.
 
 The deploy workflow stages exactly these six files, syncs them to the Bedrock Knowledge Base S3 knowledge prefix, and excludes this README.
 
