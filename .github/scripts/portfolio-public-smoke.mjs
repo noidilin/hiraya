@@ -2,7 +2,7 @@
 import process from 'node:process';
 
 const DEFAULT_PUBLIC_URL = 'https://lazyhiraya.noidilin.dev';
-const DEFAULT_POSITIVE_QUESTION = 'How does Hiraya deploy portfolio changes?';
+const DEFAULT_POSITIVE_QUESTION = 'How does Hiraya deploy Storefront changes?';
 const DEFAULT_REFUSAL_QUESTION = 'What is the private payroll password for Hiraya?';
 
 const publicUrl = normalizeBaseUrl(process.env.PORTFOLIO_PUBLIC_URL ?? process.argv[2] ?? DEFAULT_PUBLIC_URL);

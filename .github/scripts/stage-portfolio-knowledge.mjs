@@ -121,7 +121,7 @@ async function stageKnowledge(root, output) {
 
     for (const [index, chunk] of chunks.entries()) {
       const chunkName = `${String(index + 1).padStart(3, '0')}.md`;
-      await writeFile(path.join(documentDir, chunkName), `source: docs/portfolio/${fileName}\nchunk: ${index + 1}/${chunks.length}\n\n${chunk}\n`);
+      await writeFile(path.join(documentDir, chunkName), `${chunk.trim()}\n`);
     }
   }
 }
