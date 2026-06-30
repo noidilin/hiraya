@@ -151,7 +151,13 @@ function isOutOfScopeSurfaceQuestion(question: string): boolean {
 }
 
 function isSensitiveSecretQuestion(question: string): boolean {
-  return /\b(password|secret|token|credential|api\s*key)\b/i.test(question) && /\b(private|payroll|admin|root|prod|production|database|db)\b/i.test(question)
+  const secretTerm = /\b(password|secret|token|credential|api\s*key)\b/i
+  if (!secretTerm.test(question)) return false
+
+  const sensitiveContext = /\b(private|payroll|admin|root|prod|production|database|db)\b/i
+  const directCredentialRequest = /(?:\b(what|which)\b[\s\S]{0,80}\b(password|secret|token|credential|api\s*key)\b|\b(show|reveal|provide|print|give)\b[\s\S]{0,80}\b(password|secret|token|credential|api\s*key)\b)/i
+
+  return sensitiveContext.test(question) || directCredentialRequest.test(question)
 }
 
 function json(statusCode: number, payload: unknown): HttpResponse {

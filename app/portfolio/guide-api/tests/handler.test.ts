@@ -105,6 +105,8 @@ describe('local Hiraya Guide API contract', () => {
   it('returns refused and not_ready statuses as application-level 200 outcomes', async () => {
     const refused = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'What is the weather?' }) })
     const secret = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'What is the private payroll password for Hiraya?' }) })
+    const token = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'What GitHub token does Hiraya use?' }) })
+    const apiKey = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'Which API key is configured?' }) })
     const notReady = await handleRequest({ method: 'POST', path: '/api/guide/chat', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: 'simulate not ready ingestion' }) })
 
     assert.equal(refused.statusCode, 200)
@@ -112,6 +114,12 @@ describe('local Hiraya Guide API contract', () => {
     assert.equal(secret.statusCode, 200)
     assert.equal(parse(secret.body).status, 'refused')
     assert.doesNotMatch(String(parse(secret.body).answer), /payroll password/i)
+    assert.equal(token.statusCode, 200)
+    assert.equal(parse(token.body).status, 'refused')
+    assert.doesNotMatch(String(parse(token.body).answer), /github token/i)
+    assert.equal(apiKey.statusCode, 200)
+    assert.equal(parse(apiKey.body).status, 'refused')
+    assert.doesNotMatch(String(parse(apiKey.body).answer), /api key/i)
     assert.equal(notReady.statusCode, 200)
     assert.equal(parse(notReady.body).status, 'not_ready')
   })
