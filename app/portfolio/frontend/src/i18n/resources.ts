@@ -45,6 +45,51 @@ export const resources = {
           starterScope: 'What is intentionally out of scope for the guide?',
         },
       },
+      hiraya: {
+        hero: {
+          evidenceSlots: 'Evidence slots',
+        },
+        proofPoints: {
+          eyebrow: 'Proof points',
+          title: 'Claims are connected to implementation evidence',
+          description:
+            'Each card frames a portfolio claim as something that can be inspected through the evidence checklist or future media previews.',
+        },
+        mediaSlots: {
+          eyebrow: 'Evidence media',
+          title: 'Planned media slots render as safe placeholders',
+          description:
+            'Screenshots, diagrams, and videos are progressive enhancements. Until curated assets exist, the route shows explicit placeholders instead of broken embeds.',
+          status: {
+            planned: 'Planned',
+            placeholder: 'Placeholder',
+            ready: 'Ready',
+          },
+          type: {
+            introVideo: 'intro video',
+            screenshotHover: 'screenshot hover',
+            diagramFrame: 'diagram frame',
+          },
+          reservedArchitectureFrame: 'Reserved architecture frame',
+          curatedMediaSlot: 'Curated media slot',
+          missingMediaDescription:
+            'Assets can be attached later without changing the content contract. Missing media is intentionally not loaded.',
+        },
+        flow: {
+          eyebrow: 'Delivery flow',
+          title: 'Reviewed change path from pull request to rollback',
+          description:
+            'The SDLC route renders each control path as a separate card so validation, artifact publishing, GitOps sync, infrastructure delivery, and rollback remain visibly distinct.',
+        },
+        pillars: {
+          eyebrow: 'Six pillars',
+          title: 'Well-Architected reading of implementation trade-offs',
+          description:
+            'The route connects AWS Well-Architected language to current implementation evidence, explicit dev trade-offs, and future hardening work.',
+          highlights: 'Highlights',
+          futureHardening: 'Future hardening',
+        },
+      },
       stack: {
         title: 'Frontend tooling',
         items: [
@@ -117,6 +162,46 @@ export const resources = {
           starterInfrastructure: 'Hiraya 如何部署 infrastructure？',
           starterSecurity: '目前實作哪些 security gates？',
           starterScope: 'Guide 刻意不處理哪些範圍？',
+        },
+      },
+      hiraya: {
+        hero: {
+          evidenceSlots: '證據素材槽',
+        },
+        proofPoints: {
+          eyebrow: '證據重點',
+          title: '主張都連到可檢視的實作證據',
+          description: '每張卡片都把 portfolio 主張整理成可透過證據清單或未來媒體預覽檢查的內容。',
+        },
+        mediaSlots: {
+          eyebrow: '證據媒體',
+          title: '規劃中的媒體槽會以安全 placeholder 呈現',
+          description: '截圖、架構圖與影片是漸進增強項目。在整理好的素材存在前，頁面會顯示明確 placeholder，而不是載入破損 embed。',
+          status: {
+            planned: '規劃中',
+            placeholder: 'Placeholder',
+            ready: '已就緒',
+          },
+          type: {
+            introVideo: '導覽影片',
+            screenshotHover: '截圖 hover',
+            diagramFrame: '架構圖框架',
+          },
+          reservedArchitectureFrame: '預留架構圖框架',
+          curatedMediaSlot: '策展媒體槽',
+          missingMediaDescription: '素材可在之後接上，不需要改動內容契約。缺少的媒體會刻意不載入。',
+        },
+        flow: {
+          eyebrow: '交付流程',
+          title: '從 pull request 到 rollback 的審查式變更路徑',
+          description: 'SDLC 路線會將每個控制路徑拆成獨立卡片，讓 validation、artifact publishing、GitOps sync、infrastructure delivery 與 rollback 保持清楚可見。',
+        },
+        pillars: {
+          eyebrow: '六大支柱',
+          title: '以 Well-Architected 閱讀實作取捨',
+          description: '此路線將 AWS Well-Architected 語言連到目前的實作證據、明確的 dev trade-off 與未來 hardening 工作。',
+          highlights: '重點',
+          futureHardening: '未來強化',
         },
       },
       stack: {

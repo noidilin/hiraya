@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 
 import i18n from './index'
 import {
-  appLanguageStorageKey,
   appLanguages,
   defaultAppLocale,
   normalizeAppLocale,
+  writeStoredAppLocale,
   type AppLocale,
 } from './locales'
 
@@ -19,7 +19,7 @@ export function useAppLocale(): {
   const locale = normalizeAppLocale(reactI18n.language) ?? defaultAppLocale
 
   const setLocale = useCallback((nextLocale: AppLocale) => {
-    localStorage.setItem(appLanguageStorageKey, nextLocale)
+    writeStoredAppLocale(nextLocale)
     void i18n.changeLanguage(nextLocale)
   }, [])
 

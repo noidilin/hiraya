@@ -1,4 +1,5 @@
 import { BadgeCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { HirayaProofPoint } from '@/content/hiraya/types'
 
@@ -32,12 +33,14 @@ function HirayaProofPointCard({ proofPoint }: { proofPoint: HirayaProofPoint }) 
 }
 
 export function HirayaProofPointGrid({ proofPoints }: { proofPoints: readonly HirayaProofPoint[] }) {
+  const { t } = useTranslation()
+
   return (
     <HirayaSectionFrame>
       <HirayaSectionHeader
-        eyebrow="Proof points"
-        title="Claims are connected to implementation evidence"
-        description="Each card frames a portfolio claim as something that can be inspected through the evidence checklist or future media previews."
+        eyebrow={t('hiraya.proofPoints.eyebrow')}
+        title={t('hiraya.proofPoints.title')}
+        description={t('hiraya.proofPoints.description')}
       />
       <div className="grid gap-4 p-5 lg:grid-cols-3">
         {proofPoints.map((proofPoint) => (

@@ -1,4 +1,5 @@
 import { Activity, Boxes, GitBranch, ShieldCheck, Terminal, Zap, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { HirayaFlowStep } from '@/content/hiraya/types'
 
@@ -37,12 +38,14 @@ function HirayaFlowStepCard({ step, index }: { step: HirayaFlowStep; index: numb
 }
 
 export function HirayaFlow({ steps }: { steps: readonly HirayaFlowStep[] }) {
+  const { t } = useTranslation()
+
   return (
     <HirayaSectionFrame>
       <HirayaSectionHeader
-        eyebrow="Delivery flow"
-        title="Reviewed change path from pull request to rollback"
-        description="The SDLC route renders each control path as a separate card so validation, artifact publishing, GitOps sync, infrastructure delivery, and rollback remain visibly distinct."
+        eyebrow={t('hiraya.flow.eyebrow')}
+        title={t('hiraya.flow.title')}
+        description={t('hiraya.flow.description')}
       />
       <div className="grid gap-4 p-5 lg:grid-cols-5">
         {steps.map((step, index) => (

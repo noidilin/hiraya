@@ -1,10 +1,13 @@
 import type { LucideIcon } from 'lucide-react'
 import { Terminal } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import type { HirayaPageContent } from '@/content/hiraya/types'
 
 export function HirayaHero({ page, icon: Icon }: { page: HirayaPageContent; icon: LucideIcon }) {
+  const { t } = useTranslation()
+
   return (
     <section className="border-l-4 border-primary py-4 pl-6 sm:pl-8">
       <div className="flex flex-wrap items-center gap-2">
@@ -38,7 +41,7 @@ export function HirayaHero({ page, icon: Icon }: { page: HirayaPageContent; icon
         <div className="flex shrink-0 flex-wrap gap-2">
           <span className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">
             <Terminal className="size-4" aria-hidden="true" />
-            Evidence slots
+            {t('hiraya.hero.evidenceSlots')}
           </span>
           <span className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card/75 px-4 text-sm font-medium text-foreground">
             <Icon className="size-4" aria-hidden="true" />

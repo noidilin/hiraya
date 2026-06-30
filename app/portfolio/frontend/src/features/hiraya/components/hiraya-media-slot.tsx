@@ -1,31 +1,34 @@
 import { CheckCircle2, Image, MonitorPlay, Network, TimerReset, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { HirayaMediaSlot } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
 
 type MediaSlotTone = {
-  label: string
   className: string
   icon: LucideIcon
 }
 
 const mediaSlotStatusTone: Record<HirayaMediaSlot['status'], MediaSlotTone> = {
   planned: {
-    label: 'Planned',
     className: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
     icon: TimerReset,
   },
   placeholder: {
-    label: 'Placeholder',
     className: 'border-primary/30 bg-primary/10 text-primary',
     icon: Network,
   },
   ready: {
-    label: 'Ready',
     className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
     icon: CheckCircle2,
   },
+}
+
+const mediaSlotTypeLabels: Record<HirayaMediaSlot['type'], string> = {
+  'intro-video': 'hiraya.mediaSlots.type.introVideo',
+  'screenshot-hover': 'hiraya.mediaSlots.type.screenshotHover',
+  'diagram-frame': 'hiraya.mediaSlots.type.diagramFrame',
 }
 
 const mediaSlotTypeIcons: Record<HirayaMediaSlot['type'], LucideIcon> = {
@@ -35,6 +38,7 @@ const mediaSlotTypeIcons: Record<HirayaMediaSlot['type'], LucideIcon> = {
 }
 
 function HirayaMediaSlotCard({ slot }: { slot: HirayaMediaSlot }) {
+  const { t } = useTranslation()
   const statusTone = mediaSlotStatusTone[slot.status]
   const StatusIcon = statusTone.icon
   const TypeIcon = mediaSlotTypeIcons[slot.type]
@@ -48,9 +52,9 @@ function HirayaMediaSlotCard({ slot }: { slot: HirayaMediaSlot }) {
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal ${statusTone.className}`}
           >
             <StatusIcon className="size-3" aria-hidden="true" />
-            {statusTone.label}
+            {t(`hiraya.mediaSlots.status.${slot.status}`)}
           </span>
-          <HirayaTag>{slot.type.replaceAll('-', ' ')}</HirayaTag>
+          <HirayaTag>{t(mediaSlotTypeLabels[slot.type])}</HirayaTag>
         </div>
         <h3 className="text-lg font-semibold tracking-normal text-foreground">{slot.title}</h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">{slot.description}</p>
@@ -74,10 +78,10 @@ function HirayaMediaSlotCard({ slot }: { slot: HirayaMediaSlot }) {
             <TypeIcon className="size-7" aria-hidden="true" />
           </span>
           <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-            {isDiagramFrame ? 'Reserved architecture frame' : 'Curated media slot'}
+            {isDiagramFrame ? t('hiraya.mediaSlots.reservedArchitectureFrame') : t('hiraya.mediaSlots.curatedMediaSlot')}
           </p>
           <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-            Assets can be attached later without changing the content contract. Missing media is intentionally not loaded.
+            {t('hiraya.mediaSlots.missingMediaDescription')}
           </p>
         </div>
       </div>
@@ -86,12 +90,14 @@ function HirayaMediaSlotCard({ slot }: { slot: HirayaMediaSlot }) {
 }
 
 export function HirayaMediaSlotGrid({ slots }: { slots: readonly HirayaMediaSlot[] }) {
+  const { t } = useTranslation()
+
   return (
     <HirayaSectionFrame>
       <HirayaSectionHeader
-        eyebrow="Evidence media"
-        title="Planned media slots render as safe placeholders"
-        description="Screenshots, diagrams, and videos are progressive enhancements. Until curated assets exist, the route shows explicit placeholders instead of broken embeds."
+        eyebrow={t('hiraya.mediaSlots.eyebrow')}
+        title={t('hiraya.mediaSlots.title')}
+        description={t('hiraya.mediaSlots.description')}
       />
       <div className="grid gap-4 p-5">
         {slots.map((slot) => (

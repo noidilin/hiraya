@@ -1,4 +1,4 @@
-export const hirayaSourceDoc = 'docs/presentation-en.md'
+export const hirayaSourceDoc = 'app/portfolio/frontend/docs/presentation-en.md'
 
 export const hirayaRouteIds = ['brief', 'arch', 'cost', 'sdlc', 'waf'] as const
 
@@ -90,4 +90,3 @@ export type HirayaPageContent = {
   flow?: readonly HirayaFlowStep[]
   pillars?: readonly HirayaWellArchitectedPillar[]
 }
-

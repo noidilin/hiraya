@@ -1,6 +1,6 @@
 # Hiraya Portfolio
 
-Durable public portfolio app described in `docs/plan/portfolio-bedrock-KB.md`. The code is deploy-ready; the AWS Portfolio Stack still needs first approved apply.
+Durable public portfolio app described in `docs/portfolio/PROJECT_BRIEF.md` and `docs/portfolio/ARCHITECTURE.md`. The code is deploy-ready; the AWS Portfolio Stack still needs first approved apply.
 
 ## Frontend
 
