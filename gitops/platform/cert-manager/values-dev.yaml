@@ -1,0 +1,16 @@
+crds:
+  enabled: true
+  keep: true
+
+# The chart's startup API check is useful with Helm, but under Argo CD it is a
+# hook job that can make app-of-apps bootstrap ordering noisier. Argo will
+# still health-check the controller, cainjector, and webhook deployments.
+startupapicheck:
+  enabled: false
+
+prometheus:
+  enabled: true
+  # ServiceMonitor CRDs are installed later by kube-prometheus-stack; keep the
+  # cert-manager bootstrap independent of monitoring CRDs.
+  servicemonitor:
+    enabled: false

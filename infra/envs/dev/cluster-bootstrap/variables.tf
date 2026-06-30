@@ -78,6 +78,7 @@ variable "platform_project_source_repos" {
     "https://aws.github.io/eks-charts",
     "https://kubernetes-sigs.github.io/external-dns/",
     "https://charts.external-secrets.io",
+    "https://charts.jetstack.io",
     "https://prometheus-community.github.io/helm-charts",
   ]
 }

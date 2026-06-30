@@ -23,7 +23,29 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
+  ignoreDifferences:
+    # cert-manager cainjector writes caBundle into webhook configurations at
+    # runtime. Keep Argo from removing the injected trust bundle on self-heal.
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: aws-load-balancer-webhook
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: aws-load-balancer-webhook
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
