@@ -1,10 +1,13 @@
 import { ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { HirayaWellArchitectedPillar } from '@/content/hiraya/types'
 
 import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
 
 function HirayaPillarCard({ pillar }: { pillar: HirayaWellArchitectedPillar }) {
+  const { t } = useTranslation()
+
   return (
     <article className="grid gap-5 border border-border bg-background/70 p-5 transition-colors hover:border-primary/60">
       <div className="flex items-start gap-3">
@@ -19,7 +22,7 @@ function HirayaPillarCard({ pillar }: { pillar: HirayaWellArchitectedPillar }) {
       </div>
 
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">Highlights</p>
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{t('hiraya.pillars.highlights')}</p>
         <ul className="mt-3 grid gap-2">
           {pillar.highlights.map((highlight) => (
             <li key={highlight} className="text-sm leading-6 text-muted-foreground">
@@ -33,7 +36,7 @@ function HirayaPillarCard({ pillar }: { pillar: HirayaWellArchitectedPillar }) {
       {pillar.futureHardening ? (
         <div className="border border-dashed border-border bg-card/55 p-4">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-            Future hardening
+            {t('hiraya.pillars.futureHardening')}
           </p>
           <ul className="mt-2 grid gap-2">
             {pillar.futureHardening.map((item) => (
@@ -55,12 +58,14 @@ function HirayaPillarCard({ pillar }: { pillar: HirayaWellArchitectedPillar }) {
 }
 
 export function HirayaPillarGrid({ pillars }: { pillars: readonly HirayaWellArchitectedPillar[] }) {
+  const { t } = useTranslation()
+
   return (
     <HirayaSectionFrame>
       <HirayaSectionHeader
-        eyebrow="Six pillars"
-        title="Well-Architected reading of implementation trade-offs"
-        description="The route connects AWS Well-Architected language to current implementation evidence, explicit dev trade-offs, and future hardening work."
+        eyebrow={t('hiraya.pillars.eyebrow')}
+        title={t('hiraya.pillars.title')}
+        description={t('hiraya.pillars.description')}
       />
       <div className="grid gap-4 p-5 xl:grid-cols-2">
         {pillars.map((pillar) => (

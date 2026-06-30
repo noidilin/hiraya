@@ -671,4 +671,3 @@ export const hirayaPagesEn = [
     ],
   },
 ] as const satisfies readonly HirayaPageContent[]
-

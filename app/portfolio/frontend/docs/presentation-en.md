@@ -38,11 +38,11 @@ Hiraya is deployed in the AWS `ap-northeast-1` region. A dedicated VPC hosts EKS
 
 The design aims to achieve the following:
 
-1. Application services are not directly exposed to the public internet.  
+1. Application services are not directly exposed to the public internet.
    The frontend, gateway, and backend services all remain Kubernetes `ClusterIP` services. External traffic is centralized through the shared ALB and Gateway API, avoiding a separate LoadBalancer for every service.
-2. Public edge and private workloads are separated.  
+2. Public edge and private workloads are separated.
    Public subnets provide network placement for the ALB and NAT Gateway. EKS nodes and pods run in private subnets, reducing the risk of direct workload exposure.
-3. DNS and TLS are automated.  
+3. DNS and TLS are automated.
    The ACM certificate is created through Route 53 DNS validation. ExternalDNS reads hostnames from Gateway API HTTPRoutes and manages public DNS records, connecting GitOps routes with DNS automation.
 
 The platform currently exposes the main public entry points through AWS Load Balancer Controller, Gateway API HTTPRoute, ExternalDNS, and Route 53:

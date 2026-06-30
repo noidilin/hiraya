@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { detectBrowserLocale, normalizeAppLocale, resolveInitialLocale } from './locales'
+import { detectBrowserLocale, normalizeAppLocale, resolveInitialLocale, writeStoredAppLocale } from './locales'
 
 describe('i18n locale utilities', () => {
   it('normalizes only canonical locales', () => {
@@ -24,5 +24,21 @@ describe('i18n locale utilities', () => {
   it('falls back from invalid stored values to browser detection then English', () => {
     expect(resolveInitialLocale({ stored: `zh${'TW'}`, browserLanguages: ['zh-Hant'] })).toBe('zh-TW')
     expect(resolveInitialLocale({ stored: 'fr', browserLanguages: ['zh-CN'] })).toBe('en')
+  })
+
+  it('keeps locale resolution and writes safe when storage access is blocked', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('blocked')
+      },
+      setItem: () => {
+        throw new Error('blocked')
+      },
+    })
+
+    expect(resolveInitialLocale({ browserLanguages: ['zh-TW'] })).toBe('zh-TW')
+    expect(() => writeStoredAppLocale('en')).not.toThrow()
+
+    vi.unstubAllGlobals()
   })
 })

@@ -29,12 +29,34 @@ export function detectBrowserLocale(languages?: readonly string[]): AppLocale {
   return defaultAppLocale
 }
 
+export function readStoredAppLocale(): string | undefined {
+  if (typeof localStorage === 'undefined') return undefined
+
+  try {
+    return localStorage.getItem(appLanguageStorageKey) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function writeStoredAppLocale(locale: AppLocale): void {
+  if (typeof localStorage === 'undefined') return
+
+  try {
+    localStorage.setItem(appLanguageStorageKey, locale)
+  } catch {
+    // Keep locale switching functional in browsers that block storage access.
+  }
+}
+
 export function resolveInitialLocale(options?: {
   stored?: string | null
   browserLanguages?: readonly string[]
 }): AppLocale {
-  const stored = options?.stored ?? (typeof localStorage === 'undefined' ? undefined : localStorage.getItem(appLanguageStorageKey))
-  return normalizeAppLocale(stored) ?? detectBrowserLocale(options?.browserLanguages ?? (typeof navigator === 'undefined' ? undefined : navigator.languages))
+  const stored = options?.stored ?? readStoredAppLocale()
+  const browserLanguages = options?.browserLanguages ?? (typeof navigator === 'undefined' ? undefined : navigator.languages)
+
+  return normalizeAppLocale(stored) ?? detectBrowserLocale(browserLanguages)
 }
 
 export function getHtmlLang(locale: AppLocale): string {
