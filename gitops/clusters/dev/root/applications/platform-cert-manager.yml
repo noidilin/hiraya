@@ -1,31 +1,31 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-monitoring
+  name: platform-cert-manager
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/sync-wave: "-25"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: hiraya-platform
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      chart: kube-prometheus-stack
-      targetRevision: 56.21.0
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.20.3
       helm:
-        releaseName: kube-prometheus-stack
+        releaseName: cert-manager
         valueFiles:
-          - $values/gitops/platform/monitoring/values-dev.yaml
+          - $values/gitops/platform/cert-manager/values-dev.yaml
     - repoURL: https://github.com/noidilin/hiraya.git
       targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: cert-manager
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
     retry:
       limit: 5

@@ -3,6 +3,10 @@ region: ap-northeast-1
 vpcTags:
   kubernetes.io/cluster/devops-hiraya-dev-eks: shared
 
+# Delegate webhook serving-certificate lifecycle and caBundle injection to
+# cert-manager instead of relying on Helm's render-time genCA/genSignedCert.
+enableCertManager: true
+
 serviceAccount:
   create: true
   name: aws-load-balancer-controller
@@ -11,3 +15,8 @@ serviceAccount:
 
 extraArgs:
   feature-gates: NLBGatewayAPI=false,ALBGatewayAPI=true
+
+# This platform uses AWS LBC through Gateway API/ALB. Disable the broad Service
+# mutator so ordinary Service creation, such as monitoring ClusterIP Services,
+# is not coupled to this optional defaulting webhook.
+enableServiceMutatorWebhook: false

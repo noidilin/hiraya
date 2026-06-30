@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - applications/platform-namespaces.yml
+  - applications/platform-cert-manager.yml
   - applications/platform-gateway-api-crds.yml
   - applications/platform-storage.yml
   - applications/platform-external-secrets.yml
