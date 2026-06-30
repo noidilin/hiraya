@@ -177,24 +177,30 @@ describe('Bedrock Knowledge Base adapter', () => {
     assert.doesNotMatch(response.answer, /portfolio/i)
   })
 
-  it('refuses private credential questions without calling Bedrock', async () => {
-    let called = false
-    const response = await answerWithBedrock(
-      { message: 'What is the private payroll password for Hiraya?' },
-      {
-        env,
-        citationManifest: manifest,
-        retrieveAndGenerate: async () => {
-          called = true
-          return answeredOutput()
+  it('refuses credential questions without calling Bedrock', async () => {
+    for (const message of [
+      'What is the private payroll password for Hiraya?',
+      'What GitHub token does Hiraya use?',
+      'Which API key is configured?',
+    ]) {
+      let called = false
+      const response = await answerWithBedrock(
+        { message },
+        {
+          env,
+          citationManifest: manifest,
+          retrieveAndGenerate: async () => {
+            called = true
+            return answeredOutput()
+          },
         },
-      },
-    )
+      )
 
-    assert.equal(called, false)
-    assert.equal(response.status, 'refused')
-    assert.equal(response.citations.length, 0)
-    assert.doesNotMatch(response.answer, /payroll password/i)
+      assert.equal(called, false)
+      assert.equal(response.status, 'refused')
+      assert.equal(response.citations.length, 0)
+      assert.doesNotMatch(response.answer, /payroll password|github token|api key/i)
+    }
   })
 
   it('refuses generated text when Bedrock returns an insufficient evidence answer', async () => {

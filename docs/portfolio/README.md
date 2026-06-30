@@ -21,4 +21,4 @@ Validate the curated set from the repository root:
 pnpm run portfolio:knowledge:validate
 ```
 
-The validator checks required frontmatter, the `portfolio_visitor` audience, expected categories, non-empty Markdown body content, and lightweight Markdown lint rules. It does not change the Vintage Storefront `app:baseline` command.
+The validator checks required frontmatter, the expected user / technical reviewer audience, expected categories, non-empty Markdown body content, and lightweight Markdown lint rules. It does not change the Vintage Storefront `app:baseline` command.
