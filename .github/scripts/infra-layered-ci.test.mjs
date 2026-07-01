@@ -109,6 +109,7 @@ test('pre-destroy script stops root reconciliation and prunes child apps in safe
   assert.doesNotMatch(script, /delete_child_application platform-logging/, 'destroy cleanup should not reference the removed logging Application');
   assert.match(script, /delete_child_application platform-gateway-api-crds/, 'CRD app should be pruned last');
   assert.match(script, /cleanup_argocd_bootstrap_custom_resources/, 'cleanup should remove Argo CD AppProject/Application CRs before Terraform deletes the argocd namespace');
+  assert.match(script, /applicationsets\.argoproj\.io[\s\S]*applications\.argoproj\.io[\s\S]*appprojects\.argoproj\.io/, 'cleanup should remove ApplicationSets before Applications, while keeping AppProjects until apps are handled');
   assert.match(script, /appprojects\.argoproj\.io/, 'cleanup should cover Cluster Bootstrap-owned AppProjects that can hold namespace deletion open');
 });
 

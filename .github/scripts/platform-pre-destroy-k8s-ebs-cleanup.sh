@@ -372,17 +372,19 @@ cleanup_argocd_bootstrap_custom_resources() {
   fi
 
   echo "Removing Argo CD bootstrap custom resources before Terraform uninstalls Argo CD."
-  if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
-    kubectl patch applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
-      --type merge \
-      --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
-    kubectl delete applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
-  fi
+  # Remove ApplicationSets before Applications so their controller cannot
+  # recreate generated Applications while the final cleanup pass is running.
   if kubectl get crd applicationsets.argoproj.io >/dev/null 2>&1; then
     kubectl patch applicationsets.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
       --type merge \
       --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
     kubectl delete applicationsets.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
+  fi
+  if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
+    kubectl patch applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
+      --type merge \
+      --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+    kubectl delete applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
   fi
   if kubectl get crd appprojects.argoproj.io >/dev/null 2>&1; then
     kubectl patch appprojects.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
