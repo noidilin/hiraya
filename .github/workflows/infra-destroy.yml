@@ -124,6 +124,13 @@ jobs:
         shell: bash
         run: .github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh
 
+      - name: refresh-aws-credentials-with-cluster-bootstrap-role
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6
+        with:
+          role-to-assume: ${{ env.CLUSTER_BOOTSTRAP_ROLE_ARN }}
+          role-session-name: hiraya-cluster-bootstrap-destroy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: initialize-cluster-bootstrap-terraform
         shell: bash
         run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" init -backend-config=backend.hcl -reconfigure -input=false

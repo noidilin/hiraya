@@ -80,6 +80,7 @@ test('destroy workflow prunes GitOps before layered Terraform teardown', async (
 
   assert.match(workflow, /CLUSTER_BOOTSTRAP_ROLE_ARN/, 'destroy should use the dedicated Cluster Bootstrap role for Kubernetes cleanup');
   assert.match(workflow, /configure-aws-credentials-with-cluster-bootstrap-role[\s\S]*platform-pre-destroy-k8s-ebs-cleanup\.sh/, 'GitOps/Kubernetes cleanup should run under the Cluster Bootstrap role');
+  assert.match(workflow, /platform-pre-destroy-k8s-ebs-cleanup\.sh[\s\S]*refresh-aws-credentials-with-cluster-bootstrap-role[\s\S]*destroy-cluster-bootstrap-state/, 'destroy should refresh Cluster Bootstrap credentials after long GitOps cleanup and before Terraform destroy');
   assert.match(workflow, /destroy-cluster-bootstrap-state[\s\S]*terraform -chdir="\$\{CLUSTER_BOOTSTRAP_DIR\}" destroy/, 'Cluster Bootstrap state should be destroyed before Platform Core');
   assert.match(workflow, /configure-aws-credentials-with-platform-core-apply-role[\s\S]*destroy-platform-core-stack/, 'Platform Core destroy should use the infra apply role after Cluster Bootstrap teardown');
   assert.match(workflow, /write-terraform-backend\.sh cluster-bootstrap/, 'destroy should initialize the Cluster Bootstrap layered state');
@@ -94,14 +95,21 @@ test('pre-destroy script stops root reconciliation and prunes child apps in safe
   assert.match(script, /delete_child_application vintage/, 'Vintage workload must be pruned first');
   assert.match(script, /wait_for_vintage_storage_cleanup/, 'cleanup should wait for Vintage PVC/PV/EBS cleanup before controller teardown');
   assert.match(script, /wait_for_vintage_storage_cleanup[\s\S]*delete_child_application platform-storage/, 'platform storage should be pruned only after Vintage PVC/PV/EBS cleanup');
-  assert.match(script, /delete_child_application platform-edge[\s\S]*wait_for_alb_cleanup/, 'edge resources should be removed while AWS LBC is still running');
+  assert.match(script, /delete_child_application_async platform-edge[\s\S]*wait_for_alb_cleanup/, 'edge resources should be removed while AWS LBC is still running');
+  assert.match(script, /K8S_EDGE_CLEANUP_WAIT_ATTEMPTS/, 'edge cleanup should have a dedicated wait budget for slow ALB finalization');
+  assert.match(script, /wait_for_alb_cleanup[\s\S]*wait_for_aws_load_balancer_controller_k8s_cleanup[\s\S]*application_gone platform-edge/, 'edge cleanup should wait on concrete AWS LBC resources before waiting for the Argo finalizer');
   assert.match(script, /wait_for_aws_load_balancer_controller_k8s_cleanup/, 'cleanup should wait for AWS LBC Kubernetes finalizers before controller teardown');
   assert.match(script, /gatewayclasses\.gateway\.networking\.k8s\.io/, 'cleanup should wait for GatewayClass finalizers before controller teardown');
   assert.match(script, /EXTERNAL_DNS_TXT_OWNER_ID/, 'cleanup should detect ExternalDNS TXT ownership records, including prefixed TXT records');
   assert.match(script, /wait_for_external_dns_cleanup/, 'cleanup should wait for ExternalDNS-managed records to disappear');
   assert.match(script, /delete_child_application platform-aws-load-balancer-controller/, 'AWS Load Balancer Controller should be pruned only after ALB cleanup');
   assert.match(script, /delete_child_application platform-external-dns/, 'ExternalDNS should be pruned only after DNS cleanup');
+  assert.match(script, /delete_child_application platform-aws-load-balancer-controller[\s\S]*delete_child_application platform-cert-manager/, 'cert-manager should stay available for AWS LBC webhook CA injection until AWS LBC is pruned');
+  assert.match(script, /cert-manager/, 'cert-manager namespace should be included in managed namespace cleanup');
+  assert.doesNotMatch(script, /delete_child_application platform-logging/, 'destroy cleanup should not reference the removed logging Application');
   assert.match(script, /delete_child_application platform-gateway-api-crds/, 'CRD app should be pruned last');
+  assert.match(script, /cleanup_argocd_bootstrap_custom_resources/, 'cleanup should remove Argo CD AppProject/Application CRs before Terraform deletes the argocd namespace');
+  assert.match(script, /appprojects\.argoproj\.io/, 'cleanup should cover Cluster Bootstrap-owned AppProjects that can hold namespace deletion open');
 });
 
 test('platform smoke script validates GitOps health and layered public surface', async () => {

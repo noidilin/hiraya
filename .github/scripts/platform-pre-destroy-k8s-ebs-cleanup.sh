@@ -10,8 +10,9 @@ EDGE_LOAD_BALANCER_NAME="${EDGE_LOAD_BALANCER_NAME:-hiraya-dev-public}"
 EXTERNAL_DNS_HOSTED_ZONE_ID="${EXTERNAL_DNS_HOSTED_ZONE_ID:-}"
 EXTERNAL_DNS_HOSTNAMES="${EXTERNAL_DNS_HOSTNAMES:-hiraya.noidilin.dev argocd.hiraya.noidilin.dev grafana.hiraya.noidilin.dev}"
 EXTERNAL_DNS_TXT_OWNER_ID="${EXTERNAL_DNS_TXT_OWNER_ID:-hiraya-dev-eks}"
-MANAGED_NAMESPACE_CLEANUP_LIST="${MANAGED_NAMESPACE_CLEANUP_LIST:-vintage monitoring edge external-dns external-secrets amazon-cloudwatch}"
+MANAGED_NAMESPACE_CLEANUP_LIST="${MANAGED_NAMESPACE_CLEANUP_LIST:-vintage monitoring edge external-dns external-secrets cert-manager amazon-cloudwatch}"
 WAIT_ATTEMPTS="${K8S_EBS_CLEANUP_WAIT_ATTEMPTS:-60}"
+EDGE_CLEANUP_WAIT_ATTEMPTS="${K8S_EDGE_CLEANUP_WAIT_ATTEMPTS:-90}"
 WAIT_DELAY_SECONDS="${K8S_EBS_CLEANUP_WAIT_DELAY_SECONDS:-10}"
 VOLUME_IDS_FILE="${K8S_EBS_CLEANUP_VOLUME_IDS_FILE:-}"
 
@@ -39,6 +40,21 @@ wait_until() {
     echo "Still waiting for ${description} (${attempt}/${WAIT_ATTEMPTS})..."
     sleep "$WAIT_DELAY_SECONDS"
   done
+}
+
+with_wait_attempts() {
+  local attempts="$1"
+  shift
+  local previous_attempts="$WAIT_ATTEMPTS"
+  local status
+
+  WAIT_ATTEMPTS="$attempts"
+  set +e
+  "$@"
+  status=$?
+  set -e
+  WAIT_ATTEMPTS="$previous_attempts"
+  return "$status"
 }
 
 cluster_is_active() {
@@ -219,17 +235,17 @@ suspend_root_application() {
   wait_until "root Argo CD Application ${ROOT_ARGOCD_APPLICATION} to be deleted without cascading children" application_gone "$ROOT_ARGOCD_APPLICATION"
 }
 
-delete_child_application() {
+delete_child_application_async() {
   local app_name="$1"
 
   if ! argocd_app_crd_available; then
     echo "Argo CD Application CRD or namespace is absent; skipping child Application ${app_name}."
-    return 0
+    return 1
   fi
 
   if ! kubectl get application.argoproj.io "$app_name" --namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; then
     echo "Child Argo CD Application ${ARGOCD_NAMESPACE}/${app_name} is already absent."
-    return 0
+    return 1
   fi
 
   echo "Deleting child Argo CD Application ${ARGOCD_NAMESPACE}/${app_name}."
@@ -237,7 +253,15 @@ delete_child_application() {
     --namespace "$ARGOCD_NAMESPACE" \
     --ignore-not-found=true \
     --wait=false
-  wait_until "child Argo CD Application ${app_name} to prune and disappear" application_gone "$app_name"
+  return 0
+}
+
+delete_child_application() {
+  local app_name="$1"
+
+  if delete_child_application_async "$app_name"; then
+    wait_until "child Argo CD Application ${app_name} to prune and disappear" application_gone "$app_name"
+  fi
 }
 
 wait_for_vintage_storage_cleanup() {
@@ -315,6 +339,61 @@ wait_for_external_dns_cleanup() {
   wait_until "ExternalDNS-managed public Route 53 records to be deleted" external_dns_records_gone
 }
 
+argocd_bootstrap_custom_resources_gone() {
+  local remaining=""
+
+  if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
+    remaining+=$(kubectl get applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" -o name 2>/dev/null || true)
+    remaining+=$'\n'
+  fi
+  if kubectl get crd applicationsets.argoproj.io >/dev/null 2>&1; then
+    remaining+=$(kubectl get applicationsets.argoproj.io --namespace "$ARGOCD_NAMESPACE" -o name 2>/dev/null || true)
+    remaining+=$'\n'
+  fi
+  if kubectl get crd appprojects.argoproj.io >/dev/null 2>&1; then
+    remaining+=$(kubectl get appprojects.argoproj.io --namespace "$ARGOCD_NAMESPACE" -o name 2>/dev/null || true)
+    remaining+=$'\n'
+  fi
+  remaining=$(awk 'NF' <<<"$remaining")
+
+  if [[ -n "$remaining" ]]; then
+    echo "Argo CD bootstrap custom resources still exist in namespace ${ARGOCD_NAMESPACE}:"
+    sed 's/^/- /' <<<"$remaining"
+    return 1
+  fi
+
+  return 0
+}
+
+cleanup_argocd_bootstrap_custom_resources() {
+  if ! kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; then
+    echo "Argo CD namespace ${ARGOCD_NAMESPACE} is already absent; skipping bootstrap custom resource cleanup."
+    return 0
+  fi
+
+  echo "Removing Argo CD bootstrap custom resources before Terraform uninstalls Argo CD."
+  if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
+    kubectl patch applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
+      --type merge \
+      --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+    kubectl delete applications.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
+  fi
+  if kubectl get crd applicationsets.argoproj.io >/dev/null 2>&1; then
+    kubectl patch applicationsets.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
+      --type merge \
+      --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+    kubectl delete applicationsets.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
+  fi
+  if kubectl get crd appprojects.argoproj.io >/dev/null 2>&1; then
+    kubectl patch appprojects.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all \
+      --type merge \
+      --patch '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+    kubectl delete appprojects.argoproj.io --namespace "$ARGOCD_NAMESPACE" --all --ignore-not-found=true --wait=false
+  fi
+
+  wait_until "Argo CD bootstrap custom resources in namespace ${ARGOCD_NAMESPACE} to be deleted" argocd_bootstrap_custom_resources_gone
+}
+
 if ! cluster_is_active; then
   echo "EKS cluster ${CLUSTER_NAME} is not ACTIVE or is already gone; skipping ordered GitOps cleanup."
   exit 0
@@ -359,18 +438,30 @@ delete_child_application platform-storage
 delete_child_application platform-argocd-access
 delete_child_application platform-monitoring-config
 delete_child_application platform-monitoring
-delete_child_application platform-edge
-wait_for_alb_cleanup
-wait_for_aws_load_balancer_controller_k8s_cleanup
+if delete_child_application_async platform-edge; then
+  # platform-edge owns the Gateway resources that trigger AWS LBC cloud cleanup.
+  # The Argo CD resources finalizer waits on that same cleanup, so waiting for
+  # Application disappearance first can burn the generic 10-minute app quota
+  # without showing whether the ALB/finalizers are the actual slow dependency.
+  with_wait_attempts "$EDGE_CLEANUP_WAIT_ATTEMPTS" wait_for_alb_cleanup
+  with_wait_attempts "$EDGE_CLEANUP_WAIT_ATTEMPTS" wait_for_aws_load_balancer_controller_k8s_cleanup
+  with_wait_attempts "$EDGE_CLEANUP_WAIT_ATTEMPTS" wait_until "child Argo CD Application platform-edge to prune and disappear" application_gone platform-edge
+else
+  with_wait_attempts "$EDGE_CLEANUP_WAIT_ATTEMPTS" wait_for_alb_cleanup
+  with_wait_attempts "$EDGE_CLEANUP_WAIT_ATTEMPTS" wait_for_aws_load_balancer_controller_k8s_cleanup
+fi
 wait_for_external_dns_cleanup
 
 # Non-edge platform add-ons after controller-managed cloud resources are gone.
-delete_child_application platform-logging
 delete_child_application platform-external-secrets
 delete_child_application platform-external-dns
 delete_child_application platform-aws-load-balancer-controller
+# cert-manager owns the AWS LBC webhook certificate injection path; keep it
+# until after AWS LBC is pruned, then remove it before namespace cleanup.
+delete_child_application platform-cert-manager
 delete_child_application platform-namespaces
 delete_managed_namespaces
 delete_child_application platform-gateway-api-crds
+cleanup_argocd_bootstrap_custom_resources
 
 echo "Ordered GitOps pre-destroy cleanup completed."

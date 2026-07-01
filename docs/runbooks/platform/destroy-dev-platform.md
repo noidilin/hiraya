@@ -55,7 +55,7 @@ destroy dev platform
 7. Confirm the destroy job runs in this order:
    - Assumes the Cluster Bootstrap role.
    - Reads Platform Core outputs needed for cleanup and verification.
-   - Runs `.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh` to suspend/delete the root Argo CD Application non-cascading, prune child Applications in safe order, and wait for Vintage EBS, shared ALB, and ExternalDNS Route 53 cleanup while controllers are still running. The script intentionally deletes/waits managed namespaces only after the namespace-owning `platform-namespaces` Application is pruned, so Argo CD self-heal cannot recreate empty namespaces during cleanup.
+   - Runs `.github/scripts/platform-pre-destroy-k8s-ebs-cleanup.sh` to suspend/delete the root Argo CD Application non-cascading, prune child Applications in safe order, and wait for Vintage EBS, shared ALB, and ExternalDNS Route 53 cleanup while controllers are still running. Keep `platform-cert-manager` until after `platform-aws-load-balancer-controller` is pruned because AWS LBC now relies on cert-manager for webhook CA injection. The script intentionally deletes/waits managed namespaces only after the namespace-owning `platform-namespaces` Application is pruned, so Argo CD self-heal cannot recreate empty namespaces during cleanup.
    - Destroys `infra/envs/dev/cluster-bootstrap`.
    - Assumes the Platform Core apply role.
    - Destroys `infra/envs/dev/platform-core`.
