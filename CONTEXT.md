@@ -8,6 +8,26 @@ This context defines the project-specific language used to describe the portfoli
 The public demo commerce experience in Hiraya where visitors browse vintage products and place orders.
 _Avoid_: frontend, current frontend, vintage frontend
 
+**Application Runtime**:
+The Ownership Boundary where Hiraya's workload services execute behind the public edge, including application pods, private services, and runtime data components.
+_Avoid_: Vintage Storefront, Hiraya EKS Project, app layer
+
+**Runtime Interaction**:
+The architecture-route explanation model for how Hiraya behaves inside established boundaries: public request paths, private service composition, and secret materialization.
+_Avoid_: Ownership Flow, Exposure Class, complete topology graph, CI/CD flow
+
+**Request Path**:
+A visitor-facing runtime path from browser entry through the Public Edge, selected Application Runtime services, and runtime data components.
+_Avoid_: Ownership Flow, infrastructure dependency graph, every network hop
+
+**Secret Materialization**:
+The runtime process where External Secrets Operator reads allowlisted AWS Secrets Manager entries and creates Kubernetes Secrets consumed by workloads.
+_Avoid_: secret values, committed credentials, full rotation/audit design
+
+**Service Boundary**:
+A named Application Runtime service or data component with a responsibility, Kubernetes exposure mode, and role in Storefront request paths.
+_Avoid_: microservice project, generic pod, every Kubernetes object
+
 **Hiraya EKS Project**:
 The disposable EKS-hosted demonstration system that combines the Vintage Storefront with the cloud and Kubernetes platform needed to deliver and operate it.
 _Avoid_: microservice project, EKS app, cluster app
@@ -19,6 +39,10 @@ _Avoid_: frontend, portfolio frontend, project site
 **Hiraya Furugi**:
 The customer-facing brand presented inside the Vintage Storefront.
 _Avoid_: new frontend, FE rewrite, store frontend
+
+**Hiraya Furugi Storefront**:
+The branded customer-facing surface of the Vintage Storefront used when naming public reachability surfaces.
+_Avoid_: Hiraya Storefront, generic storefront, frontend
 
 **Hiraya Furugi Catalog**:
 The product assortment presented by Hiraya Furugi in the Vintage Storefront.
@@ -41,20 +65,64 @@ The durable foundation for Hiraya's dev environment that survives cluster rebuil
 _Avoid_: bootstrap, account bootstrap
 
 **Platform Core**:
-The cloud foundation of Hiraya that provides the cluster, networking, identity, and public-domain prerequisites for workloads.
-_Avoid_: platform stack, core stack
+The Terraform lifecycle boundary that builds Hiraya's cluster, networking, identity, and public-domain prerequisites for workloads.
+_Avoid_: platform stack, core stack, AWS Foundation
+
+**AWS Foundation**:
+The presentation-facing Ownership Boundary for the AWS cloud substrate in Hiraya, including the resources and managed services that other boundaries depend on.
+_Avoid_: Platform Core, cloud stuff, AWS layer
 
 **Portfolio Stack**:
 The durable cloud boundary that keeps Hiraya Portfolio and Hiraya Guide available independently of the disposable cluster.
 _Avoid_: Project Bootstrap, Platform Core, EKS app stack
 
 **Cluster Platform**:
-The shared in-cluster capabilities that make Hiraya workloads reachable, observable, and operable.
-_Avoid_: cluster add-ons, shared controllers
+The shared in-cluster capabilities that make Hiraya workloads reachable, observable, and operable, excluding the presentation-facing public exposure boundary.
+_Avoid_: cluster add-ons, shared controllers, Public Edge
+
+**Public Edge**:
+The Ownership Boundary that controls Hiraya's public HTTPS exposure through shared ingress, DNS, certificate, and route-publishing mechanisms.
+_Avoid_: Cluster Platform, public services, internet layer
+
+**Exposure Class**:
+A portfolio explanation category that describes how reachable a Hiraya surface is, such as public user entry, public demo operations surface, private service, private data, or internal platform service.
+_Avoid_: security group, network tier, service type
 
 **Cluster Bootstrap**:
 The reproducible handoff that establishes GitOps control for a Hiraya cluster.
 _Avoid_: one-time setup, Argo installer
+
+**Ownership Boundary**:
+A responsibility zone in the Hiraya EKS Project that clarifies who primarily owns a part of the platform explanation and what it intentionally does not own.
+_Avoid_: tool group, architecture box, service area
+
+**Boundary Stack**:
+The compact visual representation of one Ownership Boundary, containing the Internal Layers that belong to that responsibility zone.
+_Avoid_: layer, card, generic component
+
+**Internal Layer**:
+A compact item inside a Boundary Stack that names a tool, resource, or mechanism belonging to that Ownership Boundary without turning it into a separate relationship graph.
+_Avoid_: boundary, stack, node
+
+**Ownership Flow**:
+The read order that explains how Hiraya's Ownership Boundaries hand responsibility from change authority to cloud foundation, cluster capabilities, public exposure, workload runtime, and feedback.
+_Avoid_: traffic flow, dependency graph, topology
+
+**Delivery Authority**:
+The Ownership Boundary for proposing, validating, and approving application and infrastructure changes before another boundary owns the resulting runtime or cloud state.
+_Avoid_: CI/CD pipeline, GitHub Actions, deployment layer
+
+**Authority Flow**:
+The SDLC explanation model that shows how change authority moves from validation evidence, to artifact publishing, to proposed desired-state changes, to accepted Git state, to GitOps/runtime convergence.
+_Avoid_: pipeline stepper, deployment timeline, tool chain
+
+**Accepted Desired State**:
+The reviewed Git state that Argo CD is allowed to reconcile into the cluster after promotion, rollback, or platform handoff changes are accepted.
+_Avoid_: deployed commit, CI output, workflow result
+
+**Observation**:
+The Ownership Boundary for feedback and verification signals that help explain whether Hiraya's runtime and release decisions are working.
+_Avoid_: monitoring stack, Grafana, Cluster Platform
 
 **Public Gateway Access**:
 The platform-granted ability for a namespace to publish routes through Hiraya's shared public edge.
