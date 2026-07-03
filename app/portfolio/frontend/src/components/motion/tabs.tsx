@@ -6,7 +6,7 @@ import { createContext, useContext, useId, useState, type ReactNode } from "reac
 import { EASE_OUT } from "@/lib/ease"
 import { cn } from "@/lib/utils"
 
-type Variant = "pill" | "underline" | "segment"
+type Variant = "pill" | "underline" | "segment" | "dock"
 
 type Ctx = {
   value: string
@@ -70,6 +70,7 @@ const listClasses: Record<Variant, string> = {
   pill: "inline-flex items-center gap-1 rounded-full bg-card p-1",
   underline: "inline-flex items-center gap-1 border-b border-border",
   segment: "inline-flex items-center gap-0 rounded-lg bg-card p-0.5",
+  dock: "inline-flex items-center gap-1 rounded-xl bg-card p-1",
 }
 
 export function TabsList({ children, className }: { children: ReactNode; className?: string }) {
@@ -118,14 +119,14 @@ export function TabsTrigger({
     )
   }
 
-  const radius = variant === "pill" ? "rounded-full" : "rounded-md"
+  const radius = variant === "pill" ? "rounded-full" : variant === "dock" ? "rounded-xl" : "rounded-md"
 
   return (
     <div className="relative">
       {active ? (
         <motion.span
           layoutId={layoutId}
-          style={{ borderRadius: variant === "pill" ? 9999 : 8 }}
+          style={{ borderRadius: variant === "pill" ? 9999 : variant === "dock" ? 12 : 8 }}
           className={cn("absolute inset-0 bg-primary", radius, indicatorClassName)}
         />
       ) : null}

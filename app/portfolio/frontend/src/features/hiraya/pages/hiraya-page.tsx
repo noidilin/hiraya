@@ -24,13 +24,8 @@ import {
 } from '@/content/hiraya/content'
 import { GuideChatLauncher } from '@/features/guide-chat/components/guide-chat-launcher'
 import { useAppLocale } from '@/i18n/use-app-locale'
-import { HirayaFlow } from '@/features/hiraya/components/hiraya-flow'
 import { HirayaHero } from '@/features/hiraya/components/hiraya-hero'
-import { HirayaMediaSlotGrid } from '@/features/hiraya/components/hiraya-media-slot'
-import { HirayaMetricGrid } from '@/features/hiraya/components/hiraya-metric-grid'
-import { HirayaPillarGrid } from '@/features/hiraya/components/hiraya-pillar-grid'
-import { HirayaProofPointGrid } from '@/features/hiraya/components/hiraya-proof-point-grid'
-import { HirayaSection } from '@/features/hiraya/components/hiraya-section'
+import { HirayaRouteDesign } from '@/features/hiraya/components/hiraya-route-designs'
 
 type HirayaPageProps = {
   activePageId?: string
@@ -49,18 +44,7 @@ function getHirayaHref(pageId: HirayaRouteId) {
 }
 
 function HirayaPageContent({ page }: { page: HirayaPageContentModel }) {
-  return (
-    <div className="grid gap-6">
-      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      {page.mediaSlots ? <HirayaMediaSlotGrid slots={page.mediaSlots} /> : null}
-      {page.proofPoints ? <HirayaProofPointGrid proofPoints={page.proofPoints} /> : null}
-      {page.sections.map((section) => (
-        <HirayaSection key={section.id} section={section} />
-      ))}
-      {page.flow ? <HirayaFlow steps={page.flow} /> : null}
-      {page.pillars ? <HirayaPillarGrid pillars={page.pillars} /> : null}
-    </div>
-  )
+  return <HirayaRouteDesign page={page} />
 }
 
 function HirayaActionBar({ activePageId, pages }: { activePageId: HirayaRouteId; pages: readonly HirayaPageContentModel[] }) {
@@ -112,8 +96,6 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
   const resolvedPageId = resolveHirayaRouteId(activePageId)
   const pages = getHirayaPages(locale)
   const activePage = findHirayaPage(activePageId, locale)
-  const ActiveIcon = hirayaPageIcons[resolvedPageId]
-
   return (
     <AppPageShell
       dock={
@@ -124,7 +106,7 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
       }
       contentClassName="mx-auto flex min-h-svh w-full max-w-[1680px] flex-col gap-8 px-4 py-24 sm:px-6 lg:px-8"
     >
-      <HirayaHero page={activePage} icon={ActiveIcon} />
+      <HirayaHero page={activePage} />
       <HirayaPageContent page={activePage} />
       <GuideChatLauncher />
     </AppPageShell>

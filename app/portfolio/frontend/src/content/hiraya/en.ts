@@ -118,26 +118,6 @@ export const hirayaPagesEn = [
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
-    mediaSlots: [
-      {
-        id: 'overview-youtube-introduction',
-        type: 'intro-video',
-        status: 'planned',
-        title: 'Embedded project walkthrough video',
-        description:
-          'A short YouTube introduction can sit near the top of the brief route and explain the whole Hiraya platform before visitors inspect individual route details.',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-argocd-app-of-apps', 'p0-infra-approval-gate'],
-      },
-      {
-        id: 'overview-evidence-hover-cards',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Hover evidence cards',
-        description:
-          'Key info cards can reveal screenshots from docs/evidence-checklist.md on hover or focus, keeping the page readable while making claims inspectable.',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-public-ingress', 'p1-grafana'],
-      },
-    ],
     metrics: [
       {
         label: 'Design goals',
@@ -196,35 +176,6 @@ export const hirayaPagesEn = [
       'The architecture combines a public HTTPS edge with private EKS workloads, GitOps-managed manifests, externalized secrets, and internal observability surfaces.',
     thesis:
       'Hiraya should read as a real cloud platform boundary: the public internet reaches only the shared ingress path, while services, data, secrets, and monitoring remain behind controlled Kubernetes and AWS layers.',
-    mediaSlots: [
-      {
-        id: 'architecture-diagram-frame',
-        type: 'diagram-frame',
-        status: 'placeholder',
-        title: 'AWS/EKS architecture diagram frame',
-        description:
-          'Reserve a large responsive frame for the final architecture diagram showing Route 53, ALB/Gateway API, EKS private workloads, Secrets Manager, ECR, Argo CD, Prometheus, and Grafana. The diagram can be produced separately later.',
-        evidenceRefs: ['p0-public-ingress', 'p1-private-workloads'],
-      },
-      {
-        id: 'ingress-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Ingress, DNS, and TLS screenshots',
-        description:
-          'Network and ingress cards can reveal screenshots of Route 53 records, ALB target health, browser certificate status, Gateway/HTTPRoute resources, and public endpoint smoke tests.',
-        evidenceRefs: ['p0-public-ingress'],
-      },
-      {
-        id: 'gitops-resource-tree-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Argo CD resource-tree screenshots',
-        description:
-          'Microservice and platform cards can reveal Argo CD App-of-Apps screenshots showing Synced/Healthy child applications and owned Kubernetes resources.',
-        evidenceRefs: ['p0-argocd-app-of-apps'],
-      },
-    ],
     metrics: [
       {
         label: 'Region',
@@ -320,26 +271,6 @@ export const hirayaPagesEn = [
       'The current dev cluster uses three t3.medium Spot nodes and is functional, but pod density is already the main constraint.',
     thesis:
       'The cost story should be honest: this is not the cheapest possible AWS demo, but it is a reasonable Kubernetes/GitOps platform whose major costs and capacity risks are visible.',
-    mediaSlots: [
-      {
-        id: 'cost-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Cost and destroy evidence screenshots',
-        description:
-          'Cost cards can reveal Cost Explorer, AWS Budgets, Terraform destroy workflow, or AWS console cleanup screenshots when those assets are captured.',
-        evidenceRefs: ['p2-cost-destroy-workflow'],
-      },
-      {
-        id: 'capacity-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'EKS capacity screenshots',
-        description:
-          'Capacity cards can reveal kubectl node/pod density output, node group settings, and workload scheduling evidence without requiring those screenshots before layout implementation.',
-        evidenceRefs: ['p1-private-workloads'],
-      },
-    ],
     metrics: [
       {
         label: 'Cluster',
@@ -464,15 +395,6 @@ export const hirayaPagesEn = [
           'The SDLC route can embed or link the primary CI/CD delivery recording, then use the flow cards below to break the video into reviewable stages.',
         evidenceRefs: ['p0-cicd-delivery-flow'],
       },
-      {
-        id: 'pipeline-evidence-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Pipeline evidence hover states',
-        description:
-          'Each delivery-stage card can reveal screenshots for PR checks, ECR image push, Trivy scan, promotion PR, Argo CD sync, rollout, and smoke verification.',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p1-rollback-path', 'p2-deploy-smoke'],
-      },
     ],
     sections: [
       {
@@ -555,17 +477,6 @@ export const hirayaPagesEn = [
       'The Well-Architected mapping explains why the design choices matter and where the dev environment should harden next.',
     thesis:
       'The WAF route should translate implementation details into engineering judgment: what is strong now, what is an intentional dev trade-off, and what should improve before production.',
-    mediaSlots: [
-      {
-        id: 'pillar-evidence-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Pillar cards with evidence previews',
-        description:
-          'Each Well-Architected pillar card can reveal one or two concrete screenshots on hover, connecting framework language to implementation evidence instead of leaving it as abstract claims.',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-infra-approval-gate', 'p1-secrets', 'p1-grafana', 'p2-cost-destroy-workflow'],
-      },
-    ],
     sections: [
       {
         id: 'pillar-purpose',

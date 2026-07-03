@@ -118,26 +118,6 @@ export const hirayaPagesZhTW = [
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
-    mediaSlots: [
-      {
-        id: 'overview-youtube-introduction',
-        type: 'intro-video',
-        status: 'planned',
-        title: '嵌入式專案導覽影片',
-        description:
-          '可在概覽路線上方放置一段短 YouTube introduction，先說明整體 Hiraya platform，再讓訪客深入查看各路線細節。',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-argocd-app-of-apps', 'p0-infra-approval-gate'],
-      },
-      {
-        id: 'overview-evidence-hover-cards',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Hover 證據卡片',
-        description:
-          '關鍵資訊卡可在 hover 或 focus 時揭露 docs/evidence-checklist.md 的 screenshots，讓頁面保持易讀，同時使主張可被檢視。',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-public-ingress', 'p1-grafana'],
-      },
-    ],
     metrics: [
       {
         label: '設計目標',
@@ -196,35 +176,6 @@ export const hirayaPagesZhTW = [
       '整體架構結合 public HTTPS edge、private EKS workloads、GitOps 管理的 manifests、外部化 secrets，以及保留在內部的 observability surfaces。',
     thesis:
       'Hiraya 應呈現真實 cloud platform boundary：公網只進入 shared ingress path，而 services、data、secrets 與 monitoring 保持在受控的 Kubernetes 與 AWS layers 之後。',
-    mediaSlots: [
-      {
-        id: 'architecture-diagram-frame',
-        type: 'diagram-frame',
-        status: 'placeholder',
-        title: 'AWS/EKS 架構圖框架',
-        description:
-          '預留大型 responsive frame 給最終架構圖，呈現 Route 53、ALB/Gateway API、EKS private workloads、Secrets Manager、ECR、Argo CD、Prometheus 與 Grafana。圖可於後續另行製作。',
-        evidenceRefs: ['p0-public-ingress', 'p1-private-workloads'],
-      },
-      {
-        id: 'ingress-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Ingress、DNS 與 TLS 截圖',
-        description:
-          'Network 與 ingress cards 可揭露 Route 53 records、ALB target health、browser certificate status、Gateway/HTTPRoute resources 與 public endpoint smoke tests 的 screenshots。',
-        evidenceRefs: ['p0-public-ingress'],
-      },
-      {
-        id: 'gitops-resource-tree-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Argo CD resource-tree 截圖',
-        description:
-          'Microservice 與 platform cards 可揭露 Argo CD App-of-Apps screenshots，展示 Synced/Healthy child applications 與受管理的 Kubernetes resources。',
-        evidenceRefs: ['p0-argocd-app-of-apps'],
-      },
-    ],
     metrics: [
       {
         label: 'Region',
@@ -320,26 +271,6 @@ export const hirayaPagesZhTW = [
       '目前 Dev cluster 使用三台 t3.medium Spot nodes 並可正常運作，但 Pod density 已是主要限制。',
     thesis:
       '成本敘事必須誠實：這不是最低成本的 AWS demo，而是一個合理的 Kubernetes/GitOps platform，且主要 cost drivers 與 capacity risks 都能被看見。',
-    mediaSlots: [
-      {
-        id: 'cost-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: '成本與 destroy 證據 screenshots',
-        description:
-          'Cost cards 可在 assets 捕捉後揭露 Cost Explorer、AWS Budgets、Terraform destroy workflow 或 AWS console cleanup screenshots。',
-        evidenceRefs: ['p2-cost-destroy-workflow'],
-      },
-      {
-        id: 'capacity-screenshot-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'EKS 容量截圖',
-        description:
-          'Capacity cards 可揭露 kubectl node/pod density output、node group settings 與 workload scheduling evidence，不需要先完成 screenshots 才能實作版面。',
-        evidenceRefs: ['p1-private-workloads'],
-      },
-    ],
     metrics: [
       {
         label: 'Cluster',
@@ -464,15 +395,6 @@ export const hirayaPagesZhTW = [
           'SDLC route 可嵌入或連結主要 CI/CD delivery recording，再用下方 flow cards 將影片拆成可審查階段。',
         evidenceRefs: ['p0-cicd-delivery-flow'],
       },
-      {
-        id: 'pipeline-evidence-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: 'Pipeline 證據 hover 狀態',
-        description:
-          '每個 delivery-stage card 可揭露 PR checks、ECR image push、Trivy scan、promotion PR、Argo CD sync、rollout 與 smoke verification 的 screenshots。',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p1-rollback-path', 'p2-deploy-smoke'],
-      },
     ],
     sections: [
       {
@@ -555,17 +477,6 @@ export const hirayaPagesZhTW = [
       'Well-Architected 對應說明每個設計選擇的重要性，以及 Dev 環境下一步應強化的位置。',
     thesis:
       'WAF 路線將 implementation details 轉換為 engineering judgment：目前強項、刻意接受的 Dev 取捨，以及進入 Production 前需要改善的項目。',
-    mediaSlots: [
-      {
-        id: 'pillar-evidence-hover',
-        type: 'screenshot-hover',
-        status: 'planned',
-        title: '含 evidence preview 的 Pillar cards',
-        description:
-          '每張 Well-Architected pillar card 可在 hover 時揭露一到兩張具體 screenshots，將 framework language 連回 implementation evidence，而不是停留在抽象主張。',
-        evidenceRefs: ['p0-cicd-delivery-flow', 'p0-infra-approval-gate', 'p1-secrets', 'p1-grafana', 'p2-cost-destroy-workflow'],
-      },
-    ],
     sections: [
       {
         id: 'pillar-purpose',
