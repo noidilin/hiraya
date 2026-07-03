@@ -1,0 +1,5 @@
+# referenced: https://github.com/DavidAnson/markdownlint/blob/main/README.md#rules--aliases
+config:
+  MD013: false # line-length - Line length
+  MD028: false # no-multiple-space-blockquote - Multiple spaces after blockquote symbol
+  # MD032: false # blanks-around-lists - Lists should be surrounded by blank lines
