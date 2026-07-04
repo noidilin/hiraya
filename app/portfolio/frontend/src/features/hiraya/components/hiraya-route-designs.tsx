@@ -104,8 +104,8 @@ function EvidenceCarouselCard({
   const resolvedImageSrc = imageSrc ?? asset?.src
 
   return (
-    <article className="grid gap-4 border border-border bg-background/78 p-4 lg:grid-cols-[0.42fr_0.58fr] lg:p-5">
-      <div className="grid content-start gap-4">
+    <article className="grid gap-5 lg:grid-cols-[minmax(16rem,0.36fr)_minmax(0,0.64fr)] lg:items-stretch">
+      <div className="grid content-start gap-4 lg:py-3 lg:pr-4">
         <div>
           <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{evidenceId}</p>
           <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">{title}</h3>
@@ -125,7 +125,7 @@ function EvidenceCarouselCard({
         </p>
       </div>
 
-      <div className="overflow-hidden border border-primary/25 bg-card shadow-2xl">
+      <div className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-2xl shadow-primary/10">
         <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2">
           <span className="size-2 rounded-full bg-red-400/80" />
           <span className="size-2 rounded-full bg-amber-400/80" />
@@ -176,11 +176,46 @@ function EvidenceCarousel({
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
 
+  const activeCard = cards[activeIndex] ?? cards[0]
+
   return (
-    <RoutePanel eyebrow="Evidence" title={title} description={description}>
-      <div className="grid gap-4">
-        <Carousel index={activeIndex} onIndexChange={setActiveIndex} className="mx-auto w-full" disableDrag={false}>
-          <CarouselContent className="items-stretch">
+    <section className="border-l-4 border-primary/70 py-4 pl-6 sm:pl-8">
+      <Carousel index={activeIndex} onIndexChange={setActiveIndex} className="mx-auto w-full" disableDrag={false}>
+        <div className="grid gap-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <header className="max-w-5xl">
+              <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">Evidence</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">{title}</h2>
+              <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{description}</p>
+            </header>
+            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+              <p className="rounded-full border border-border bg-card/75 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
+                {activeIndex + 1}/{cards.length} · {activeCard?.evidenceId}
+              </p>
+              <div className="flex items-center gap-3 rounded-full border border-border bg-card/75 px-2 py-1 shadow-sm">
+                <button
+                  type="button"
+                  aria-label="Previous evidence"
+                  disabled={activeIndex === 0}
+                  onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
+                  className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
+                >
+                  <ChevronLeft className="size-3.5" aria-hidden="true" />
+                </button>
+                <CarouselIndicator className="static w-auto" classNameButton="size-1.5 data-[active=true]:bg-primary/80" />
+                <button
+                  type="button"
+                  aria-label="Next evidence"
+                  disabled={activeIndex + 1 === cards.length}
+                  onClick={() => setActiveIndex((index) => Math.min(cards.length - 1, index + 1))}
+                  className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
+                >
+                  <ChevronRight className="size-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <CarouselContent className="items-stretch py-1">
             {cards.map((card) => (
               <CarouselItem key={card.evidenceId} className="basis-full px-1">
                 <div className="p-1">
@@ -189,30 +224,9 @@ function EvidenceCarousel({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              aria-label="Previous evidence"
-              disabled={activeIndex === 0}
-              onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
-              className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground disabled:opacity-30"
-            >
-              <ChevronLeft className="size-3.5" aria-hidden="true" />
-            </button>
-            <CarouselIndicator className="static w-auto" classNameButton="size-1.5 data-[active=true]:bg-primary/80" />
-            <button
-              type="button"
-              aria-label="Next evidence"
-              disabled={activeIndex + 1 === cards.length}
-              onClick={() => setActiveIndex((index) => Math.min(cards.length - 1, index + 1))}
-              className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground disabled:opacity-30"
-            >
-              <ChevronRight className="size-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        </Carousel>
-      </div>
-    </RoutePanel>
+        </div>
+      </Carousel>
+    </section>
   )
 }
 
@@ -236,8 +250,8 @@ function ArchitectureRouteDesign() {
       <ExposureBoundaryMatrix content={exposureBoundaryContent} />
       <ArchitectureRuntimeInteractionExplorer content={architectureRuntimeInteractionsContent} />
       <EvidenceCarousel
-        title="Architecture evidence carousel"
-        description="Architecture remains readable as text while one console screenshot-sized proof item is shown at a time."
+        title="Evidence behind the architecture decisions"
+        description="Each capture anchors one architecture claim without turning the page into a detached screenshot gallery."
         cards={[
           {
             evidenceId: 'p0-public-ingress',
@@ -275,8 +289,8 @@ function CostRouteDesign({ page }: { page: HirayaPageContent }) {
         capacity={costCapacityTradeoffLedgerContent.capacity}
       />
       <EvidenceCarousel
-        title="Cost evidence carousel"
-        description="Financial proof appears one item at a time, while the rest of the page remains an analysis board."
+        title="Evidence behind the cost decisions"
+        description="Financial proof stays close to the trade-off analysis, one operational capture at a time."
         cards={[
           {
             evidenceId: 'p2-cost-destroy-workflow',
@@ -302,8 +316,8 @@ function SdlcRouteDesign() {
       <SdlcAuthorityFlow content={sdlcAuthorityFlowContent} />
       <SdlcDeliveryGuardrailBoard guardrails={sdlcDeliveryGuardrails} authorityFlow={sdlcAuthorityFlowContent} />
       <EvidenceCarousel
-        title="Pipeline evidence carousel"
-        description="Each delivery stage gets concrete workflow evidence without turning the page into a static gallery."
+        title="Evidence behind the delivery loop"
+        description="Pipeline captures sit beside the SDLC model so each delivery stage has concrete proof."
         cards={[
           {
             evidenceId: 'p0-cicd-delivery-flow',
@@ -387,8 +401,8 @@ function WafRouteDesign({ page }: { page: HirayaPageContent }) {
         </RoutePanel>
       ) : null}
       <EvidenceCarousel
-        title="Well-Architected evidence carousel"
-        description="The framework stays text-led while screenshots support one pillar claim at a time."
+        title="Evidence behind the Well-Architected review"
+        description="The pillar review stays judgment-led while captures support one implementation claim at a time."
         cards={[
           {
             evidenceId: 'p1-secrets',
