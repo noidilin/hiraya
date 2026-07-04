@@ -3,7 +3,7 @@ import type { HirayaEvidenceItem, HirayaRouteId } from './types'
 export type HirayaEvidenceAssetKind = 'screenshot' | 'video' | 'diagram' | 'external-link'
 
 export type HirayaEvidenceAssetUse =
-  | 'hover-preview'
+  | 'carousel-slide'
   | 'inline-explainer'
   | 'deep-dive-link'
   | 'demo-video'
@@ -42,10 +42,10 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p0-argocd-app-of-apps',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['arch'],
     title: 'Argo CD App-of-Apps health',
-    caption: 'Useful as hover proof when discussing GitOps ownership, not as a default page centerpiece.',
+    caption: 'Useful as carousel proof when discussing GitOps ownership, not as a default page centerpiece.',
   },
   {
     evidenceId: 'p0-infra-approval-gate',
@@ -60,7 +60,7 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p0-public-ingress',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['arch'],
     title: 'Public endpoint, DNS, TLS, and ALB ingress',
     caption: 'Supports the public-edge claim with Route 53, ALB, certificate, Gateway/HTTPRoute, and smoke-test evidence.',
@@ -78,7 +78,7 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p1-secrets',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['waf', 'arch'],
     title: 'Secrets Manager and External Secrets',
     caption: 'Supports security claims without exposing values. Prefer redacted screenshots and status views.',
@@ -87,7 +87,7 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p1-grafana',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['waf', 'arch'],
     title: 'Grafana observability dashboard',
     caption: 'Useful when explaining operational visibility and release feedback, but not required on every route.',
@@ -96,7 +96,7 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p1-private-workloads',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['arch', 'cost'],
     title: 'EKS private workload architecture',
     caption: 'Supports private subnet, ClusterIP, NAT egress, and shared ingress boundary claims.',
@@ -114,7 +114,7 @@ export const hirayaEvidenceAssetManifest = [
     evidenceId: 'p2-cost-destroy-workflow',
     kind: 'screenshot',
     status: 'planned',
-    preferredUse: 'hover-preview',
+    preferredUse: 'carousel-slide',
     routes: ['cost', 'waf'],
     title: 'Cost control and destroy workflow',
     caption: 'Supports cost governance and sustainability claims; use selectively where the destroyable-dev-environment decision matters.',

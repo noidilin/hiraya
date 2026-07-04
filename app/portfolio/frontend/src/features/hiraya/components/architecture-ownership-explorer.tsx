@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Fragment, useMemo, useState } from 'react'
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type {
   ArchitectureOwnershipBoundary,
@@ -12,7 +11,7 @@ import type {
 } from '@/content/hiraya/architectureOwnership'
 import { cn } from '@/lib/utils'
 
-import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
+import { HirayaSectionShell, HirayaTag } from './hiraya-section'
 
 type ArchitectureOwnershipExplorerProps = {
   content: ArchitectureOwnershipContent
@@ -236,26 +235,17 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
   )
 
   return (
-    <HirayaSectionFrame className={cn('overflow-hidden', className)}>
-      <HirayaSectionHeader eyebrow="Ownership explorer" title={content.title} description={content.summary} />
-
-      <Tabs variant="dock" value={selectedBoundaryId} onValueChange={(value) => setSelectedBoundaryId(value as ArchitectureOwnershipBoundaryId)}>
-        <div className="border-b border-border bg-card/70 px-5 py-3">
-          <TabsList className="flex flex-wrap rounded-xl border border-border/80 bg-background/70 p-1">
-            {content.boundaries.map((boundary) => (
-              <TabsTrigger
-                key={boundary.id}
-                value={boundary.id}
-                className="min-h-9 rounded-xl px-3 py-2 text-xs"
-                indicatorClassName="rounded-xl"
-              >
-                {boundary.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-
+    <HirayaSectionShell
+      className={cn('overflow-hidden', className)}
+      eyebrow="Ownership explorer"
+      title={content.title}
+      description={content.summary}
+      tabs={{
+        items: content.boundaries.map((boundary) => ({ value: boundary.id, label: boundary.label })),
+        value: selectedBoundaryId,
+        onValueChange: (value) => setSelectedBoundaryId(value as ArchitectureOwnershipBoundaryId),
+      }}
+    >
       <TooltipProvider>
         <div className="relative overflow-hidden bg-card/80">
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border),transparent_64%)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border),transparent_70%)_1px,transparent_1px)] bg-[size:24px_24px] opacity-25" />
@@ -290,6 +280,6 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
           </div>
         </div>
       </TooltipProvider>
-    </HirayaSectionFrame>
+    </HirayaSectionShell>
   )
 }

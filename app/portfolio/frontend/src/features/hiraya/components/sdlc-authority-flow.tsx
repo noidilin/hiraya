@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
 import type {
   SdlcAuthorityConnector,
   SdlcAuthorityFlowContent,
@@ -12,7 +11,7 @@ import type {
 } from '@/content/hiraya/sdlcAuthorityFlow'
 import { cn } from '@/lib/utils'
 
-import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
+import { HirayaSectionShell, HirayaTag } from './hiraya-section'
 
 type SdlcAuthorityFlowProps = {
   content: SdlcAuthorityFlowContent
@@ -101,22 +100,46 @@ function StageNode({
   )
 }
 
-function LaneConnector({ connector, active }: { connector: SdlcAuthorityConnector; active: boolean }) {
+function StageTimeline({
+  stages,
+  connectors,
+  activeConnectorIds,
+}: {
+  stages: readonly SdlcAuthorityStage[]
+  connectors: readonly SdlcAuthorityConnector[]
+  activeConnectorIds: Set<string>
+}) {
   return (
-    <div className="grid min-h-32 w-20 shrink-0 content-center gap-2 text-center" aria-hidden={!active}>
-      <div className={cn('grid grid-cols-[1fr_auto_1fr] items-center gap-1', active ? 'text-primary' : 'text-muted-foreground')}>
-        <span className={cn('h-px', active ? 'bg-primary' : 'bg-border')} />
-        <span className="font-mono text-[10px] leading-none">→</span>
-        <span className={cn('h-px', active ? 'bg-primary' : 'bg-border')} />
+    <div className="max-w-full overflow-hidden border border-border/80 bg-background/72 p-3 shadow-sm backdrop-blur-sm">
+      <div className="grid grid-cols-[repeat(11,minmax(0,1fr))] items-center gap-2">
+        {stages.map((stage, index) => {
+          const connector = connectors.find((item) => item.from === stage.id)
+          const isActive = connector ? activeConnectorIds.has(connectorId(connector)) : false
+
+          return (
+            <Fragment key={stage.id}>
+              <div className="grid min-w-0 justify-items-center gap-1 text-center">
+                <span className="grid size-6 place-items-center border border-primary/35 bg-card font-mono text-[10px] font-semibold text-primary">
+                  {index + 1}
+                </span>
+                <span className="break-words font-mono text-[8px] uppercase leading-3 tracking-normal text-muted-foreground sm:text-[9px]">
+                  {stage.label}
+                </span>
+              </div>
+              {connector ? (
+                <div className={cn('grid min-w-0 gap-1 text-center transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')}>
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                    <span className={cn('h-px', isActive ? 'bg-primary' : 'bg-border')} />
+                    <span className="font-mono text-[10px] leading-none">→</span>
+                    <span className={cn('h-px', isActive ? 'bg-primary' : 'bg-border')} />
+                  </div>
+                  <span className="font-mono text-[8px] uppercase leading-3 tracking-normal sm:text-[9px]">{connector.label}</span>
+                </div>
+              ) : null}
+            </Fragment>
+          )
+        })}
       </div>
-      <span
-        className={cn(
-          'min-h-8 text-pretty font-mono text-[8px] uppercase leading-3 tracking-normal transition-opacity',
-          active ? 'opacity-100 text-primary' : 'opacity-0',
-        )}
-      >
-        {connector.label}
-      </span>
     </div>
   )
 }
@@ -138,40 +161,41 @@ function AuthorityLane({
 
   return (
     <section
-      className="grid gap-4 border border-border/75 bg-background/45 p-4 transition-colors lg:grid-cols-[13rem_minmax(0,1fr)]"
+      className="grid gap-4 border border-border/75 bg-background/45 p-4 transition-colors"
       aria-label={`${lane.label} authority lane`}
     >
-      <div className="border-b border-border/70 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">active authority path</p>
-        <h3 className="mt-1.5 text-lg font-semibold tracking-normal text-foreground">{lane.label}</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{lane.summary}</p>
-      </div>
+      <StageTimeline stages={lane.stages} connectors={lane.connectors} activeConnectorIds={activeConnectorIds} />
 
-      <div className="overflow-x-auto pb-1">
-        <div className="flex min-w-max items-stretch">
-          {lane.stages.map((stage) => {
-            const connector = lane.connectors.find((item) => item.from === stage.id)
-            const state: StageState =
-              stage.id === selectedStage.id
-                ? 'selected'
-                : stage.conceptId && stage.conceptId === selectedStage.conceptId
-                  ? 'shared-concept'
-                  : activeLane
-                    ? 'active-lane'
-                    : 'muted'
+      <div className="grid gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <div className="border-b border-border/70 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">active authority path</p>
+          <h3 className="mt-1.5 text-lg font-semibold tracking-normal text-foreground">{lane.label}</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{lane.summary}</p>
+        </div>
 
-            return (
-              <div key={stage.id} className="flex items-stretch">
+        <div className="overflow-x-auto pb-1">
+          <div className="flex min-w-max items-stretch gap-3">
+            {lane.stages.map((stage) => {
+              const state: StageState =
+                stage.id === selectedStage.id
+                  ? 'selected'
+                  : stage.conceptId && stage.conceptId === selectedStage.conceptId
+                    ? 'shared-concept'
+                    : activeLane
+                      ? 'active-lane'
+                      : 'muted'
+
+              return (
                 <StageNode
+                  key={stage.id}
                   stage={stage}
                   state={state}
                   laneLabel={lane.label}
                   onSelect={() => onSelectStage(stage.id)}
                 />
-                {connector ? <LaneConnector connector={connector} active={activeConnectorIds.has(connectorId(connector))} /> : null}
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </div>
     </section>
@@ -269,21 +293,17 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
   }
 
   return (
-    <HirayaSectionFrame className={cn('overflow-hidden', className)}>
-      <HirayaSectionHeader eyebrow="Authority flow" title={content.title} description={content.summary} />
-
-      <Tabs variant="dock" value={activeLaneId} onValueChange={handleLaneChange}>
-        <div className="border-b border-border bg-card/70 px-5 py-3">
-          <TabsList className="flex flex-wrap rounded-xl border border-border/80 bg-background/70 p-1">
-            {content.lanes.map((lane) => (
-              <TabsTrigger key={lane.id} value={lane.id} className="min-h-9 rounded-xl px-3 py-2 text-xs" indicatorClassName="rounded-xl">
-                {lane.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-
+    <HirayaSectionShell
+      className={cn('overflow-hidden', className)}
+      eyebrow="Authority flow"
+      title={content.title}
+      description={content.summary}
+      tabs={{
+        items: content.lanes.map((lane) => ({ value: lane.id, label: lane.label })),
+        value: activeLaneId,
+        onValueChange: handleLaneChange,
+      }}
+    >
       <div className="relative overflow-hidden bg-card/80">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border),transparent_64%)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border),transparent_70%)_1px,transparent_1px)] bg-[size:24px_24px] opacity-25" />
 
@@ -301,6 +321,6 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
           <StageDetail stage={selectedStage} lane={selectedLane} />
         </div>
       </div>
-    </HirayaSectionFrame>
+    </HirayaSectionShell>
   )
 }

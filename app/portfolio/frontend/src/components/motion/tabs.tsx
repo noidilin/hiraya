@@ -87,11 +87,15 @@ export function TabsTrigger({
   children,
   className,
   indicatorClassName,
+  activeClassName,
+  inactiveClassName,
 }: {
   value: string
   children: ReactNode
   className?: string
   indicatorClassName?: string
+  activeClassName?: string
+  inactiveClassName?: string
 }) {
   const { value: current, setValue, layoutId, variant } = useTabs()
   const active = current === value
@@ -106,6 +110,7 @@ export function TabsTrigger({
           "relative isolate -mb-px inline-flex min-h-[44px] items-center px-3 pb-2.5 pt-1 text-sm font-medium transition-colors",
           active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
           className,
+          active ? activeClassName : inactiveClassName,
         )}
       >
         {children}
@@ -139,6 +144,7 @@ export function TabsTrigger({
           active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           radius,
           className,
+          active ? activeClassName : inactiveClassName,
         )}
       >
         {children}

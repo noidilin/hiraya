@@ -1,25 +1,39 @@
-import type { ComponentProps, ReactNode } from 'react'
-import { CheckCircle2, Play, ShieldCheck } from 'lucide-react'
+import { useState, type ComponentProps, type ReactNode } from 'react'
+import { CheckCircle2, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselIndicator,
+  CarouselItem,
+} from '@/components/motion-primitives/carousel'
 import { architectureOwnershipContent } from '@/content/hiraya/architectureOwnership'
+import { architectureRuntimeInteractionsContent } from '@/content/hiraya/architectureRuntimeInteractions'
+import { getBriefProofPathOverviewContent } from '@/content/hiraya/briefProofPathOverview'
+import { costCapacityTradeoffLedgerContent } from '@/content/hiraya/costTradeoffLedger'
 import { getHirayaEvidenceAsset } from '@/content/hiraya/evidence-assets'
 import { exposureBoundaryContent } from '@/content/hiraya/exposureBoundaries'
 import { sdlcAuthorityFlowContent } from '@/content/hiraya/sdlcAuthorityFlow'
+import { sdlcDeliveryGuardrails } from '@/content/hiraya/sdlcDeliveryGuardrails'
 import type {
-  HirayaContentSection,
   HirayaEvidenceItem,
   HirayaPageContent,
-  HirayaProofPoint,
   HirayaWellArchitectedPillar,
 } from '@/content/hiraya/types'
+import { normalizeAppLocale } from '@/i18n/locales'
 import { cn } from '@/lib/utils'
 
 import { ArchitectureOwnershipExplorer } from './architecture-ownership-explorer'
+import { ArchitectureRuntimeInteractionExplorer } from './architecture-runtime-interaction-explorer'
+import { BriefProofPathOverview } from './brief-proof-path-overview'
+import { CostCapacityTradeoffLedger } from './cost-capacity-tradeoff-ledger'
 import { ExposureBoundaryMatrix } from './exposure-boundary-matrix'
-import { HirayaContentTableView } from './hiraya-content-table'
+import { SdlcDeliveryGuardrailBoard } from './sdlc-delivery-guardrail-board'
 import { SdlcAuthorityFlow } from './sdlc-authority-flow'
+import { HirayaMediaSlotGrid } from './hiraya-media-slot'
 import { HirayaMetricGrid } from './hiraya-metric-grid'
-import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
+import { HirayaSectionShell, HirayaTag } from './hiraya-section'
 
 function findSection(page: HirayaPageContent, id: string) {
   return page.sections.find((section) => section.id === id)
@@ -39,10 +53,9 @@ function RoutePanel({
   className?: string
 }) {
   return (
-    <HirayaSectionFrame className={className}>
-      <HirayaSectionHeader eyebrow={eyebrow} title={title} description={description} />
+    <HirayaSectionShell className={className} eyebrow={eyebrow} title={title} description={description}>
       <div className="p-5">{children}</div>
-    </HirayaSectionFrame>
+    </HirayaSectionShell>
   )
 }
 
@@ -74,7 +87,7 @@ function TextNode({
   )
 }
 
-function EvidenceRevealCard({
+function EvidenceCarouselCard({
   evidenceId,
   title,
   summary,
@@ -91,165 +104,140 @@ function EvidenceRevealCard({
   const resolvedImageSrc = imageSrc ?? asset?.src
 
   return (
-    <article
-      tabIndex={0}
-      className="group relative min-h-44 overflow-hidden border border-border bg-background/78 p-4 outline-none transition-colors hover:border-primary/55 focus-visible:border-primary/70 focus-visible:ring-2 focus-visible:ring-ring/30"
-    >
-      <div className="flex h-full flex-col justify-between gap-4">
+    <article className="grid gap-4 border border-border bg-background/78 p-4 lg:grid-cols-[0.42fr_0.58fr] lg:p-5">
+      <div className="grid content-start gap-4">
         <div>
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{evidenceId}</p>
-          <h3 className="mt-2 text-base font-semibold tracking-normal text-foreground">{title}</h3>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{evidenceId}</p>
+          <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">{title}</h3>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{summary}</p>
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-normal text-primary">hover/focus for screenshot evidence</p>
+        {asset?.caption ? <p className="border-l-2 border-primary pl-3 text-xs leading-5 text-muted-foreground">{asset.caption}</p> : null}
+        <div className="grid gap-2">
+          {previewLines.map((line) => (
+            <div key={line} className="flex items-center gap-2 text-xs leading-5 text-muted-foreground">
+              <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+              <span>{line}</span>
+            </div>
+          ))}
+        </div>
+        <p className="w-fit border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
+          {asset ? `${asset.status} ${asset.kind}` : 'screenshot evidence'}
+        </p>
       </div>
 
-      <div className="pointer-events-none absolute inset-3 z-10 translate-y-2 border border-primary/35 bg-card/98 p-4 opacity-0 shadow-2xl transition duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus:translate-y-0 group-focus:opacity-100">
-        {resolvedImageSrc ? (
-          <img src={resolvedImageSrc} alt={asset?.alt ?? ''} loading="lazy" className="h-full w-full object-cover" />
-        ) : (
-          <div className="grid h-full content-between gap-3">
-            <div>
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
-                {asset ? `${asset.status} ${asset.kind} · ${asset.preferredUse}` : 'screenshot preview surface'}
-              </p>
-              {asset?.caption ? <p className="mt-2 text-xs leading-5 text-muted-foreground">{asset.caption}</p> : null}
-              <div className="mt-3 grid gap-2">
-                {previewLines.map((line) => (
-                  <div key={line} className="flex items-center gap-2 text-xs leading-5 text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-primary" />
-                    <span>{line}</span>
-                  </div>
-                ))}
+      <div className="overflow-hidden border border-primary/25 bg-card shadow-2xl">
+        <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2">
+          <span className="size-2 rounded-full bg-red-400/80" />
+          <span className="size-2 rounded-full bg-amber-400/80" />
+          <span className="size-2 rounded-full bg-emerald-400/80" />
+          <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">MacBook Pro 14-inch capture frame · 1512 × 982</span>
+        </div>
+        <div className="aspect-[1512/982] bg-background">
+          {resolvedImageSrc ? (
+            <img src={resolvedImageSrc} alt={asset?.alt ?? title} loading="lazy" className="h-full w-full object-contain" />
+          ) : (
+            <div className="grid h-full content-between gap-4 p-5">
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="h-3 w-36 bg-primary/35" />
+                  <span className="h-3 w-24 bg-muted" />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <span className="h-16 border border-border bg-muted/50" />
+                  <span className="h-16 border border-border bg-muted/50" />
+                  <span className="h-16 border border-border bg-muted/50" />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <span className="h-3 w-5/6 bg-muted" />
+                <span className="h-3 w-2/3 bg-muted" />
+                <span className="h-3 w-3/4 bg-muted" />
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[1fr_0.62fr]">
+                <span className="h-28 border border-primary/25 bg-primary/10" />
+                <span className="h-28 border border-border bg-muted/40" />
               </div>
             </div>
-            <div className="grid gap-1 font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
-              <span className="h-2 w-3/4 bg-muted" />
-              <span className="h-2 w-1/2 bg-muted" />
-              <span className="h-2 w-2/3 bg-muted" />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </article>
   )
 }
 
-function EvidenceRevealGrid({
+function EvidenceCarousel({
   title,
   description,
   cards,
 }: {
   title: string
   description: string
-  cards: Array<ComponentProps<typeof EvidenceRevealCard>>
+  cards: Array<ComponentProps<typeof EvidenceCarouselCard>>
 }) {
+  const [activeIndex, setActiveIndex] = useState(0)
+
   return (
     <RoutePanel eyebrow="Evidence" title={title} description={description}>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {cards.map((card) => (
-          <EvidenceRevealCard key={card.evidenceId} {...card} />
-        ))}
-      </div>
-    </RoutePanel>
-  )
-}
-
-function SectionBulletNodes({ section }: { section: HirayaContentSection }) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {section.bullets?.map((bullet, index) => (
-        <TextNode key={bullet} code={String(index + 1).padStart(2, '0')} title={bullet.split(':')[0] ?? section.title} body={bullet} />
-      ))}
-    </div>
-  )
-}
-
-function BriefProofBoard({ proofPoints }: { proofPoints: readonly HirayaProofPoint[] }) {
-  return (
-    <RoutePanel
-      eyebrow="Portfolio reading path"
-      title="Make the proof visible before the visitor asks for screenshots"
-      description="The non-hover state should explain the engineering claim. Hover and focus states are reserved for captured evidence only."
-    >
-      <div className="grid gap-4 lg:grid-cols-3">
-        {proofPoints.map((proofPoint) => (
-          <TextNode key={proofPoint.id} code={proofPoint.id} title={proofPoint.title} body={proofPoint.summary} tone="primary" />
-        ))}
+      <div className="grid gap-4">
+        <Carousel index={activeIndex} onIndexChange={setActiveIndex} className="mx-auto w-full" disableDrag={false}>
+          <CarouselContent className="items-stretch">
+            {cards.map((card) => (
+              <CarouselItem key={card.evidenceId} className="basis-full px-1">
+                <div className="p-1">
+                  <EvidenceCarouselCard {...card} />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              aria-label="Previous evidence"
+              disabled={activeIndex === 0}
+              onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
+              className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronLeft className="size-3.5" aria-hidden="true" />
+            </button>
+            <CarouselIndicator className="static w-auto" classNameButton="size-1.5 data-[active=true]:bg-primary/80" />
+            <button
+              type="button"
+              aria-label="Next evidence"
+              disabled={activeIndex + 1 === cards.length}
+              onClick={() => setActiveIndex((index) => Math.min(cards.length - 1, index + 1))}
+              className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronRight className="size-3.5" aria-hidden="true" />
+            </button>
+          </div>
+        </Carousel>
       </div>
     </RoutePanel>
   )
 }
 
 function BriefRouteDesign({ page }: { page: HirayaPageContent }) {
-  const principles = findSection(page, 'operating-principles')
-  const scope = findSection(page, 'platform-scope')
+  const { i18n } = useTranslation()
+  const locale = normalizeAppLocale(i18n.resolvedLanguage) ?? 'en'
+  const overviewCards = getBriefProofPathOverviewContent(locale)
 
   return (
     <div className="grid gap-6">
-      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      {page.proofPoints ? <BriefProofBoard proofPoints={page.proofPoints} /> : null}
-      {principles ? (
-        <RoutePanel eyebrow={principles.eyebrow} title={principles.title} description={principles.body}>
-          <SectionBulletNodes section={principles} />
-        </RoutePanel>
-      ) : null}
-      {scope ? (
-        <RoutePanel eyebrow={scope.eyebrow} title={scope.title} description="A compact text inventory replaces broad media placeholders.">
-          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            <SectionBulletNodes section={scope} />
-            <div className="grid content-start gap-3 border border-border bg-muted/30 p-4">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">stack vocabulary</p>
-              <div className="flex flex-wrap gap-2">
-                {scope.tags?.map((tag) => <HirayaTag key={tag}>{tag}</HirayaTag>)}
-              </div>
-              <p className="text-sm leading-6 text-muted-foreground">
-                The brief route should act as the executive map: what was built, which decisions matter, and where the deeper proof lives.
-              </p>
-            </div>
-          </div>
-        </RoutePanel>
-      ) : null}
+      <BriefProofPathOverview cards={overviewCards} />
+      {page.mediaSlots ? <HirayaMediaSlotGrid slots={page.mediaSlots} /> : null}
     </div>
   )
 }
 
-function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
-  const network = findSection(page, 'network-architecture')
-  const ingress = findSection(page, 'ingress-path')
-  const services = findSection(page, 'microservices')
-  const ops = findSection(page, 'secrets-observability')
-
+function ArchitectureRouteDesign() {
   return (
     <div className="grid gap-6">
       <ArchitectureOwnershipExplorer content={architectureOwnershipContent} />
       <ExposureBoundaryMatrix content={exposureBoundaryContent} />
-      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      {network?.table ? (
-        <RoutePanel eyebrow={network.eyebrow} title={network.title} description={network.body}>
-          <HirayaContentTableView table={network.table} />
-        </RoutePanel>
-      ) : null}
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        {ingress ? (
-          <RoutePanel eyebrow={ingress.eyebrow} title={ingress.title} description={ingress.body}>
-            <SectionBulletNodes section={ingress} />
-          </RoutePanel>
-        ) : null}
-        {ops ? (
-          <RoutePanel eyebrow={ops.eyebrow} title={ops.title}>
-            <SectionBulletNodes section={ops} />
-          </RoutePanel>
-        ) : null}
-      </div>
-      {services?.table ? (
-        <RoutePanel eyebrow={services.eyebrow} title={services.title}>
-          <HirayaContentTableView table={services.table} />
-        </RoutePanel>
-      ) : null}
-      <EvidenceRevealGrid
-        title="Screenshots stay behind hover states"
-        description="Architecture remains readable as text; console screenshots appear only when the visitor asks for proof."
+      <ArchitectureRuntimeInteractionExplorer content={architectureRuntimeInteractionsContent} />
+      <EvidenceCarousel
+        title="Architecture evidence carousel"
+        description="Architecture remains readable as text while one console screenshot-sized proof item is shown at a time."
         cards={[
           {
             evidenceId: 'p0-public-ingress',
@@ -275,80 +263,20 @@ function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function CostBar({ label, value, note, percent }: { label: string; value: string; note: string; percent: number }) {
-  return (
-    <div className="grid gap-2 border border-border bg-background/78 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-semibold text-foreground">{label}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{note}</p>
-        </div>
-        <span className="font-mono text-xs font-semibold text-primary">{value}</span>
-      </div>
-      <div className="h-2 overflow-hidden bg-muted">
-        <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  )
-}
-
 function CostRouteDesign({ page }: { page: HirayaPageContent }) {
-  const runtime = findSection(page, 'runtime-selection')
-  const capacity = findSection(page, 'capacity-risk')
-  const decision = findSection(page, 'capacity-decision')
-  const drivers = findSection(page, 'cost-drivers')
-  const estimate = findSection(page, 'monthly-estimate')
-
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      <RoutePanel eyebrow="Cost model" title="Make the trade-off visible instead of cheap-sounding" description={page.thesis}>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CostBar label="EKS control plane" value="~$73" note="The fixed platform cost that proves managed Kubernetes." percent={100} />
-          <CostBar label="NAT Gateway" value="~$45-55+" note="Private-node egress convenience with a visible monthly floor." percent={72} />
-          <CostBar label="Spot workers" value="~$35-45" note="Lower compute spend, but pod density and replacement headroom matter." percent={58} />
-          <CostBar label="Shared ALB edge" value="~$18-25" note="One ingress path avoids one LoadBalancer per service." percent={34} />
-        </div>
-      </RoutePanel>
-      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        {capacity?.table ? (
-          <RoutePanel eyebrow={capacity.eyebrow} title={capacity.title} description={capacity.body}>
-            <div className="mb-5 border border-amber-500/30 bg-amber-500/10 p-4">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-amber-700 dark:text-amber-300">pod slots</p>
-              <div className="mt-3 h-3 overflow-hidden bg-background">
-                <div className="h-full bg-amber-500" style={{ width: '82.35%' }} />
-              </div>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">42 of 51 pod slots are already used; two t3.medium nodes would not fit the current workload.</p>
-            </div>
-            <HirayaContentTableView table={capacity.table} />
-          </RoutePanel>
-        ) : null}
-        {decision ? (
-          <RoutePanel eyebrow={decision.eyebrow} title={decision.title}>
-            <SectionBulletNodes section={decision} />
-          </RoutePanel>
-        ) : null}
-      </div>
-      <div className="grid gap-6 xl:grid-cols-2">
-        {runtime ? (
-          <RoutePanel eyebrow={runtime.eyebrow} title={runtime.title}>
-            <SectionBulletNodes section={runtime} />
-          </RoutePanel>
-        ) : null}
-        {drivers ? (
-          <RoutePanel eyebrow={drivers.eyebrow} title={drivers.title} description={drivers.body}>
-            <SectionBulletNodes section={drivers} />
-          </RoutePanel>
-        ) : null}
-      </div>
-      {estimate?.table ? (
-        <RoutePanel eyebrow={estimate.eyebrow} title={estimate.title} description={estimate.body}>
-          <HirayaContentTableView table={estimate.table} />
-        </RoutePanel>
-      ) : null}
-      <EvidenceRevealGrid
-        title="Cost proof without always-on console imagery"
-        description="Financial screenshots appear as evidence overlays, while the default page remains an analysis board."
+      <CostCapacityTradeoffLedger
+        title={costCapacityTradeoffLedgerContent.title}
+        summary={costCapacityTradeoffLedgerContent.summary}
+        tradeoffs={costCapacityTradeoffLedgerContent.tradeoffs}
+        estimateRows={costCapacityTradeoffLedgerContent.estimateRows}
+        capacity={costCapacityTradeoffLedgerContent.capacity}
+      />
+      <EvidenceCarousel
+        title="Cost evidence carousel"
+        description="Financial proof appears one item at a time, while the rest of the page remains an analysis board."
         cards={[
           {
             evidenceId: 'p2-cost-destroy-workflow',
@@ -368,43 +296,14 @@ function CostRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function SdlcRouteDesign({ page }: { page: HirayaPageContent }) {
-  const rules = findSection(page, 'core-decisions')
-  const layers = findSection(page, 'infrastructure-layers')
-  const video = page.mediaSlots?.find((slot) => slot.id === 'delivery-video-embed')
-
+function SdlcRouteDesign() {
   return (
     <div className="grid gap-6">
       <SdlcAuthorityFlow content={sdlcAuthorityFlowContent} />
-      {video ? (
-        <RoutePanel eyebrow="Single demo video" title={video.title} description={video.description}>
-          <div className="grid gap-4 border border-primary/35 bg-primary/10 p-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-            <span className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground">
-              <Play className="size-7" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="font-semibold text-foreground">One recording should carry the complete delivery proof.</p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Use the authority flow above to decompose the video into validation, artifact, promotion, reconciliation, infrastructure, and rollback decisions.</p>
-            </div>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              {video.evidenceRefs?.map((ref) => <HirayaTag key={ref}>{ref}</HirayaTag>)}
-            </div>
-          </div>
-        </RoutePanel>
-      ) : null}
-      {rules ? (
-        <RoutePanel eyebrow={rules.eyebrow} title={rules.title}>
-          <SectionBulletNodes section={rules} />
-        </RoutePanel>
-      ) : null}
-      {layers?.table ? (
-        <RoutePanel eyebrow={layers.eyebrow} title={layers.title} description={layers.body}>
-          <HirayaContentTableView table={layers.table} />
-        </RoutePanel>
-      ) : null}
-      <EvidenceRevealGrid
-        title="Pipeline screenshots are hover proof, not the default component"
-        description="Each delivery stage can reveal its concrete workflow evidence without turning the page into a gallery."
+      <SdlcDeliveryGuardrailBoard guardrails={sdlcDeliveryGuardrails} authorityFlow={sdlcAuthorityFlowContent} />
+      <EvidenceCarousel
+        title="Pipeline evidence carousel"
+        description="Each delivery stage gets concrete workflow evidence without turning the page into a static gallery."
         cards={[
           {
             evidenceId: 'p0-cicd-delivery-flow',
@@ -487,9 +386,9 @@ function WafRouteDesign({ page }: { page: HirayaPageContent }) {
           </div>
         </RoutePanel>
       ) : null}
-      <EvidenceRevealGrid
-        title="Pillar evidence appears only when inspecting a claim"
-        description="The framework stays text-led; screenshots support the claim on hover/focus."
+      <EvidenceCarousel
+        title="Well-Architected evidence carousel"
+        description="The framework stays text-led while screenshots support one pillar claim at a time."
         cards={[
           {
             evidenceId: 'p1-secrets',
@@ -520,11 +419,11 @@ export function HirayaRouteDesign({ page }: { page: HirayaPageContent }) {
     case 'brief':
       return <BriefRouteDesign page={page} />
     case 'arch':
-      return <ArchitectureRouteDesign page={page} />
+      return <ArchitectureRouteDesign />
     case 'cost':
       return <CostRouteDesign page={page} />
     case 'sdlc':
-      return <SdlcRouteDesign page={page} />
+      return <SdlcRouteDesign />
     case 'waf':
       return <WafRouteDesign page={page} />
     default:
