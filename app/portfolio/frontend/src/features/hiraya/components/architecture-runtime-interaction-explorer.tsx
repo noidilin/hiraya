@@ -45,21 +45,6 @@ const statusClasses: Record<ServiceBoundaryStatus, string> = {
   'platform-support': 'border-border bg-muted/50 text-muted-foreground',
 }
 
-function PanelIntro({ title, summary }: { title: string; summary: string }) {
-  return (
-    <div className="grid gap-2 border border-border bg-background/72 p-4 lg:grid-cols-[1fr_auto] lg:items-end">
-      <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">selected runtime lens</p>
-        <h3 className="mt-1 text-lg font-semibold tracking-normal text-foreground">{title}</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{summary}</p>
-      </div>
-      <span className="w-fit border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-        runtime interaction
-      </span>
-    </div>
-  )
-}
-
 const runtimeFlowEdgeStyle = {
   stroke: 'var(--muted-foreground)',
   strokeOpacity: 0.42,
@@ -247,33 +232,29 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
 
 function RequestPathExplorer({ content }: { content: ArchitectureRuntimeInteractionsContent }) {
   return (
-    <div className="grid gap-5 p-5">
-      <PanelIntro title={content.requestPaths.title} summary={content.requestPaths.summary} />
-
+    <div className="grid gap-4 p-4 sm:p-5">
       <Card className="overflow-hidden rounded-lg border-border/90 bg-card/92 py-0 shadow-none backdrop-blur-md">
-        <article className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-4 p-4 sm:p-5 xl:p-6">
+        <article className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 p-4">
           <header className="grid min-w-0 gap-2">
-            <div className="flex min-h-7 min-w-0 items-center gap-2">
+            <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
               <span className="shrink-0 border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
                 flow graph
               </span>
               <span className="min-w-0 truncate border border-border/80 bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
-                same-origin request path → private ClusterIP services
+                same-origin → private services
               </span>
             </div>
             <div className="w-full min-w-0">
-              <h4 className="text-3xl font-semibold leading-[1.05] tracking-normal text-foreground sm:text-4xl lg:text-[2.625rem]">
+              <h4 className="text-lg font-semibold leading-tight tracking-normal text-foreground">
                 One visitor path, multiple private branches
               </h4>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground/86">
-                The graph shows the runtime boundary transfer directly: public traffic reaches only the Storefront route; API requests then move through the Storefront proxy and gateway before selecting private services.
+              <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground/86">
+                Public traffic reaches only the Storefront route; API requests move through the Storefront proxy and gateway before selecting private services.
               </p>
             </div>
           </header>
 
           <RuntimeFlowGraph content={content} />
-
-
         </article>
       </Card>
     </div>
@@ -410,25 +391,23 @@ function SecretMaterializationFlowGraph({ content }: { content: ArchitectureRunt
 
 function SecretMaterializationExplorer({ content }: { content: ArchitectureRuntimeInteractionsContent }) {
   return (
-    <div className="grid gap-5 p-5">
-      <PanelIntro title={content.secretMaterialization.title} summary={content.secretMaterialization.summary} />
-
+    <div className="grid gap-4 p-4 sm:p-5">
       <Card className="overflow-hidden rounded-lg border-border/90 bg-card/92 py-0 shadow-none backdrop-blur-md">
-        <article className="grid gap-4 p-4 sm:p-5 xl:p-6">
+        <article className="grid gap-3 p-4">
           <header className="grid min-w-0 gap-2">
-            <div className="flex min-h-7 min-w-0 items-center gap-2">
+            <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
               <span className="shrink-0 border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
                 materialization flow
               </span>
               <span className="min-w-0 truncate border border-border/80 bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
-                external source → operator-owned runtime secret → pod consumers
+                external source → runtime secret → pods
               </span>
             </div>
             <div className="w-full min-w-0">
-              <h4 className="text-3xl font-semibold leading-[1.05] tracking-normal text-foreground sm:text-4xl lg:text-[2.625rem]">
+              <h4 className="text-lg font-semibold leading-tight tracking-normal text-foreground">
                 Secrets move by reference, not by copying values into Git
               </h4>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground/86">
+              <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground/86">
                 Hover a node to inspect the owner, mechanism, and source reference behind each materialization handoff.
               </p>
             </div>
