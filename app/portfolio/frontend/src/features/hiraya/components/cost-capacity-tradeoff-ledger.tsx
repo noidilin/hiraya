@@ -235,47 +235,6 @@ function CapacityDecision({ capacity }: { capacity: CostCapacitySnapshot }) {
   )
 }
 
-function TabButton({ tab, active, onSelect }: { tab: (typeof ledgerTabs)[number]; active: boolean; onSelect: () => void }) {
-  return (
-    <button
-      id={`${tab.id}-tab`}
-      type="button"
-      role="tab"
-      aria-selected={active}
-      aria-controls={`${tab.id}-panel`}
-      tabIndex={active ? 0 : -1}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-        event.preventDefault()
-
-        const currentIndex = ledgerTabs.findIndex((item) => item.id === tab.id)
-        const nextIndex =
-          event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? ledgerTabs.length - 1
-              : event.key === 'ArrowLeft'
-                ? (currentIndex - 1 + ledgerTabs.length) % ledgerTabs.length
-                : (currentIndex + 1) % ledgerTabs.length
-        const nextTab = ledgerTabs[nextIndex]
-        const nextButton = event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#${nextTab.id}-tab`)
-        nextButton?.focus()
-        nextButton?.click()
-      }}
-      className={cn(
-        'inline-flex min-h-9 items-center gap-2 whitespace-nowrap border px-3 py-1.5 text-left text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/45',
-        active
-          ? 'border-primary/45 bg-primary/10 text-primary'
-          : 'border-border/80 bg-background/55 text-muted-foreground hover:border-primary/30 hover:text-foreground',
-      )}
-    >
-      <span>{tab.label}</span>
-      <span className="hidden font-mono text-[10px] uppercase tracking-normal opacity-75 sm:inline">{tab.meta}</span>
-    </button>
-  )
-}
-
 export function CostCapacityTradeoffLedger({
   title,
   summary,
@@ -299,46 +258,24 @@ export function CostCapacityTradeoffLedger({
       eyebrow="Cost explanation model"
       title={title}
       description={summary}
+      tabs={{
+        items: ledgerTabs.map((tab) => ({ value: tab.id, label: tab.label, meta: tab.meta })),
+        value: activeTab,
+        onValueChange: (value) => setActiveTab(value as LedgerTab),
+      }}
     >
-      <div className="border-b border-border bg-muted/20 px-5 py-4">
-        <div role="tablist" aria-label="Capacity trade-off ledger views" className="flex gap-2 overflow-x-auto pb-1">
-          {ledgerTabs.map((tab) => (
-            <TabButton key={tab.id} tab={tab} active={activeTab === tab.id} onSelect={() => setActiveTab(tab.id)} />
-          ))}
-        </div>
-      </div>
-
       <div className="p-5">
-        <div
-          id="tradeoff-analysis-panel"
-          role="tabpanel"
-          aria-labelledby="tradeoff-analysis-tab"
-          hidden={activeTab !== 'tradeoff-analysis'}
-        >
+        {activeTab === 'tradeoff-analysis' ? (
           <div className="grid gap-3">
             {tradeoffs.map((item) => (
               <TradeoffCard key={item.id} item={item} />
             ))}
           </div>
-        </div>
+        ) : null}
 
-        <div
-          id="estimate-details-panel"
-          role="tabpanel"
-          aria-labelledby="estimate-details-tab"
-          hidden={activeTab !== 'estimate-details'}
-        >
-          <EstimateDetails rows={estimateRows} />
-        </div>
+        {activeTab === 'estimate-details' ? <EstimateDetails rows={estimateRows} /> : null}
 
-        <div
-          id="capacity-decision-panel"
-          role="tabpanel"
-          aria-labelledby="capacity-decision-tab"
-          hidden={activeTab !== 'capacity-decision'}
-        >
-          <CapacityDecision capacity={capacity} />
-        </div>
+        {activeTab === 'capacity-decision' ? <CapacityDecision capacity={capacity} /> : null}
       </div>
     </HirayaSectionShell>
   )
