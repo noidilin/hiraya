@@ -73,7 +73,7 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
                   className="grid h-full content-start gap-2 p-3 text-left outline-none ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   aria-expanded={expanded}
                   aria-controls="guardrail-detail-panel"
-                  onClick={() => setExpandedId(guardrail.id)}
+                  onMouseEnter={() => setExpandedId(guardrail.id)}
                   onFocus={() => setExpandedId(guardrail.id)}
                 >
                   <div className="flex items-start gap-3">
