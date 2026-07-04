@@ -1,5 +1,5 @@
-import { useState, type ComponentProps, type ReactNode } from 'react'
-import { CheckCircle2, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
+import { useState, type ComponentProps } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -10,82 +10,28 @@ import {
 } from '@/components/motion-primitives/carousel'
 import { architectureOwnershipContent } from '@/content/hiraya/architectureOwnership'
 import { architectureRuntimeInteractionsContent } from '@/content/hiraya/architectureRuntimeInteractions'
+import { briefPlatformProofMapContent } from '@/content/hiraya/briefPlatformProofMap'
 import { getBriefProofPathOverviewContent } from '@/content/hiraya/briefProofPathOverview'
 import { costCapacityTradeoffLedgerContent } from '@/content/hiraya/costTradeoffLedger'
 import { getHirayaEvidenceAsset } from '@/content/hiraya/evidence-assets'
 import { exposureBoundaryContent } from '@/content/hiraya/exposureBoundaries'
 import { sdlcAuthorityFlowContent } from '@/content/hiraya/sdlcAuthorityFlow'
 import { sdlcDeliveryGuardrails } from '@/content/hiraya/sdlcDeliveryGuardrails'
-import type {
-  HirayaEvidenceItem,
-  HirayaPageContent,
-  HirayaWellArchitectedPillar,
-} from '@/content/hiraya/types'
+import { wafMaturityJudgmentContent } from '@/content/hiraya/wafMaturityJudgment'
+import type { HirayaEvidenceItem, HirayaPageContent } from '@/content/hiraya/types'
 import { normalizeAppLocale } from '@/i18n/locales'
-import { cn } from '@/lib/utils'
 
 import { ArchitectureOwnershipExplorer } from './architecture-ownership-explorer'
 import { ArchitectureRuntimeInteractionExplorer } from './architecture-runtime-interaction-explorer'
+import { BriefPlatformProofMap } from './brief-platform-proof-map'
 import { BriefProofPathOverview } from './brief-proof-path-overview'
 import { CostCapacityTradeoffLedger } from './cost-capacity-tradeoff-ledger'
 import { ExposureBoundaryMatrix } from './exposure-boundary-matrix'
 import { SdlcDeliveryGuardrailBoard } from './sdlc-delivery-guardrail-board'
 import { SdlcAuthorityFlow } from './sdlc-authority-flow'
+import { WafMaturityJudgmentBoard } from './waf-maturity-judgment-board'
 import { HirayaMediaSlotGrid } from './hiraya-media-slot'
 import { HirayaMetricGrid } from './hiraya-metric-grid'
-import { HirayaSectionShell, HirayaTag } from './hiraya-section'
-
-function findSection(page: HirayaPageContent, id: string) {
-  return page.sections.find((section) => section.id === id)
-}
-
-function RoutePanel({
-  eyebrow,
-  title,
-  description,
-  children,
-  className,
-}: {
-  eyebrow?: string
-  title: string
-  description?: string
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <HirayaSectionShell className={className} eyebrow={eyebrow} title={title} description={description}>
-      <div className="p-5">{children}</div>
-    </HirayaSectionShell>
-  )
-}
-
-function TextNode({
-  code,
-  title,
-  body,
-  tone = 'default',
-}: {
-  code: string
-  title: string
-  body: string
-  tone?: 'default' | 'primary' | 'success' | 'warning'
-}) {
-  return (
-    <article
-      className={cn(
-        'min-w-0 border bg-background/78 p-4',
-        tone === 'primary' && 'border-primary/45 bg-primary/10',
-        tone === 'success' && 'border-emerald-500/30 bg-emerald-500/10',
-        tone === 'warning' && 'border-amber-500/35 bg-amber-500/10',
-        tone === 'default' && 'border-border',
-      )}
-    >
-      <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{code}</p>
-      <h3 className="mt-2 text-base font-semibold tracking-normal text-foreground">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
-    </article>
-  )
-}
 
 function EvidenceCarouselCard({
   evidenceId,
@@ -238,14 +184,16 @@ function BriefRouteDesign({ page }: { page: HirayaPageContent }) {
   return (
     <div className="grid gap-6">
       <BriefProofPathOverview cards={overviewCards} />
+      <BriefPlatformProofMap content={briefPlatformProofMapContent} />
       {page.mediaSlots ? <HirayaMediaSlotGrid slots={page.mediaSlots} /> : null}
     </div>
   )
 }
 
-function ArchitectureRouteDesign() {
+function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
   return (
     <div className="grid gap-6">
+      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <ArchitectureOwnershipExplorer content={architectureOwnershipContent} />
       <ExposureBoundaryMatrix content={exposureBoundaryContent} />
       <ArchitectureRuntimeInteractionExplorer content={architectureRuntimeInteractionsContent} />
@@ -310,9 +258,10 @@ function CostRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function SdlcRouteDesign() {
+function SdlcRouteDesign({ page }: { page: HirayaPageContent }) {
   return (
     <div className="grid gap-6">
+      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <SdlcAuthorityFlow content={sdlcAuthorityFlowContent} />
       <SdlcDeliveryGuardrailBoard guardrails={sdlcDeliveryGuardrails} authorityFlow={sdlcAuthorityFlowContent} />
       <EvidenceCarousel
@@ -343,63 +292,10 @@ function SdlcRouteDesign() {
   )
 }
 
-function PillarReviewCard({ pillar }: { pillar: HirayaWellArchitectedPillar }) {
-  return (
-    <article className="group grid gap-4 border border-border bg-background/78 p-5 transition-colors hover:border-primary/55">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-          <ShieldCheck className="size-5" aria-hidden="true" />
-        </span>
-        <div>
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{pillar.id}</p>
-          <h3 className="mt-1 text-lg font-semibold tracking-normal text-foreground">{pillar.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{pillar.stance}</p>
-        </div>
-      </div>
-      <div className="grid gap-2">
-        {pillar.highlights.map((highlight) => (
-          <div key={highlight} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-            <CheckCircle2 className="mt-1 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-            <span>{highlight}</span>
-          </div>
-        ))}
-      </div>
-      {pillar.futureHardening ? (
-        <div className="border border-dashed border-border bg-card/55 p-3">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">future hardening</p>
-          <ul className="mt-2 grid gap-1">
-            {pillar.futureHardening.map((item) => <li key={item} className="text-xs leading-5 text-muted-foreground">{item}</li>)}
-          </ul>
-        </div>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        {pillar.tools.map((tool) => <HirayaTag key={tool}>{tool}</HirayaTag>)}
-      </div>
-    </article>
-  )
-}
-
-function WafRouteDesign({ page }: { page: HirayaPageContent }) {
-  const purpose = findSection(page, 'pillar-purpose')
-
+function WafRouteDesign() {
   return (
     <div className="grid gap-6">
-      {purpose ? (
-        <RoutePanel eyebrow={purpose.eyebrow} title={purpose.title} description={purpose.body}>
-          <div className="grid gap-4 md:grid-cols-3">
-            <TextNode code="strong-now" title="What is strong now" body="Reviewable IaC, GitOps convergence, OIDC, IRSA, externalized secrets, and observable service health." tone="success" />
-            <TextNode code="dev-tradeoff" title="Intentional dev trade-offs" body="Public demo surfaces, single NAT, Spot nodes, low replica counts, and non-blocking advisory scans keep the environment affordable and demonstrable." tone="warning" />
-            <TextNode code="harden-next" title="Production hardening path" body="Restrict access, rotate secrets, scale replicas, add autoscaling, enforce gates, and use evidence to right-size." tone="primary" />
-          </div>
-        </RoutePanel>
-      ) : null}
-      {page.pillars ? (
-        <RoutePanel eyebrow="Six-pillar review" title="Translate implementation details into engineering judgment" description={page.thesis}>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {page.pillars.map((pillar) => <PillarReviewCard key={pillar.id} pillar={pillar} />)}
-          </div>
-        </RoutePanel>
-      ) : null}
+      <WafMaturityJudgmentBoard content={wafMaturityJudgmentContent} />
       <EvidenceCarousel
         title="Evidence behind the Well-Architected review"
         description="The pillar review stays judgment-led while captures support one implementation claim at a time."
@@ -433,13 +329,13 @@ export function HirayaRouteDesign({ page }: { page: HirayaPageContent }) {
     case 'brief':
       return <BriefRouteDesign page={page} />
     case 'arch':
-      return <ArchitectureRouteDesign />
+      return <ArchitectureRouteDesign page={page} />
     case 'cost':
       return <CostRouteDesign page={page} />
     case 'sdlc':
-      return <SdlcRouteDesign />
+      return <SdlcRouteDesign page={page} />
     case 'waf':
-      return <WafRouteDesign page={page} />
+      return <WafRouteDesign />
     default:
       return null
   }

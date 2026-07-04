@@ -189,19 +189,19 @@ export const hirayaPagesZhTW = [
       'Hiraya 應呈現真實 cloud platform boundary：公網只進入 shared ingress path，而 services、data、secrets 與 monitoring 保持在受控的 Kubernetes 與 AWS layers 之後。',
     metrics: [
       {
-        label: 'Region',
-        value: 'ap-northeast-1',
-        note: 'Dev 環境部署於 Tokyo region。',
+        label: 'Ownership model',
+        value: '6 boundary stacks',
+        note: '對齊 delivery authority、AWS foundation、cluster platform、public edge、runtime 與 observation 的 ownership。',
       },
       {
-        label: 'Availability Zones',
-        value: '3',
-        note: 'Public 與 private subnets 橫跨 1a、1c、1d。',
+        label: 'Exposure model',
+        value: '5 exposure classes',
+        note: '區分 public user entry、demo ops surfaces、private services、private data 與 internal platform services。',
       },
       {
-        label: 'Public endpoints',
-        value: '3',
-        note: 'Storefront、Argo CD 與 Grafana 共用 Gateway/ALB edge。',
+        label: 'Runtime interaction',
+        value: '2 flow lenses',
+        note: '追蹤 same-origin request path 與 secret materialization，而不是把 private services 變成 public。',
       },
     ],
     sections: [
@@ -396,6 +396,23 @@ export const hirayaPagesZhTW = [
       'Hiraya 將 validation、artifact publishing、manifest promotion、infrastructure delivery 與 rollback 分成責任清楚的控制路徑。',
     thesis:
       '此路線強調 CI 不直接取得部署權限；CI 產生證據與 proposed desired-state changes，reviewed Git changes 合併後再由 Argo CD 收斂 cluster。',
+    metrics: [
+      {
+        label: 'Authority lanes',
+        value: '3 control paths',
+        note: '分開 application delivery、infrastructure delivery 與 rollback，讓每條路徑都有正確的 approval boundary。',
+      },
+      {
+        label: 'App release path',
+        value: '6 stages',
+        note: '從低權限 PR evidence 前進到 image artifact、promotion PR、accepted Git state、GitOps convergence 與 smoke proof。',
+      },
+      {
+        label: 'Recovery model',
+        value: '5 reviewed steps',
+        note: 'Rollback 會驗證 target image、提出 manifest diff、接受 Git state，再讓 Argo CD 收斂 runtime。',
+      },
+    ],
     sections: [],
     flow: [
       {

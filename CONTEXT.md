@@ -40,6 +40,14 @@ _Avoid_: frontend, portfolio frontend, project site
 The brief-route explanation model that shows why Hiraya is a platform demonstration: design goals, EKS runtime, GitOps delivery, and evidence media connect into one claim before visitors inspect route-specific details.
 _Avoid_: screenshot gallery, static site intro, marketing hero, complete architecture walkthrough
 
+**Platform Proof Map**:
+The brief-route architecture graph model that uses one high-level map to orient Portfolio Visitors across source/change authority, durable foundations, disposable AWS/EKS runtime, Vintage workload paths, and proof surfaces without becoming a complete topology walkthrough.
+_Avoid_: Runtime Interaction, Ownership Flow, Authority Flow, screenshot gallery, exhaustive AWS resource diagram
+
+**Proof Lens**:
+A selectable Brief-route graph focus that highlights one evidence-backed claim across the Platform Proof Map, such as visitor request proof, delivery/GitOps proof, rebuild/destroy proof, or operations evidence proof.
+_Avoid_: generic graph filter, arbitrary node selection, screenshot tab
+
 **Hiraya Furugi**:
 The customer-facing brand presented inside the Vintage Storefront.
 _Avoid_: new frontend, FE rewrite, store frontend
@@ -123,6 +131,10 @@ _Avoid_: pipeline stepper, deployment timeline, tool chain
 **Capacity Trade-off Ledger**:
 The cost-route explanation model that treats Hiraya's dev platform spend as explicit architectural choices: fixed platform costs, savings mechanisms, capacity headroom, and remaining operational risk.
 _Avoid_: monthly bill table, cheapest possible AWS demo, production cost commitment
+
+**Well-Architected Maturity Judgment**:
+The WAF-route explanation model that separates each pillar into what is strong now, what is an intentional disposable-dev-platform trade-off, and what should harden next before production.
+_Avoid_: six-pillar checklist, compliance badge, production-readiness claim, generic best-practice scorecard
 
 **Delivery Guardrail**:
 An SDLC rule that states the allowed action, the shortcut Hiraya intentionally avoids, and the handoff result that preserves authority boundaries.

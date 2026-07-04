@@ -189,19 +189,19 @@ export const hirayaPagesEn = [
       'Hiraya should read as a real cloud platform boundary: the public internet reaches only the shared ingress path, while services, data, secrets, and monitoring remain behind controlled Kubernetes and AWS layers.',
     metrics: [
       {
-        label: 'Region',
-        value: 'ap-northeast-1',
-        note: 'Tokyo region deployment for the dev environment.',
+        label: 'Ownership model',
+        value: '6 boundary stacks',
+        note: 'Maps delivery authority, AWS foundation, cluster platform, public edge, runtime, and observation ownership.',
       },
       {
-        label: 'Availability zones',
-        value: '3',
-        note: 'Public and private subnets span 1a, 1c, and 1d.',
+        label: 'Exposure model',
+        value: '5 exposure classes',
+        note: 'Separates public user entry, demo ops surfaces, private services, private data, and internal platform services.',
       },
       {
-        label: 'Public endpoints',
-        value: '3',
-        note: 'Storefront, Argo CD, and Grafana share the Gateway/ALB edge.',
+        label: 'Runtime interaction',
+        value: '2 flow lenses',
+        note: 'Traces same-origin request paths and secret materialization without making private services public.',
       },
     ],
     sections: [
@@ -396,6 +396,23 @@ export const hirayaPagesEn = [
       'Hiraya separates validation, artifact publishing, manifest promotion, infrastructure delivery, and rollback into clear control paths.',
     thesis:
       'The route should show that CI does not directly become deployment authority. CI creates evidence and proposed desired-state changes; Argo CD converges the cluster after reviewed Git changes.',
+    metrics: [
+      {
+        label: 'Authority lanes',
+        value: '3 control paths',
+        note: 'Separates application delivery, infrastructure delivery, and rollback so each path has the right approval boundary.',
+      },
+      {
+        label: 'App release path',
+        value: '6 stages',
+        note: 'Moves from credentialless PR evidence to image artifact, promotion PR, accepted Git state, GitOps convergence, and smoke proof.',
+      },
+      {
+        label: 'Recovery model',
+        value: '5 reviewed steps',
+        note: 'Rollback verifies the target image, proposes a manifest diff, accepts Git state, and lets Argo CD converge runtime.',
+      },
+    ],
     sections: [],
     flow: [
       {
