@@ -58,31 +58,24 @@ function BoundaryStack({
 }) {
   return (
     <article
-      onClick={onSelect}
+      tabIndex={0}
+      onMouseEnter={onSelect}
+      onFocus={onSelect}
+      aria-label={`${boundary.label} boundary stack. Owner: ${boundary.primaryOwner}`}
       className={cn(
-        'relative h-full border bg-background/82 p-3 shadow-sm backdrop-blur-sm transition-colors',
+        'relative h-full border bg-background/82 p-3 shadow-sm backdrop-blur-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35',
         state === 'selected' && 'border-primary/75 bg-primary/10 ring-1 ring-primary/25',
         state === 'adjacent' && 'border-primary/35 bg-background/90',
         state === 'muted' && 'border-border/90 opacity-70 hover:opacity-100',
       )}
     >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation()
-          onSelect()
-        }}
-        onFocus={onSelect}
-        className="block w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
-      >
-        <div className="border-b border-border/75 pb-2">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-            {String(index + 1).padStart(2, '0')} · boundary stack
-          </p>
-          <h3 className="mt-1 text-sm font-semibold tracking-normal text-foreground xl:text-base">{boundary.label}</h3>
-        </div>
-        <p className="mt-2 text-[11px] leading-4 text-muted-foreground">Owner: {boundary.primaryOwner}</p>
-      </button>
+      <div className="border-b border-border/75 pb-2">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
+          {String(index + 1).padStart(2, '0')} · boundary stack
+        </p>
+        <h3 className="mt-1 text-sm font-semibold tracking-normal text-foreground xl:text-base">{boundary.label}</h3>
+      </div>
+      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">Owner: {boundary.primaryOwner}</p>
 
       <ol className="mt-3 grid gap-2">
         {boundary.layers.map((layer) => (
@@ -240,11 +233,6 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
       eyebrow="Ownership explorer"
       title={content.title}
       description={content.summary}
-      tabs={{
-        items: content.boundaries.map((boundary) => ({ value: boundary.id, label: boundary.label })),
-        value: selectedBoundaryId,
-        onValueChange: (value) => setSelectedBoundaryId(value as ArchitectureOwnershipBoundaryId),
-      }}
     >
       <TooltipProvider>
         <div className="relative overflow-hidden bg-card/80">

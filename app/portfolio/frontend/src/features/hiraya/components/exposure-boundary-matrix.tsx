@@ -54,15 +54,14 @@ function ExposureBoundaryTable({ group }: { group: ExposureBoundaryGroup }) {
 
   return (
     <div className="p-5">
-      <div className="mb-4 grid gap-2 border border-border bg-background/70 p-4 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">selected exposure class</p>
-          <h3 className="mt-1 text-lg font-semibold tracking-normal text-foreground">{group.label}</h3>
-          <p className="mt-2 font-mono text-[10px] uppercase leading-4 tracking-normal text-muted-foreground">
-            {surfacePreview(group)}
-          </p>
-        </div>
-        <span className="w-fit border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
+      <div className="mb-3 flex flex-wrap items-center gap-2 border border-border bg-background/70 px-3 py-2">
+        <span className="font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground">selected exposure</span>
+        <span className="text-sm font-semibold tracking-normal text-foreground">{group.label}</span>
+        <span aria-hidden="true" className="hidden font-mono text-[10px] text-border sm:inline">/</span>
+        <span className="min-w-[12rem] flex-1 truncate font-mono text-[10px] uppercase leading-4 tracking-normal text-muted-foreground">
+          {surfacePreview(group)}
+        </span>
+        <span className="shrink-0 border border-border bg-card px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground">
           {group.rows.length} {group.rows.length === 1 ? 'surface' : 'surfaces'}
         </span>
       </div>
