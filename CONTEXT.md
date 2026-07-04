@@ -36,6 +36,10 @@ _Avoid_: microservice project, EKS app, cluster app
 The public project introduction experience in Hiraya where Portfolio Visitors learn about the platform and use Hiraya Guide.
 _Avoid_: frontend, portfolio frontend, project site
 
+**Portfolio Proof Path**:
+The brief-route explanation model that shows why Hiraya is a platform demonstration: design goals, EKS runtime, GitOps delivery, and evidence media connect into one claim before visitors inspect route-specific details.
+_Avoid_: screenshot gallery, static site intro, marketing hero, complete architecture walkthrough
+
 **Hiraya Furugi**:
 The customer-facing brand presented inside the Vintage Storefront.
 _Avoid_: new frontend, FE rewrite, store frontend
@@ -115,6 +119,14 @@ _Avoid_: CI/CD pipeline, GitHub Actions, deployment layer
 **Authority Flow**:
 The SDLC explanation model that shows how change authority moves from validation evidence, to artifact publishing, to proposed desired-state changes, to accepted Git state, to GitOps/runtime convergence.
 _Avoid_: pipeline stepper, deployment timeline, tool chain
+
+**Capacity Trade-off Ledger**:
+The cost-route explanation model that treats Hiraya's dev platform spend as explicit architectural choices: fixed platform costs, savings mechanisms, capacity headroom, and remaining operational risk.
+_Avoid_: monthly bill table, cheapest possible AWS demo, production cost commitment
+
+**Delivery Guardrail**:
+An SDLC rule that states the allowed action, the shortcut Hiraya intentionally avoids, and the handoff result that preserves authority boundaries.
+_Avoid_: generic best practice, pipeline step, compliance checkbox
 
 **Accepted Desired State**:
 The reviewed Git state that Argo CD is allowed to reconcile into the cluster after promotion, rollback, or platform handoff changes are accepted.
