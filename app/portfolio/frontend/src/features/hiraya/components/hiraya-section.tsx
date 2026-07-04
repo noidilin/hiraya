@@ -49,8 +49,8 @@ function HirayaSectionTabList({
         <TabsTrigger
           key={item.value}
           value={item.value}
-          className="min-h-8 rounded-md border border-border/70 px-3 py-1.5 text-xs shadow-sm"
-          indicatorClassName="rounded-md border border-primary/35 bg-primary/10 shadow-sm"
+          className="min-h-8 rounded-none border border-border/70 px-3 py-1.5 text-xs shadow-sm"
+          indicatorClassName="!rounded-none border border-primary/35 bg-primary/10 shadow-sm"
           activeClassName="border-primary/35 bg-transparent text-primary"
           inactiveClassName="bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"
         >
