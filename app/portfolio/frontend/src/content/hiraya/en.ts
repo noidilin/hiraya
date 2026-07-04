@@ -118,6 +118,17 @@ export const hirayaPagesEn = [
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
+    mediaSlots: [
+      {
+        id: 'delivery-video-embed',
+        type: 'intro-video',
+        status: 'planned',
+        title: 'End-to-end delivery walkthrough video',
+        description:
+          'The Brief route carries the primary CI/CD delivery recording as portfolio proof: PR validation, image publishing, manifest promotion, Argo CD sync, rollout, and smoke verification.',
+        evidenceRefs: ['p0-cicd-delivery-flow'],
+      },
+    ],
     metrics: [
       {
         label: 'Design goals',
@@ -268,9 +279,9 @@ export const hirayaPagesEn = [
     eyebrow: 'Hardware and cost',
     title: 'Lean EKS Capacity with Explicit Trade-offs',
     summary:
-      'The current dev cluster uses three t3.medium Spot nodes and is functional, but pod density is already the main constraint.',
+      'The Cost route frames Hiraya as a Capacity Trade-off Ledger: paid platform capabilities, explicit savings choices, and visible pod-density risk.',
     thesis:
-      'The cost story should be honest: this is not the cheapest possible AWS demo, but it is a reasonable Kubernetes/GitOps platform whose major costs and capacity risks are visible.',
+      'Hiraya pays for managed Kubernetes, private-subnet egress, and public HTTPS proof; saves with Spot capacity, shared ingress, and destroyability; and keeps capacity risk inspectable without pretending this is production planning.',
     metrics: [
       {
         label: 'Cluster',
@@ -280,7 +291,7 @@ export const hirayaPagesEn = [
       {
         label: 'Node group',
         value: '3 x t3.medium',
-        note: 'Spot managed node group, 30 GiB disk per node.',
+        note: 'Spot managed node group, 20 GiB disk per node.',
       },
       {
         label: 'Pod slots',
@@ -385,48 +396,7 @@ export const hirayaPagesEn = [
       'Hiraya separates validation, artifact publishing, manifest promotion, infrastructure delivery, and rollback into clear control paths.',
     thesis:
       'The route should show that CI does not directly become deployment authority. CI creates evidence and proposed desired-state changes; Argo CD converges the cluster after reviewed Git changes.',
-    mediaSlots: [
-      {
-        id: 'delivery-video-embed',
-        type: 'intro-video',
-        status: 'planned',
-        title: 'End-to-end delivery walkthrough video',
-        description:
-          'The SDLC route can embed or link the primary CI/CD delivery recording, then use the flow cards below to break the video into reviewable stages.',
-        evidenceRefs: ['p0-cicd-delivery-flow'],
-      },
-    ],
-    sections: [
-      {
-        id: 'core-decisions',
-        eyebrow: 'Delivery rules',
-        title: 'Five delivery decisions anchor the process',
-        bullets: [
-          'Validate first, authorize later: PR checks run without cloud write permissions.',
-          'Produce artifacts before deployment: images are immutable and tagged by commit SHA.',
-          'Git is the deployment contract: CI proposes manifest changes, Argo CD applies them after merge.',
-          'Infrastructure changes are controlled: high-impact Terraform applies require manual triggers, approval, and plan evidence.',
-          'Rollback follows the same path: rollback is a manifest PR that points workloads back to a selected ECR image tag.',
-        ],
-      },
-      {
-        id: 'infrastructure-layers',
-        eyebrow: 'Control planes',
-        title: 'Separate infrastructure and workload ownership layers',
-        body:
-          'The implementation should show that normal application release automation and high-permission infrastructure automation are intentionally separated.',
-        table: {
-          columns: ['Layer', 'Owner / executor', 'Responsibility', 'Lifecycle'],
-          rows: [
-            ['Project bootstrap', 'Terraform / reviewed setup', 'Remote state access, GitHub OIDC roles, ECR, and long-lived runtime secrets', 'Long-lived'],
-            ['Platform core', 'Environment-gated Terraform apply', 'VPC, EKS, node group, ACM/DNS primitives, AWS-side IRSA roles, and admin secrets', 'Rebuildable'],
-            ['Cluster bootstrap handoff', 'Environment-gated Terraform apply', 'Argo CD installation, AppProjects, and root application handoff', 'Recreated after platform core rebuild'],
-            ['Cluster platform', 'Argo CD', 'Controllers, CRDs, namespaces, shared gateway, and monitoring', 'Continuous GitOps sync'],
-            ['GitOps application', 'Argo CD', 'Vintage Storefront workload manifests and image tag desired state', 'Continuous GitOps sync'],
-          ],
-        },
-      },
-    ],
+    sections: [],
     flow: [
       {
         id: 'pull-request-validation',

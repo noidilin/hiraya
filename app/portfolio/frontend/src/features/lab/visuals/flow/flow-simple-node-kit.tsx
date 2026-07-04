@@ -153,27 +153,35 @@ function SimpleFlowSurface({ data, selected, config, children }: SimpleSurfacePr
     .filter(Boolean)
     .join('. ')
 
+  const trigger = (
+    <div
+      tabIndex={0}
+      role="group"
+      aria-label={ariaLabel}
+      data-flow-kind={config.kind}
+      className={cn(
+        'nodrag nopan relative text-left outline-none transition duration-150',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        selected && 'ring-2 ring-primary/25',
+      )}
+    >
+      <SimpleFlowHandles data={data} />
+      {children({ Icon, meta, status, tone })}
+    </div>
+  )
+
+  if (data.tooltipContent === null) return trigger
+
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          tabIndex={0}
-          role="group"
-          aria-label={ariaLabel}
-          data-flow-kind={config.kind}
-          className={cn(
-            'nodrag nopan relative text-left outline-none transition duration-150',
-            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            selected && 'ring-2 ring-primary/25',
-          )}
-        >
-          <SimpleFlowHandles data={data} />
-          {children({ Icon, meta, status, tone })}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64">
-        <span className="font-medium">{data.label}</span>
-        <span className="block text-muted-foreground">{data.detail}</span>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+      <TooltipContent side="top" className={data.tooltipContentClassName ?? 'max-w-64'}>
+        {data.tooltipContent ?? (
+          <>
+            <span className="font-medium">{data.label}</span>
+            <span className="block text-muted-foreground">{data.detail}</span>
+          </>
+        )}
       </TooltipContent>
     </Tooltip>
   )

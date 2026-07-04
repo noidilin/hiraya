@@ -118,6 +118,17 @@ export const hirayaPagesZhTW = [
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
+    mediaSlots: [
+      {
+        id: 'delivery-video-embed',
+        type: 'intro-video',
+        status: 'planned',
+        title: '端到端交付導覽影片',
+        description:
+          'Brief route 將主要 CI/CD delivery recording 作為 portfolio proof：PR validation、image publishing、manifest promotion、Argo CD sync、rollout 與 smoke verification。',
+        evidenceRefs: ['p0-cicd-delivery-flow'],
+      },
+    ],
     metrics: [
       {
         label: '設計目標',
@@ -268,9 +279,9 @@ export const hirayaPagesZhTW = [
     eyebrow: '硬體與成本',
     title: '精簡 EKS 容量與清楚的取捨',
     summary:
-      '目前 Dev cluster 使用三台 t3.medium Spot nodes 並可正常運作，但 Pod density 已是主要限制。',
+      'Cost route 將 Hiraya 呈現為 Capacity Trade-off Ledger：付費平台能力、明確節省選擇，以及可見的 pod-density risk。',
     thesis:
-      '成本敘事必須誠實：這不是最低成本的 AWS demo，而是一個合理的 Kubernetes/GitOps platform，且主要 cost drivers 與 capacity risks 都能被看見。',
+      'Hiraya 為 managed Kubernetes、private-subnet egress 與 public HTTPS proof 付費；透過 Spot capacity、shared ingress 與 destroyability 節省；並讓 capacity risk 可檢視，而不假裝這是 production planning。',
     metrics: [
       {
         label: 'Cluster',
@@ -280,7 +291,7 @@ export const hirayaPagesZhTW = [
       {
         label: 'Node group',
         value: '3 x t3.medium',
-        note: 'Spot managed node group，每個 node 30 GiB disk。',
+        note: 'Spot managed node group，每個 node 20 GiB disk。',
       },
       {
         label: 'Pod slots',
@@ -385,48 +396,7 @@ export const hirayaPagesZhTW = [
       'Hiraya 將 validation、artifact publishing、manifest promotion、infrastructure delivery 與 rollback 分成責任清楚的控制路徑。',
     thesis:
       '此路線強調 CI 不直接取得部署權限；CI 產生證據與 proposed desired-state changes，reviewed Git changes 合併後再由 Argo CD 收斂 cluster。',
-    mediaSlots: [
-      {
-        id: 'delivery-video-embed',
-        type: 'intro-video',
-        status: 'planned',
-        title: '端到端交付導覽影片',
-        description:
-          'SDLC route 可嵌入或連結主要 CI/CD delivery recording，再用下方 flow cards 將影片拆成可審查階段。',
-        evidenceRefs: ['p0-cicd-delivery-flow'],
-      },
-    ],
-    sections: [
-      {
-        id: 'core-decisions',
-        eyebrow: '交付規則',
-        title: '五個交付決策支撐整體流程',
-        bullets: [
-          '先驗證、後授權：PR checks 在沒有 cloud write permissions 的情況下執行。',
-          '先產生 artifacts、再部署：images 維持 immutable，並以 commit SHA 標記。',
-          'Git 是 deployment contract：CI 提出 manifest changes，merge 後由 Argo CD 套用。',
-          'Infrastructure changes 必須受控：高影響 Terraform applies 需要 manual triggers、approval 與 plan evidence。',
-          'Rollback 走同一路徑：rollback 是 manifest PR，將 workloads 指回指定 ECR image tag。',
-        ],
-      },
-      {
-        id: 'infrastructure-layers',
-        eyebrow: '控制平面',
-        title: '分離 Infrastructure 與 Workload ownership layers',
-        body:
-          '實作應呈現一般 application release automation 與高權限 infrastructure automation 是刻意分離的。',
-        table: {
-          columns: ['層級', 'Owner / executor', '責任', 'Lifecycle'],
-          rows: [
-            ['Project bootstrap', 'Terraform / reviewed setup', 'Remote state access、GitHub OIDC roles、ECR 與長期 runtime secrets', 'Long-lived'],
-            ['Platform core', 'Environment-gated Terraform apply', 'VPC、EKS、node group、ACM/DNS primitives、AWS-side IRSA roles 與 admin secrets', 'Rebuildable'],
-            ['Cluster bootstrap handoff', 'Environment-gated Terraform apply', 'Argo CD installation、AppProjects 與 root application handoff', 'Recreated after platform core rebuild'],
-            ['Cluster platform', 'Argo CD', 'Controllers、CRDs、namespaces、shared gateway 與 monitoring', 'Continuous GitOps sync'],
-            ['GitOps application', 'Argo CD', 'Vintage Storefront workload manifests 與 image tag desired state', 'Continuous GitOps sync'],
-          ],
-        },
-      },
-    ],
+    sections: [],
     flow: [
       {
         id: 'pull-request-validation',

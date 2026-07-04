@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
 import type {
   ExposureBoundaryClassId,
   ExposureBoundaryContent,
@@ -10,7 +9,7 @@ import type {
 } from '@/content/hiraya/exposureBoundaries'
 import { cn } from '@/lib/utils'
 
-import { HirayaSectionFrame, HirayaSectionHeader } from './hiraya-section'
+import { HirayaSectionShell } from './hiraya-section'
 
 type ExposureBoundaryMatrixProps = {
   content: ExposureBoundaryContent
@@ -42,36 +41,6 @@ function surfacePreview(group: ExposureBoundaryGroup) {
   const remainingCount = group.rows.length - visibleSurfaces.length
 
   return remainingCount > 0 ? `${visibleSurfaces.join(' · ')} · +${remainingCount}` : visibleSurfaces.join(' · ')
-}
-
-function ExposureTabs({
-  groups,
-  selectedGroupId,
-  onSelect,
-}: {
-  groups: readonly ExposureBoundaryGroup[]
-  selectedGroupId: ExposureBoundaryClassId
-  onSelect: (groupId: ExposureBoundaryClassId) => void
-}) {
-  return (
-    <Tabs variant="dock" value={selectedGroupId} onValueChange={(value) => onSelect(value as ExposureBoundaryClassId)}>
-      <div className="border-b border-border bg-card/70 px-5 py-3">
-        <TabsList className="flex flex-wrap rounded-xl border border-border/80 bg-background/70 p-1">
-          {groups.map((group) => (
-            <TabsTrigger
-              key={group.id}
-              value={group.id}
-              className="min-h-9 rounded-xl px-3 py-2 text-xs"
-              indicatorClassName="rounded-xl"
-            >
-              <span>{group.label}</span>
-              <span className="ml-2 font-mono text-[10px] text-muted-foreground">{group.rows.length}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-    </Tabs>
-  )
 }
 
 function ExposureBoundaryTable({ group }: { group: ExposureBoundaryGroup }) {
@@ -138,10 +107,18 @@ export function ExposureBoundaryMatrix({ content, className }: ExposureBoundaryM
   )
 
   return (
-    <HirayaSectionFrame className={cn('overflow-hidden', className)}>
-      <HirayaSectionHeader eyebrow="Exposure boundary" title={content.title} description={content.summary} />
-      <ExposureTabs groups={content.groups} selectedGroupId={selectedGroup.id} onSelect={setSelectedGroupId} />
+    <HirayaSectionShell
+      className={cn('overflow-hidden', className)}
+      eyebrow="Exposure boundary"
+      title={content.title}
+      description={content.summary}
+      tabs={{
+        items: content.groups.map((group) => ({ value: group.id, label: group.label, meta: group.rows.length })),
+        value: selectedGroup.id,
+        onValueChange: (value) => setSelectedGroupId(value as ExposureBoundaryClassId),
+      }}
+    >
       <ExposureBoundaryTable group={selectedGroup} />
-    </HirayaSectionFrame>
+    </HirayaSectionShell>
   )
 }
