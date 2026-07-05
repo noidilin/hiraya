@@ -27,7 +27,7 @@ export function HirayaHero({ page }: { page: HirayaPageContent }) {
           Decision log
         </Badge>
       </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-end">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">{page.title}</p>
           <h1 className="mt-3 max-w-5xl text-4xl font-semibold tracking-normal text-foreground sm:text-5xl lg:text-6xl">
@@ -35,7 +35,7 @@ export function HirayaHero({ page }: { page: HirayaPageContent }) {
           </h1>
           <p className="mt-4 max-w-4xl text-base leading-7 text-muted-foreground sm:text-lg">{page.summary}</p>
         </div>
-        <aside className="rounded-2xl border border-border bg-card/75 p-4 shadow-sm">
+        <aside className="rounded-2xl border border-border bg-card/75 p-4 shadow-sm lg:self-end">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/80">Design thesis</p>
           <p className="mt-3 border-l border-primary/40 pl-4 text-sm leading-6 text-muted-foreground">{page.thesis}</p>
         </aside>

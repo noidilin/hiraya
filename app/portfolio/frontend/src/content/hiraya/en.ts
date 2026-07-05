@@ -87,7 +87,7 @@ export const hirayaPagesEn = [
   {
     id: 'brief',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '1. Solution Overview and Design Principles',
+    sourceSection: 'Platform Brief',
     navLabel: 'Brief',
     shortLabel: 'Brief',
     eyebrow: 'Solution overview',
@@ -178,15 +178,15 @@ export const hirayaPagesEn = [
   {
     id: 'arch',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '2. Overall Architecture Design',
+    sourceSection: 'Runtime Architecture',
     navLabel: 'Architecture',
     shortLabel: 'Arch',
     eyebrow: 'Overall architecture',
     title: 'Public Edge, Private Workloads, GitOps Runtime',
     summary:
-      'The architecture combines a public HTTPS edge with private EKS workloads, GitOps-managed manifests, externalized secrets, and internal observability surfaces.',
+      'The architecture combines a public HTTPS edge with private EKS workloads, GitOps-managed manifests, externalized secrets, and deliberately scoped observability surfaces.',
     thesis:
-      'Hiraya should read as a real cloud platform boundary: the public internet reaches only the shared ingress path, while services, data, secrets, and monitoring remain behind controlled Kubernetes and AWS layers.',
+      'Hiraya should read as a real cloud platform boundary: the public internet reaches the shared ingress path for the Storefront and review surfaces, while backend services, data, secrets, and raw metrics remain behind controlled Kubernetes and AWS layers.',
     metrics: [
       {
         label: 'Ownership model',
@@ -200,8 +200,8 @@ export const hirayaPagesEn = [
       },
       {
         label: 'Runtime interaction',
-        value: '2 flow lenses',
-        note: 'Traces same-origin request paths and secret materialization without making private services public.',
+        value: '3 runtime lenses',
+        note: 'Traces request paths, service boundaries, and secret materialization without making private services public.',
       },
     ],
     sections: [
@@ -231,7 +231,7 @@ export const hirayaPagesEn = [
         body:
           'External traffic is centralized through one shared ALB and Gateway API route layer instead of exposing each service independently.',
         bullets: [
-          'User -> Route 53 -> ALB -> Gateway API Gateway -> HTTPRoute -> Frontend Service -> Nginx -> Gateway -> Backend Services.',
+          'Browser -> Route 53 -> ALB -> Gateway API Gateway -> HTTPRoute -> Frontend Service; /api continues through nginx -> gateway -> private backend services.',
           'AWS Load Balancer Controller creates the ALB from Gateway API resources.',
           'ExternalDNS manages Route 53 records from HTTPRoute hostnames.',
           'ACM provides certificates for hiraya.noidilin.dev and *.hiraya.noidilin.dev.',
@@ -249,9 +249,7 @@ export const hirayaPagesEn = [
             ['gateway', 'Deployment + Service', '3001', 'Private', 'API aggregation layer'],
             ['auth', 'Deployment + Service', '3002', 'Private', 'Login, registration, and authentication'],
             ['product-service', 'Deployment + Service', '3003', 'Private', 'Catalog and browsing API'],
-            ['orders', 'Deployment + Service', '3005', 'Private', 'Main order API owner'],
-            ['order-service', 'Deployment + Service', '3004', 'Private', 'Legacy service boundary'],
-            ['user-service', 'Deployment + Service', '3006', 'Private', 'User profile/data service'],
+            ['orders', 'Deployment + Service', '3005', 'Private', 'Active Storefront order API owner'],
             ['vintage-postgres', 'StatefulSet + Headless Service', '5432', 'Private', 'Internal Kubernetes dev database'],
           ],
         },
@@ -273,7 +271,7 @@ export const hirayaPagesEn = [
   {
     id: 'cost',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '3. Hardware and Cost Estimate',
+    sourceSection: 'Cost & Capacity',
     navLabel: 'Cost',
     shortLabel: 'Cost',
     eyebrow: 'Hardware and cost',
@@ -387,7 +385,7 @@ export const hirayaPagesEn = [
   {
     id: 'sdlc',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '4. Full Software Development Lifecycle CI/CD Process Design',
+    sourceSection: 'SDLC Delivery Loop',
     navLabel: 'SDLC',
     shortLabel: 'SDLC',
     eyebrow: 'CI/CD process',
@@ -455,7 +453,7 @@ export const hirayaPagesEn = [
   {
     id: 'waf',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '5. Mapping to the Six Pillars of the AWS Well-Architected Framework',
+    sourceSection: 'Well-Architected Review',
     navLabel: 'Well-Architected',
     shortLabel: 'WAF',
     eyebrow: 'AWS Well-Architected',
@@ -464,6 +462,28 @@ export const hirayaPagesEn = [
       'The Well-Architected mapping explains why the design choices matter and where the dev environment should harden next.',
     thesis:
       'The WAF route should translate implementation details into engineering judgment: what is strong now, what is an intentional dev trade-off, and what should improve before production.',
+    metrics: [
+      {
+        label: 'Review scope',
+        value: '6 pillars',
+        note: 'Operations, security, reliability, performance, cost, and sustainability are reviewed as one maturity picture.',
+      },
+      {
+        label: 'Judgment states',
+        value: '3 lenses',
+        note: 'Each pillar separates strong now, intentional dev trade-off, and harden next.',
+      },
+      {
+        label: 'Current posture',
+        value: 'Dev-only',
+        note: 'The route explains disposable platform maturity without claiming production readiness.',
+      },
+      {
+        label: 'Output',
+        value: 'Priorities',
+        note: 'Each pillar ends with a practical hardening recommendation instead of a numeric score.',
+      },
+    ],
     sections: [
       {
         id: 'pillar-purpose',
