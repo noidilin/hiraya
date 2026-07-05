@@ -43,7 +43,8 @@ export type ArchitectureOwnershipContent = {
 export const architectureOwnershipContent: ArchitectureOwnershipContent = {
   routeId: 'arch',
   title: 'Architecture as ownership design',
-  summary: '',
+  summary:
+    'Hiraya is explained as ownership boundaries first: delivery proposes and proves change, AWS provides the rebuildable substrate, GitOps-owned platform capabilities expose selected runtime paths, and observation closes the decision loop.',
   boundaries: [
     {
       id: 'delivery-authority',

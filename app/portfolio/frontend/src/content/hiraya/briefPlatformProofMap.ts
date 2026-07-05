@@ -1,4 +1,4 @@
-import type { ProductIconId } from '@/components/app/product-icons'
+import type { ProductIconId } from '@/components/app/product-icon-types'
 
 import type { HirayaEvidenceItem, HirayaRouteId } from './types'
 

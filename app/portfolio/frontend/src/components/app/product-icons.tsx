@@ -1,22 +1,7 @@
 import { useId, type SVGProps } from 'react'
 
+import type { ProductIconId } from './product-icon-types'
 import { GithubIcon } from './icons'
-
-export type ProductIconId =
-  | 'github'
-  | 'github-actions'
-  | 'terraform'
-  | 'aws'
-  | 'aws-vpc'
-  | 'aws-eks'
-  | 'aws-ecr'
-  | 'aws-secrets-manager'
-  | 'aws-route53-alb'
-  | 'kubernetes'
-  | 'argo-cd'
-  | 'prometheus'
-  | 'grafana'
-  | 'postgres'
 
 type ProductIconProps = SVGProps<SVGSVGElement>
 
@@ -214,10 +199,6 @@ function PostgresIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
-export function isAwsProductIcon(icon: ProductIconId) {
-  return icon === 'aws' || icon.startsWith('aws-')
-}
-
 export function ProductIcon({ icon, className }: { icon: ProductIconId; className?: string }) {
   switch (icon) {
     case 'github':
@@ -248,6 +229,10 @@ export function ProductIcon({ icon, className }: { icon: ProductIconId; classNam
       return <PostgresIcon className={className} />
     case 'aws':
       return <AwsLogoIcon className={className} />
+    default: {
+      const exhaustiveIcon: never = icon
+      throw new Error(`Unsupported product icon: ${exhaustiveIcon}`)
+    }
   }
 }
 

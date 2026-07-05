@@ -95,9 +95,12 @@ function OwnershipTimeline({
   connectors: readonly ArchitectureOwnershipConnector[]
   activeConnectorIds: Set<string>
 }) {
+  const renderedConnectorCount = boundaries.filter((boundary) => connectors.some((connector) => connector.from === boundary.id)).length
+  const timelineColumnCount = Math.max(1, boundaries.length + renderedConnectorCount)
+
   return (
     <div className="border border-border/80 bg-background/72 p-3 shadow-sm backdrop-blur-sm">
-      <div className="grid grid-cols-[repeat(11,minmax(0,1fr))] items-center gap-2">
+      <div className="grid items-center gap-2" style={{ gridTemplateColumns: `repeat(${timelineColumnCount}, minmax(0, 1fr))` }}>
         {boundaries.map((boundary, index) => {
           const connector = connectors.find((item) => item.from === boundary.id)
           const isActive = connector ? activeConnectorIds.has(connectorId(connector)) : false
