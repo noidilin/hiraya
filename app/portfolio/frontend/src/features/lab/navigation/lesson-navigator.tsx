@@ -258,7 +258,7 @@ export function LessonActionBar({
         className="absolute right-0 top-0 origin-right"
         classNames={{
           track: "min-h-[38px] rounded-xl border-border/70 bg-card/92 px-1 py-0.5 shadow-xl",
-          item: "group h-8 min-w-8 px-2 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/45 [&_svg]:size-3.5",
+          item: "group h-8 min-w-8 rounded-[10px] px-2 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/45 [&_svg]:size-3.5",
           label: "font-mono text-[11px] tracking-normal text-muted-foreground",
         }}
       />

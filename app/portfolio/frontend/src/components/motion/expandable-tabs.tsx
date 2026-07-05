@@ -131,7 +131,9 @@ function useContentSize() {
 
   const ref = useCallback((nextNode: HTMLDivElement | null) => {
     setNode(nextNode)
-    if (!nextNode) setSize(null)
+    // Keep the previous panel size while switching active tabs. Clearing it on
+    // unmount makes the shell animate back to the closed bar before the next
+    // panel can measure, which feels like the menu closed instead of switched.
   }, [])
 
   const measure = useCallback(() => {
