@@ -35,7 +35,7 @@ export function HirayaHero({ page }: { page: HirayaPageContent }) {
           </h1>
           <p className="mt-4 max-w-4xl text-base leading-7 text-muted-foreground sm:text-lg">{page.summary}</p>
         </div>
-        <aside className="rounded-2xl border border-border bg-card/75 p-4 shadow-sm lg:self-end">
+        <aside className="rounded-xl border border-border bg-card/75 p-4 shadow-sm lg:self-end">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/80">Design thesis</p>
           <p className="mt-3 border-l border-primary/40 pl-4 text-sm leading-6 text-muted-foreground">{page.thesis}</p>
         </aside>
