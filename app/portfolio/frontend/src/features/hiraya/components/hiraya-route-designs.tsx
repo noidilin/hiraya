@@ -161,16 +161,16 @@ function EvidenceCarousel({
               <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{description}</p>
             </header>
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-              <p className="rounded-full border border-border bg-card/75 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
+              <p className="inline-flex h-9 items-center rounded-xl border border-border bg-card/75 px-3 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
                 {activeIndex + 1}/{cards.length} · {activeCard?.evidenceId}
               </p>
-              <div className="flex items-center gap-3 rounded-full border border-border bg-card/75 px-2 py-1 shadow-sm">
+              <div className="inline-flex h-9 items-center gap-3 rounded-xl border border-border bg-card/75 px-1.5 shadow-sm">
                 <button
                   type="button"
                   aria-label="Previous evidence"
                   disabled={activeIndex === 0}
                   onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
-                  className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
+                  className="grid size-7 place-items-center rounded-[10px] bg-transparent text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
                 >
                   <ChevronLeft className="size-3.5" aria-hidden="true" />
                 </button>
@@ -180,7 +180,7 @@ function EvidenceCarousel({
                   aria-label="Next evidence"
                   disabled={activeIndex + 1 === cards.length}
                   onClick={() => setActiveIndex((index) => Math.min(cards.length - 1, index + 1))}
-                  className="rounded-full bg-transparent p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
+                  className="grid size-7 place-items-center rounded-[10px] bg-transparent text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
                 >
                   <ChevronRight className="size-3.5" aria-hidden="true" />
                 </button>
