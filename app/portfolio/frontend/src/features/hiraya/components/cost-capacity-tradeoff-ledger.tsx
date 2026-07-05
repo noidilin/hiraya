@@ -4,6 +4,7 @@ import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tan
 import {
   costTradeoffClassLabels,
   type CostCapacitySnapshot,
+  type CostCapacityTradeoffLedgerContent,
   type CostEstimateRow,
   type CostTradeoffClass,
   type CostTradeoffItem,
@@ -14,11 +15,19 @@ import { HirayaSectionShell } from './hiraya-section'
 
 type LedgerTab = 'tradeoff-analysis' | 'estimate-details' | 'capacity-decision'
 
-const ledgerTabs: readonly { id: LedgerTab; label: string; meta: string }[] = [
-  { id: 'tradeoff-analysis', label: 'Trade-off analysis', meta: 'why it exists' },
-  { id: 'estimate-details', label: 'Estimate details', meta: 'monthly view' },
-  { id: 'capacity-decision', label: 'Capacity decision', meta: 'pod headroom' },
-]
+const ledgerTabMeta: Record<LedgerTab, string> = {
+  'tradeoff-analysis': 'why it exists',
+  'estimate-details': 'monthly view',
+  'capacity-decision': 'pod headroom',
+}
+
+function buildLedgerTabs(tabs: CostCapacityTradeoffLedgerContent['tabs']): readonly { id: LedgerTab; label: string; meta: string }[] {
+  return [
+    { id: 'tradeoff-analysis', label: tabs.tradeoffAnalysis, meta: ledgerTabMeta['tradeoff-analysis'] },
+    { id: 'estimate-details', label: tabs.estimateDetails, meta: ledgerTabMeta['estimate-details'] },
+    { id: 'capacity-decision', label: tabs.capacityDecision, meta: ledgerTabMeta['capacity-decision'] },
+  ]
+}
 
 function classLabel(tradeoffClass: CostTradeoffClass) {
   return costTradeoffClassLabels[tradeoffClass]
@@ -238,6 +247,7 @@ function CapacityDecision({ capacity }: { capacity: CostCapacitySnapshot }) {
 export function CostCapacityTradeoffLedger({
   title,
   summary,
+  tabs,
   tradeoffs,
   estimateRows,
   capacity,
@@ -245,12 +255,14 @@ export function CostCapacityTradeoffLedger({
 }: {
   title: string
   summary: string
+  tabs: CostCapacityTradeoffLedgerContent['tabs']
   tradeoffs: readonly CostTradeoffItem[]
   estimateRows: readonly CostEstimateRow[]
   capacity: CostCapacitySnapshot
   className?: string
 }) {
   const [activeTab, setActiveTab] = useState<LedgerTab>('tradeoff-analysis')
+  const tabItems = useMemo(() => buildLedgerTabs(tabs), [tabs])
 
   return (
     <HirayaSectionShell
@@ -259,7 +271,7 @@ export function CostCapacityTradeoffLedger({
       title={title}
       description={summary}
       tabs={{
-        items: ledgerTabs.map((tab) => ({ value: tab.id, label: tab.label, meta: tab.meta })),
+        items: tabItems.map((tab) => ({ value: tab.id, label: tab.label, meta: tab.meta })),
         value: activeTab,
         onValueChange: (value) => setActiveTab(value as LedgerTab),
       }}

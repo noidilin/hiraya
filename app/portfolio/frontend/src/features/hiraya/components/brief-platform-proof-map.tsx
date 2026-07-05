@@ -14,7 +14,6 @@ import {
 } from '@xyflow/react'
 import {
   CloudCog,
-  Database,
   FileCheck2,
   Globe2,
   KeyRound,
@@ -34,7 +33,8 @@ import type {
   BriefProofMapNodeRole,
   BriefProofMapZone,
 } from '@/content/hiraya/briefPlatformProofMap'
-import { isAwsProductIcon, ProductIcon } from '@/components/app/product-icons'
+import { isAwsProductIcon } from '@/components/app/product-icon-types'
+import { ProductIcon } from '@/components/app/product-icons'
 import { cn } from '@/lib/utils'
 
 import { HirayaSectionShell } from './hiraya-section'
@@ -109,7 +109,7 @@ function ProofMapZoneNode({ data }: NodeProps<Node<ProofMapZoneData, 'proofMapZo
 function ProofMapNode({ data }: NodeProps<Node<ProofMapNodeData, 'proofMapNode'>>) {
   const { mapNode, isLensNode, layoutCaptureEnabled, onInspect } = data
   const role = roleClasses[mapNode.role]
-  const Icon = mapNode.id === 'vintage-postgres' ? Database : mapNode.id === 'secrets-manager' || mapNode.id === 'vintage-secrets' ? KeyRound : kindIcons[mapNode.kind]
+  const Icon = mapNode.id === 'secrets-manager' || mapNode.id === 'vintage-secrets' ? KeyRound : kindIcons[mapNode.kind]
   const productIconHasWhiteTile = mapNode.toolIcon ? isAwsProductIcon(mapNode.toolIcon) : false
 
   return (
@@ -177,12 +177,36 @@ const inactiveMarker = {
   color: 'var(--muted-foreground)',
 }
 
+const missingProofMapReferenceWarnings = new Set<string>()
+
+function warnMissingProofMapReference(kind: string, id: string) {
+  if (!import.meta.env.DEV) return
+
+  const warningKey = `${kind}:${id}`
+  if (missingProofMapReferenceWarnings.has(warningKey)) return
+
+  missingProofMapReferenceWarnings.add(warningKey)
+  console.warn(`[brief-platform-proof-map] Unknown ${kind} id "${id}".`)
+}
+
 function findLens(content: BriefPlatformProofMapContent, lensId: BriefProofMapLensId) {
-  return content.lenses.find((lens) => lens.id === lensId) ?? content.lenses[0]
+  const lens = content.lenses.find((item) => item.id === lensId)
+
+  if (!lens) {
+    warnMissingProofMapReference('lens', lensId)
+  }
+
+  return lens
 }
 
 function findNode(content: BriefPlatformProofMapContent, nodeId: string) {
-  return content.nodes.find((node) => node.id === nodeId) ?? content.nodes[0]
+  const node = content.nodes.find((item) => item.id === nodeId)
+
+  if (!node) {
+    warnMissingProofMapReference('node', nodeId)
+  }
+
+  return node
 }
 
 type CapturedProofMapPositions = Record<string, { x: number; y: number }>
@@ -245,9 +269,7 @@ const proofMapEdgeRoutes: Record<string, ProofMapEdgeRoute> = {
   'prometheus-ops': { sourceHandle: 'source-bottom', targetHandle: 'target-top', offset: 22, stepPosition: 0.5 },
 }
 
-function getAutomaticEdgeHandles(content: BriefPlatformProofMapContent, sourceId: string, targetId: string) {
-  const source = findNode(content, sourceId)
-  const target = findNode(content, targetId)
+function getAutomaticEdgeHandles(source: BriefProofMapNode, target: BriefProofMapNode) {
   const dx = target.position.x - source.position.x
   const dy = target.position.y - source.position.y
 
@@ -262,8 +284,8 @@ function getAutomaticEdgeHandles(content: BriefPlatformProofMapContent, sourceId
     : { sourceHandle: 'source-top', targetHandle: 'target-bottom' }
 }
 
-function getEdgeRoute(content: BriefPlatformProofMapContent, edge: BriefPlatformProofMapContent['edges'][number]) {
-  const automaticHandles = getAutomaticEdgeHandles(content, edge.source, edge.target)
+function getEdgeRoute(edge: BriefPlatformProofMapContent['edges'][number], source: BriefProofMapNode, target: BriefProofMapNode) {
+  const automaticHandles = getAutomaticEdgeHandles(source, target)
   const route = proofMapEdgeRoutes[edge.id]
 
   return {
@@ -335,12 +357,23 @@ function CompactProofMapNodeCard({ node, className }: { node: BriefProofMapNode;
 
 export function BriefPlatformProofMap({ content, className }: BriefPlatformProofMapProps) {
   const [activeLensId, setActiveLensId] = useState<BriefProofMapLensId>('visitor-request')
-  const activeLens = findLens(content, activeLensId)
+  const activeLens = findLens(content, activeLensId) ?? content.lenses[0]
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null)
   const [capturedPositions, setCapturedPositions] = useState<CapturedProofMapPositions>({})
   const [storageRevision, setStorageRevision] = useState(0)
   const inspectedNode = inspectedNodeId ? findNode(content, inspectedNodeId) : undefined
-  const activeNodeIds = useMemo(() => new Set(activeLens.highlightedNodeIds), [activeLens.highlightedNodeIds])
+  const activeNodeIds = useMemo(() => {
+    const knownNodeIds = new Set(content.nodes.map((node) => node.id))
+    const highlightedNodeIds = activeLens?.highlightedNodeIds ?? []
+
+    return new Set(
+      highlightedNodeIds.filter((nodeId) => {
+        const nodeExists = knownNodeIds.has(nodeId)
+        if (!nodeExists) warnMissingProofMapReference('highlighted node', nodeId)
+        return nodeExists
+      }),
+    )
+  }, [activeLens?.highlightedNodeIds, content.nodes])
   const layoutCaptureEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false
 
@@ -402,14 +435,21 @@ export function BriefPlatformProofMap({ content, className }: BriefPlatformProof
   }, [activeNodeIds, content.nodes, content.zones, displayedPositions, layoutCaptureEnabled])
 
   const edges = useMemo<Edge[]>(() => {
-    return content.edges.map((edge) => {
-      const active = edge.lensIds.includes(activeLens.id)
+    return content.edges.flatMap((edge) => {
+      const source = findNode(content, edge.source)
+      const target = findNode(content, edge.target)
+
+      if (!source || !target) {
+        return []
+      }
+
+      const active = activeLens ? edge.lensIds.includes(activeLens.id) : false
 
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        ...getEdgeRoute(content, edge),
+        ...getEdgeRoute(edge, source, target),
         label: active ? edge.label : undefined,
         type: 'smoothstep',
         animated: active,
@@ -433,10 +473,12 @@ export function BriefPlatformProofMap({ content, className }: BriefPlatformProof
         className: active ? 'brief-proof-map-edge-active' : 'brief-proof-map-edge-context',
       }
     })
-  }, [activeLens.id, content])
+  }, [activeLens, content])
 
   const handleLensChange = (lensId: BriefProofMapLensId) => {
-    const nextLens = findLens(content, lensId)
+    const nextLens = findLens(content, lensId) ?? content.lenses[0]
+    if (!nextLens) return
+
     setActiveLensId(nextLens.id)
     setInspectedNodeId(null)
   }
@@ -491,7 +533,7 @@ export function BriefPlatformProofMap({ content, className }: BriefPlatformProof
             <LensButton
               key={lens.id}
               lens={lens}
-              active={lens.id === activeLens.id}
+              active={lens.id === activeLens?.id}
               onSelect={() => handleLensChange(lens.id)}
             />
           ))}

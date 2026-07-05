@@ -80,26 +80,15 @@ function Carousel({
   children,
   className,
   initialIndex = 0,
-  index: externalIndex,
+  index,
   onIndexChange,
   disableDrag = false,
 }: CarouselProps) {
-  const [internalIndex, setInternalIndex] = useState<number>(initialIndex);
-  const isControlled = externalIndex !== undefined;
-  const currentIndex = isControlled ? externalIndex : internalIndex;
-
-  const handleIndexChange = (newIndex: number) => {
-    if (!isControlled) {
-      setInternalIndex(newIndex);
-    }
-    onIndexChange?.(newIndex);
-  };
-
   return (
     <CarouselProvider
       initialIndex={initialIndex}
-      index={currentIndex}
-      onIndexChange={handleIndexChange}
+      index={index}
+      onIndexChange={onIndexChange}
       disableDrag={disableDrag}
     >
       <div className={cn('group/hover relative', className)}>
@@ -273,11 +262,14 @@ function CarouselContent({
 
   const onDragEnd = () => {
     const x = dragX.get();
+    const containerWidth = containerRef.current?.clientWidth ?? 0;
+    const dragThreshold = Math.max(24, Math.min(containerWidth * 0.08, 80));
+    const maxIndex = Math.max(0, itemsLength - 1);
 
-    if (x <= -10 && index < itemsLength - 1) {
-      setIndex(index + 1);
-    } else if (x >= 10 && index > 0) {
-      setIndex(index - 1);
+    if (x <= -dragThreshold && index < maxIndex) {
+      setIndex(Math.min(index + 1, maxIndex));
+    } else if (x >= dragThreshold && index > 0) {
+      setIndex(Math.max(index - 1, 0));
     }
   };
 
