@@ -87,12 +87,6 @@ Durable portfolio stack:
 
 - `infra/portfolio/`
 
-## Reports and agentic workflows
-
-```sh
-gh aw compile .github/workflows/weekly-permission-audit.md
-```
-
 ## Kubernetes / EKS operator checks
 
 These require AWS and cluster access:

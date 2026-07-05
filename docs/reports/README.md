@@ -17,6 +17,3 @@ The JSON schemas define the external data contract for the retained report data.
 
 The Standards Alignment Report is evidence-based and intentionally avoids formal compliance claims unless separate audit evidence exists.
 
-## Weekly audit
-
-`weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. Recompile it after edits with the reports command in [`../references/commands.md#reports-and-agentic-workflows`](../references/commands.md#reports-and-agentic-workflows).

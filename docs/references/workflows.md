@@ -14,8 +14,6 @@ Stable map of workflow files and their primary responsibility. See workflow YAML
 | `.github/workflows/portfolio-pr-baseline.yml` | Portfolio app/API PR baseline |
 | `.github/workflows/portfolio-deploy.yml` | Portfolio app/API deploy path |
 | `.github/workflows/portfolio-infra-deploy.yml` | Durable Portfolio Stack infra deploy path |
-| `.github/workflows/weekly-permission-audit.md` | Agentic workflow source for weekly permission audit |
-| `.github/workflows/weekly-permission-audit.lock.yml` | Compiled workflow generated from the agentic workflow source |
 
 ## Related automation sources
 
