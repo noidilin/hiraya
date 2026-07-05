@@ -87,7 +87,7 @@ export const hirayaPagesZhTW = [
   {
     id: 'brief',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '1. Solution Overview and Design Principles',
+    sourceSection: 'Platform Brief',
     navLabel: '概覽',
     shortLabel: '概覽',
     eyebrow: '方案概覽',
@@ -178,15 +178,15 @@ export const hirayaPagesZhTW = [
   {
     id: 'arch',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '2. Overall Architecture Design',
+    sourceSection: 'Runtime Architecture',
     navLabel: '架構',
     shortLabel: '架構',
     eyebrow: '整體架構',
     title: 'Public Edge、Private Workloads 與 GitOps Runtime',
     summary:
-      '整體架構結合 public HTTPS edge、private EKS workloads、GitOps 管理的 manifests、外部化 secrets，以及保留在內部的 observability surfaces。',
+      '整體架構結合 public HTTPS edge、private EKS workloads、GitOps 管理的 manifests、外部化 secrets，以及刻意界定範圍的 observability surfaces。',
     thesis:
-      'Hiraya 應呈現真實 cloud platform boundary：公網只進入 shared ingress path，而 services、data、secrets 與 monitoring 保持在受控的 Kubernetes 與 AWS layers 之後。',
+      'Hiraya 應呈現真實 cloud platform boundary：公網會經由 shared ingress path 進入 Storefront 與 review surfaces，而 backend services、data、secrets 與 raw metrics 保持在受控的 Kubernetes 與 AWS layers 之後。',
     metrics: [
       {
         label: 'Ownership model',
@@ -200,8 +200,8 @@ export const hirayaPagesZhTW = [
       },
       {
         label: 'Runtime interaction',
-        value: '2 flow lenses',
-        note: '追蹤 same-origin request path 與 secret materialization，而不是把 private services 變成 public。',
+        value: '3 runtime lenses',
+        note: '追蹤 request paths、service boundaries 與 secret materialization，而不是把 private services 變成 public。',
       },
     ],
     sections: [
@@ -231,7 +231,7 @@ export const hirayaPagesZhTW = [
         body:
           '外部流量集中經由單一 shared ALB 與 Gateway API route layer，而不是讓每個 service 獨立暴露。',
         bullets: [
-          'User -> Route 53 -> ALB -> Gateway API Gateway -> HTTPRoute -> Frontend Service -> Nginx -> Gateway -> Backend Services。',
+          'Browser -> Route 53 -> ALB -> Gateway API Gateway -> HTTPRoute -> Frontend Service；/api 會繼續經過 nginx -> gateway -> private backend services。',
           'AWS Load Balancer Controller 依 Gateway API resources 建立 ALB。',
           'ExternalDNS 依 HTTPRoute hostnames 管理 Route 53 records。',
           'ACM 為 hiraya.noidilin.dev 與 *.hiraya.noidilin.dev 提供 certificates。',
@@ -249,9 +249,7 @@ export const hirayaPagesZhTW = [
             ['gateway', 'Deployment + Service', '3001', 'Private', 'API aggregation layer'],
             ['auth', 'Deployment + Service', '3002', 'Private', '登入、註冊與驗證'],
             ['product-service', 'Deployment + Service', '3003', 'Private', 'Catalog 與 browsing API'],
-            ['orders', 'Deployment + Service', '3005', 'Private', '主要 order API owner'],
-            ['order-service', 'Deployment + Service', '3004', 'Private', 'Legacy service boundary'],
-            ['user-service', 'Deployment + Service', '3006', 'Private', 'User profile/data service'],
+            ['orders', 'Deployment + Service', '3005', 'Private', 'Active Storefront order API owner'],
             ['vintage-postgres', 'StatefulSet + Headless Service', '5432', 'Private', 'Kubernetes 內部 dev database'],
           ],
         },
@@ -273,7 +271,7 @@ export const hirayaPagesZhTW = [
   {
     id: 'cost',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '3. Hardware and Cost Estimate',
+    sourceSection: 'Cost & Capacity',
     navLabel: '成本',
     shortLabel: '成本',
     eyebrow: '硬體與成本',
@@ -387,7 +385,7 @@ export const hirayaPagesZhTW = [
   {
     id: 'sdlc',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '4. Full Software Development Lifecycle CI/CD Process Design',
+    sourceSection: 'SDLC Delivery Loop',
     navLabel: 'SDLC',
     shortLabel: 'SDLC',
     eyebrow: 'CI/CD 流程',
@@ -455,7 +453,7 @@ export const hirayaPagesZhTW = [
   {
     id: 'waf',
     sourceDoc: hirayaSourceDoc,
-    sourceSection: '5. Mapping to the Six Pillars of the AWS Well-Architected Framework',
+    sourceSection: 'Well-Architected Review',
     navLabel: 'Well-Architected',
     shortLabel: 'WAF',
     eyebrow: 'AWS Well-Architected',
@@ -464,6 +462,28 @@ export const hirayaPagesZhTW = [
       'Well-Architected 對應說明每個設計選擇的重要性，以及 Dev 環境下一步應強化的位置。',
     thesis:
       'WAF 路線將 implementation details 轉換為 engineering judgment：目前強項、刻意接受的 Dev 取捨，以及進入 Production 前需要改善的項目。',
+    metrics: [
+      {
+        label: 'Review scope',
+        value: '6 pillars',
+        note: 'Operations、security、reliability、performance、cost 與 sustainability 會被放在同一個 maturity picture 中檢視。',
+      },
+      {
+        label: 'Judgment states',
+        value: '3 lenses',
+        note: '每個 pillar 都區分 strong now、intentional dev trade-off 與 harden next。',
+      },
+      {
+        label: 'Current posture',
+        value: 'Dev-only',
+        note: '此路線說明 disposable platform maturity，但不宣稱 production readiness。',
+      },
+      {
+        label: 'Output',
+        value: 'Priorities',
+        note: '每個 pillar 產出實際 hardening recommendation，而不是 numeric score。',
+      },
+    ],
     sections: [
       {
         id: 'pillar-purpose',

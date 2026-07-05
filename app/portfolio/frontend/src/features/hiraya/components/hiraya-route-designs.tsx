@@ -1,5 +1,5 @@
 import { useState, type ComponentProps } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MonitorPlay, PlayCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -14,23 +14,22 @@ import { briefPlatformProofMapContent } from '@/content/hiraya/briefPlatformProo
 import { getBriefProofPathOverviewContent } from '@/content/hiraya/briefProofPathOverview'
 import { costCapacityTradeoffLedgerContent } from '@/content/hiraya/costTradeoffLedger'
 import { getHirayaEvidenceAsset } from '@/content/hiraya/evidence-assets'
-import { exposureBoundaryContent } from '@/content/hiraya/exposureBoundaries'
+import { exposureBoundaryContent } from '@/content/hiraya/architectureExposureBoundaries'
 import { sdlcAuthorityFlowContent } from '@/content/hiraya/sdlcAuthorityFlow'
 import { sdlcDeliveryGuardrails } from '@/content/hiraya/sdlcDeliveryGuardrails'
 import { wafMaturityJudgmentContent } from '@/content/hiraya/wafMaturityJudgment'
-import type { HirayaEvidenceItem, HirayaPageContent } from '@/content/hiraya/types'
+import type { HirayaEvidenceItem, HirayaMediaSlot, HirayaPageContent } from '@/content/hiraya/types'
 import { normalizeAppLocale } from '@/i18n/locales'
 
+import { ArchitectureExposureBoundaryMatrix } from './architecture-exposure-boundary-matrix'
 import { ArchitectureOwnershipExplorer } from './architecture-ownership-explorer'
 import { ArchitectureRuntimeInteractionExplorer } from './architecture-runtime-interaction-explorer'
 import { BriefPlatformProofMap } from './brief-platform-proof-map'
 import { BriefProofPathOverview } from './brief-proof-path-overview'
 import { CostCapacityTradeoffLedger } from './cost-capacity-tradeoff-ledger'
-import { ExposureBoundaryMatrix } from './exposure-boundary-matrix'
 import { SdlcDeliveryGuardrailBoard } from './sdlc-delivery-guardrail-board'
 import { SdlcAuthorityFlow } from './sdlc-authority-flow'
 import { WafMaturityJudgmentBoard } from './waf-maturity-judgment-board'
-import { HirayaMediaSlotGrid } from './hiraya-media-slot'
 import { HirayaMetricGrid } from './hiraya-metric-grid'
 
 function EvidenceCarouselCard({
@@ -47,7 +46,9 @@ function EvidenceCarouselCard({
   imageSrc?: string
 }) {
   const asset = getHirayaEvidenceAsset(evidenceId)
-  const resolvedImageSrc = imageSrc ?? asset?.src
+  const isVideoAsset = asset?.kind === 'video'
+  const resolvedImageSrc = isVideoAsset ? imageSrc : (imageSrc ?? asset?.src)
+  const videoSrc = isVideoAsset ? asset.src : undefined
 
   return (
     <article className="grid gap-5 lg:grid-cols-[minmax(16rem,0.36fr)_minmax(0,0.64fr)] lg:items-stretch">
@@ -76,11 +77,36 @@ function EvidenceCarouselCard({
           <span className="size-2 rounded-full bg-red-400/80" />
           <span className="size-2 rounded-full bg-amber-400/80" />
           <span className="size-2 rounded-full bg-emerald-400/80" />
-          <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">MacBook Pro 14-inch capture frame · 1512 × 982</span>
+          <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
+            {isVideoAsset ? 'Video walkthrough frame · 16:9' : 'MacBook Pro 14-inch capture frame · 1512 × 982'}
+          </span>
         </div>
-        <div className="aspect-[1512/982] bg-background">
-          {resolvedImageSrc ? (
+        <div className={`${isVideoAsset ? 'aspect-video' : 'aspect-[1512/982]'} bg-background`}>
+          {videoSrc ? (
+            <video
+              controls
+              preload="metadata"
+              src={videoSrc}
+              className="h-full w-full bg-black object-contain"
+              aria-label={asset?.alt ?? title}
+            />
+          ) : resolvedImageSrc ? (
             <img src={resolvedImageSrc} alt={asset?.alt ?? title} loading="lazy" className="h-full w-full object-contain" />
+          ) : isVideoAsset ? (
+            <div className="relative grid h-full place-items-center overflow-hidden p-5 text-center">
+              <div className="absolute inset-0 grid-overlay opacity-45" />
+              <div className="relative z-10 grid max-w-sm justify-items-center gap-3">
+                <span className="grid size-14 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary shadow-lg shadow-primary/10">
+                  <PlayCircle className="size-7" aria-hidden="true" />
+                </span>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/80">
+                  Video evidence slot
+                </p>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Add a video source to the evidence manifest to turn this support card into a playable walkthrough.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="grid h-full content-between gap-4 p-5">
               <div className="grid gap-3">
@@ -176,6 +202,118 @@ function EvidenceCarousel({
   )
 }
 
+const briefVideoProofStages = ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke']
+
+function BriefVideoEvidence({ slots }: { slots?: readonly HirayaMediaSlot[] }) {
+  const videoSlot = slots?.find((slot) => slot.type === 'intro-video')
+  const evidenceId = videoSlot?.evidenceRefs?.[0]
+  const asset = evidenceId ? getHirayaEvidenceAsset(evidenceId) : undefined
+  const videoSrc = asset?.kind === 'video' ? asset.src : undefined
+
+  if (!videoSlot) {
+    return null
+  }
+
+  return (
+    <section className="border-l-4 border-primary/70 py-4 pl-6 sm:pl-8">
+      <div className="grid gap-5">
+        <header className="max-w-5xl">
+          <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">Evidence</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">{videoSlot.title}</h2>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{videoSlot.description}</p>
+        </header>
+
+        <article className="grid gap-5 lg:grid-cols-[minmax(16rem,0.34fr)_minmax(0,0.66fr)] lg:items-stretch">
+          <div className="grid content-start gap-4 lg:py-3 lg:pr-4">
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
+                {evidenceId ?? videoSlot.id}
+              </p>
+              <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">
+                Primary portfolio walkthrough
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {asset?.caption ?? 'A focused recording keeps the Brief route proof-led without turning the overview into a long media gallery.'}
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              {briefVideoProofStages.map((stage) => (
+                <div key={stage} className="flex items-center gap-2 text-xs leading-5 text-muted-foreground">
+                  <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{stage}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {videoSlot.evidenceRefs?.map((ref) => (
+                <span
+                  key={ref}
+                  className="rounded-full border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground"
+                >
+                  {ref}
+                </span>
+              ))}
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
+                {asset ? `${asset.status} ${asset.kind}` : `${videoSlot.status} video`}
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-2xl shadow-primary/10">
+            <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2">
+              <span className="size-2 rounded-full bg-red-400/80" />
+              <span className="size-2 rounded-full bg-amber-400/80" />
+              <span className="size-2 rounded-full bg-emerald-400/80" />
+              <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
+                Brief proof video · delivery walkthrough
+              </span>
+            </div>
+            <div className="aspect-video bg-background">
+              {videoSrc ? (
+                <video
+                  controls
+                  preload="metadata"
+                  src={videoSrc}
+                  className="h-full w-full bg-black object-contain"
+                  aria-label={asset?.alt ?? videoSlot.title}
+                />
+              ) : (
+                <div className="relative grid h-full place-items-center overflow-hidden p-6 text-center">
+                  <div className="absolute inset-0 grid-overlay opacity-45" />
+                  <div className="relative z-10 grid max-w-md justify-items-center gap-4">
+                    <span className="grid size-16 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary shadow-lg shadow-primary/10">
+                      <PlayCircle className="size-8" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/80">
+                        Video evidence slot
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        Drop the final walkthrough file into the evidence manifest and this frame becomes the playable Brief proof.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
+                        <MonitorPlay className="size-3" aria-hidden="true" />
+                        16:9 walkthrough
+                      </span>
+                      <span className="rounded-full border border-border bg-card/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
+                        Brief route anchor
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  )
+}
+
 function BriefRouteDesign({ page }: { page: HirayaPageContent }) {
   const { i18n } = useTranslation()
   const locale = normalizeAppLocale(i18n.resolvedLanguage) ?? 'en'
@@ -185,7 +323,7 @@ function BriefRouteDesign({ page }: { page: HirayaPageContent }) {
     <div className="grid gap-6">
       <BriefProofPathOverview cards={overviewCards} />
       <BriefPlatformProofMap content={briefPlatformProofMapContent} />
-      {page.mediaSlots ? <HirayaMediaSlotGrid slots={page.mediaSlots} /> : null}
+      <BriefVideoEvidence slots={page.mediaSlots} />
     </div>
   )
 }
@@ -195,7 +333,7 @@ function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <ArchitectureOwnershipExplorer content={architectureOwnershipContent} />
-      <ExposureBoundaryMatrix content={exposureBoundaryContent} />
+      <ArchitectureExposureBoundaryMatrix content={exposureBoundaryContent} />
       <ArchitectureRuntimeInteractionExplorer content={architectureRuntimeInteractionsContent} />
       <EvidenceCarousel
         title="Evidence behind the architecture decisions"
@@ -292,9 +430,10 @@ function SdlcRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function WafRouteDesign() {
+function WafRouteDesign({ page }: { page: HirayaPageContent }) {
   return (
     <div className="grid gap-6">
+      {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <WafMaturityJudgmentBoard content={wafMaturityJudgmentContent} />
       <EvidenceCarousel
         title="Evidence behind the Well-Architected review"
@@ -335,7 +474,7 @@ export function HirayaRouteDesign({ page }: { page: HirayaPageContent }) {
     case 'sdlc':
       return <SdlcRouteDesign page={page} />
     case 'waf':
-      return <WafRouteDesign />
+      return <WafRouteDesign page={page} />
     default:
       return null
   }
