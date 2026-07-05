@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, FileText, Hammer, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileText, Hammer } from 'lucide-react'
 
 import type {
   WafMaturityItem,
@@ -116,25 +116,7 @@ function PillarSwitcherButton({
         </span>
         <h3 className="text-sm font-semibold leading-5 tracking-normal text-foreground">{pillar.title}</h3>
       </div>
-      <div className="flex flex-wrap gap-1.5 pl-6" aria-label={`${pillar.title} judgment states`}>
-        {maturityStates.map((state) => {
-          const copy = maturityStateCopy[state]
-          const Icon = copy.icon
-
-          return (
-            <span
-              key={state}
-              className={cn(
-                'inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground',
-                copy.className,
-              )}
-            >
-              <Icon className={cn('size-2.5', copy.iconClassName)} aria-hidden="true" />
-              {copy.shortLabel}
-            </span>
-          )
-        })}
-      </div>
+      <p className="pl-6 text-xs leading-5 text-muted-foreground">{pillar.switcherSummary}</p>
     </button>
   )
 }
@@ -179,9 +161,9 @@ function PillarDetailPanel({ pillar }: { pillar: WafMaturityPillar }) {
       <div className="border-b border-border bg-muted/35 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">selected pillar</p>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/75 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-            <ShieldCheck className="size-3" aria-hidden="true" />
-            judgment, not score
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
+            <Hammer className="size-3" aria-hidden="true" />
+            Priority: {pillar.priorityRecommendation}
           </span>
         </div>
         <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">{pillar.title}</h3>
@@ -208,10 +190,12 @@ function PillarDetailPanel({ pillar }: { pillar: WafMaturityPillar }) {
               <FileText className="size-3" aria-hidden="true" />
               source references
             </p>
-            <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+            <ul className="mt-2 grid min-w-0 gap-1.5 sm:grid-cols-2">
               {sourceRefs.map((ref) => (
-                <li key={ref} className="break-words font-mono text-[10px] leading-5 text-muted-foreground">
-                  {ref}
+                <li key={ref} className="min-w-0 border border-border/70 bg-background/65 px-2 py-1">
+                  <code className="block overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-5 text-muted-foreground">
+                    {ref}
+                  </code>
                 </li>
               ))}
             </ul>

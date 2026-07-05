@@ -21,6 +21,8 @@ export type WafMaturityPillar = {
     | 'sustainability'
   title: string
   stance: string
+  switcherSummary: string
+  priorityRecommendation: string
   strongNow: readonly WafMaturityItem[]
   devTradeoffs: readonly WafMaturityItem[]
   hardenNext: readonly WafMaturityItem[]
@@ -47,6 +49,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Operational Excellence',
       stance:
         'Operations are strongest where changes are reviewable, GitOps-owned, observable, and recoverable through repeatable workflows.',
+      switcherSummary: 'How changes are operated, verified, and recovered.',
+      priorityRecommendation: 'Expand incident signals',
       strongNow: [
         {
           id: 'ops-gitops-delivery-loop',
@@ -86,6 +90,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Security',
       stance:
         'Security is strongest where Hiraya narrows automation credentials, centralizes public ingress, and keeps secrets outside Git.',
+      switcherSummary: 'How access, exposure, and secrets are controlled.',
+      priorityRecommendation: 'Tighten privileged access',
       strongNow: [
         {
           id: 'security-identity-boundaries',
@@ -150,6 +156,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Reliability',
       stance:
         'Reliability is currently about reproducible rebuilds, GitOps correction, dev persistence, and verified rollback rather than high-availability claims.',
+      switcherSummary: 'How the platform rebuilds, reconciles, and rolls back.',
+      priorityRecommendation: 'Add workload resilience',
       strongNow: [
         {
           id: 'reliability-rebuild-gitops',
@@ -197,6 +205,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Performance Efficiency',
       stance:
         'Performance maturity is strongest where service boundaries, shared ingress, and metrics make future right-sizing inspectable.',
+      switcherSummary: 'How service shape and metrics support right-sizing.',
+      priorityRecommendation: 'Add resource signals',
       strongNow: [
         {
           id: 'performance-service-shape',
@@ -245,6 +255,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Cost Optimization',
       stance:
         'Cost maturity is strongest where platform spend is treated as an explicit trade-off and the dev runtime remains destroyable.',
+      switcherSummary: 'How spend is justified, bounded, and governed.',
+      priorityRecommendation: 'Validate actual spend',
       strongNow: [
         {
           id: 'cost-explicit-ledger',
@@ -284,6 +296,8 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
       title: 'Sustainability',
       stance:
         'Sustainability is framed as avoiding idle dev resources, reducing duplication, and making the platform easy to rebuild when proof is needed.',
+      switcherSummary: 'How idle resources and duplicate infrastructure are reduced.',
+      priorityRecommendation: 'Automate cleanup',
       strongNow: [
         {
           id: 'sustainability-disposable-runtime',
