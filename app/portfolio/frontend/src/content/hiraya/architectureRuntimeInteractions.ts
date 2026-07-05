@@ -89,8 +89,8 @@ export const architectureRuntimeInteractionsContent: ArchitectureRuntimeInteract
     },
     {
       label: 'Public routes',
-      value: 'Storefront + demo ops',
-      note: 'The user entry route shares the edge with portfolio review surfaces.',
+      value: 'Storefront + Argo CD + Grafana',
+      note: 'The Storefront user route shares the public edge with dev ops review surfaces.',
     },
     {
       label: 'Private service pattern',
@@ -194,14 +194,14 @@ export const architectureRuntimeInteractionsContent: ArchitectureRuntimeInteract
         label: 'Checkout / order history',
         path: '/api/orders/*',
         stages: ['browser', 'public-edge', 'storefront', 'api-proxy', 'gateway', 'orders', 'vintage-postgres'],
-        claim: 'The active Storefront order contract is owned by orders; the older order-service is not on this visitor path.',
+        claim: 'The active Storefront order contract is owned by orders behind the private gateway path.',
       },
     ],
   },
   serviceBoundaries: {
     title: 'Service boundaries show what participates in the Storefront path',
     summary:
-      'Each card names the runtime responsibility, Kubernetes shape, exposure mode, and whether the service is active, legacy, data, or only supporting a platform/runtime path.',
+      'Each card names the runtime responsibility, Kubernetes shape, exposure mode, and how the portfolio-relevant service participates in the Storefront path.',
     services: [
       {
         id: 'frontend',
@@ -254,28 +254,6 @@ export const architectureRuntimeInteractionsContent: ArchitectureRuntimeInteract
         exposure: 'ClusterIP',
         participatesIn: ['/api/orders', '/api/orders/my-orders'],
         notes: 'Current dev contract remains client-gated for some order ownership behavior; do not read it as production auth hardening.',
-      },
-      {
-        id: 'order-service',
-        name: 'order-service',
-        status: 'legacy',
-        responsibility: 'Older order boundary kept visible while the Storefront uses the active orders service.',
-        kubernetesType: 'Deployment + Service',
-        port: '3004',
-        exposure: 'ClusterIP',
-        participatesIn: ['not on active Storefront order path'],
-        notes: 'ADR 0003 keeps this outside the critical Storefront baseline until retired or deliberately routed.',
-      },
-      {
-        id: 'user-service',
-        name: 'user-service',
-        status: 'platform-support',
-        responsibility: 'User profile/data service wired behind the gateway but not currently claimed as a visible Storefront visitor path.',
-        kubernetesType: 'Deployment + Service',
-        port: '3006',
-        exposure: 'ClusterIP',
-        participatesIn: ['/api/users/* gateway route', 'private user data boundary'],
-        notes: 'The frontend route audit found no current browser call to /api/users, so this stays support-scoped here.',
       },
       {
         id: 'vintage-postgres',
@@ -340,7 +318,7 @@ export const architectureRuntimeInteractionsContent: ArchitectureRuntimeInteract
         label: 'Application Runtime services',
         owner: 'Application Runtime',
         mechanism: 'pod environment references',
-        explanation: 'Auth, catalog, order, user, legacy order, and PostgreSQL workloads consume the materialized Secret at runtime without storing values in Git.',
+        explanation: 'Application services and PostgreSQL workloads consume the materialized Secret at runtime without storing values in Git.',
       },
     ],
     nonClaims: [

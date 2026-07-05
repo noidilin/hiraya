@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 
 import type {
   SdlcAuthorityConnector,
@@ -70,10 +70,11 @@ function StageNode({
     <button
       type="button"
       aria-pressed={state === 'selected'}
-      onClick={onSelect}
+      onMouseEnter={onSelect}
       onFocus={onSelect}
+      onClick={onSelect}
       className={cn(
-        'grid min-h-32 w-40 shrink-0 content-between gap-3 border bg-background/80 p-3 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none 2xl:w-44',
+        'grid min-h-32 w-full min-w-40 shrink-0 content-between gap-3 border bg-background/80 p-3 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none',
         state === 'selected' && 'border-primary/45 bg-background shadow-sm ring-1 ring-primary/20',
         state === 'active-lane' && 'border-border hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background',
         state === 'shared-concept' && 'border-primary/30 bg-background/90',
@@ -101,34 +102,42 @@ function StageTimeline({
   connectors: readonly SdlcAuthorityConnector[]
   activeConnectorIds: Set<string>
 }) {
-  return (
-    <div className="flex min-w-max items-start gap-3 border border-border/80 bg-background/72 p-3 shadow-sm backdrop-blur-sm">
-      {stages.map((stage, index) => {
-        const connector = connectors.find((item) => item.from === stage.id)
-        const isActive = connector ? activeConnectorIds.has(connectorId(connector)) : false
+  const timelineColumnCount = Math.max(stages.length * 2 - 1, 1)
 
-        return (
-          <div key={stage.id} className="relative grid w-40 shrink-0 justify-items-center gap-1 text-center 2xl:w-44">
-            {connector ? (
-              <div className="absolute left-1/2 right-[-0.75rem] top-3 grid grid-cols-[1fr_auto] items-center gap-1 pl-4">
-                <span className={cn('h-px', isActive ? 'bg-primary' : 'bg-border')} />
-                <span className={cn('font-mono text-[10px] leading-none', isActive ? 'text-primary' : 'text-muted-foreground')}>→</span>
+  return (
+    <div className="border border-border/80 bg-background/72 p-3 shadow-sm backdrop-blur-sm">
+      <div
+        className="grid min-w-[62rem] items-center gap-2"
+        style={{ gridTemplateColumns: `repeat(${timelineColumnCount}, minmax(0, 1fr))` }}
+      >
+        {stages.map((stage, index) => {
+          const connector = connectors.find((item) => item.from === stage.id)
+          const isActive = connector ? activeConnectorIds.has(connectorId(connector)) : false
+
+          return (
+            <Fragment key={stage.id}>
+              <div className="grid justify-items-center gap-1 text-center">
+                <span className="grid size-6 place-items-center border border-primary/35 bg-card font-mono text-[10px] font-semibold text-primary">
+                  {index + 1}
+                </span>
+                <span className="break-words font-mono text-[8px] uppercase leading-3 tracking-normal text-muted-foreground sm:text-[9px]">
+                  {stage.shortLabel ?? stage.label}
+                </span>
               </div>
-            ) : null}
-            <span className="relative z-10 grid size-6 place-items-center border border-primary/35 bg-card font-mono text-[10px] font-semibold text-primary">
-              {index + 1}
-            </span>
-            <span className="break-words font-mono text-[8px] uppercase leading-3 tracking-normal text-muted-foreground sm:text-[9px]">
-              {stage.label}
-            </span>
-            {connector ? (
-              <span className={cn('font-mono text-[8px] uppercase leading-3 tracking-normal sm:text-[9px]', isActive ? 'text-primary' : 'text-muted-foreground')}>
-                {connector.label}
-              </span>
-            ) : null}
-          </div>
-        )
-      })}
+              {connector ? (
+                <div className={cn('grid gap-1 text-center transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')}>
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                    <span className={cn('h-px', isActive ? 'bg-primary' : 'bg-border')} />
+                    <span className="font-mono text-[10px] leading-none">→</span>
+                    <span className={cn('h-px', isActive ? 'bg-primary' : 'bg-border')} />
+                  </div>
+                  <span className="font-mono text-[8px] uppercase leading-3 tracking-normal sm:text-[9px]">{connector.label}</span>
+                </div>
+              ) : null}
+            </Fragment>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -162,7 +171,10 @@ function AuthorityLane({
 
         <div className="overflow-x-auto pb-1">
           <StageTimeline stages={lane.stages} connectors={lane.connectors} activeConnectorIds={activeConnectorIds} />
-          <div className="mt-3 flex min-w-max items-stretch gap-3">
+          <div
+            className="mt-3 grid min-w-[62rem] items-stretch gap-3"
+            style={{ gridTemplateColumns: `repeat(${lane.stages.length}, minmax(0, 1fr))` }}
+          >
             {lane.stages.map((stage) => {
               const state: StageState =
                 stage.id === selectedStage.id
