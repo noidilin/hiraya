@@ -152,7 +152,7 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
     return [
       buildNode('browser', 'flowActor', { x: 0, y: 170 }, { code: 'visitor', status: 'public client', Icon: Globe2, tone: 'muted' }),
       buildNode('public-edge', 'flowGate', { x: 185, y: 166 }, { code: 'edge', status: 'published route', Icon: ShieldCheck, tone: 'primary' }),
-      buildNode('storefront', 'flowSystem', { x: 400, y: 166 }, { code: 'frontend', status: 'only public app boundary', Icon: Server, tone: 'primary' }),
+      buildNode('storefront', 'flowSystem', { x: 400, y: 166 }, { code: 'frontend', status: 'only public Vintage boundary', Icon: Server, tone: 'primary' }),
       buildNode('static-assets', 'flowArtifact', { x: 620, y: 58 }, { code: 'assets', status: 'served by nginx', Icon: Server, tone: 'ghost' }),
       buildNode('api-proxy', 'flowGate', { x: 620, y: 166 }, { code: '/api', status: 'same-origin proxy', Icon: Network, tone: 'muted' }),
       buildNode('gateway', 'flowSystem', { x: 830, y: 166 }, { code: 'gateway', status: 'private router', Icon: ShieldCheck, tone: 'primary' }),
@@ -249,7 +249,7 @@ function RequestPathExplorer({ content }: { content: ArchitectureRuntimeInteract
                 One visitor path, multiple private branches
               </h4>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground/86">
-                Public traffic reaches only the Storefront route; API requests move through the Storefront proxy and gateway before selecting private services.
+                Storefront visitor traffic reaches only the Storefront route; API requests move through the Storefront proxy and gateway before selecting private services.
               </p>
             </div>
           </header>
