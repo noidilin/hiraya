@@ -36,9 +36,9 @@ function InternalLayerItem({ layer }: { layer: ArchitectureOwnershipInternalLaye
             {layer.label}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-64">
-          <span className="font-medium">{layer.label}</span>
-          <span className="block text-muted-foreground">{layer.brief}</span>
+        <TooltipContent side="top" className="w-64 max-w-[calc(100vw-2rem)] flex-col items-start gap-1 text-left">
+          <span className="block max-w-full whitespace-normal break-words font-medium leading-5">{layer.label}</span>
+          <span className="block max-w-full whitespace-normal break-words text-muted-foreground leading-5">{layer.brief}</span>
         </TooltipContent>
       </Tooltip>
     </li>
