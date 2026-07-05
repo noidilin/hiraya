@@ -35,6 +35,7 @@ export type SdlcAuthorityStage = {
   id: SdlcAuthorityStageId
   conceptId?: SdlcAuthorityConceptId
   label: string
+  shortLabel?: string
   authorityHolder: string
   inputState: string
   allowedAction: string
@@ -82,6 +83,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'pr-validation-evidence',
           label: 'PR validation evidence',
+          shortLabel: 'PR',
           authorityHolder: 'GitHub Actions PR checks',
           inputState: 'A proposed code, manifest, or infrastructure change in a pull request.',
           allowedAction: 'Classify the change, run application checks, validate rendered manifests, and produce review evidence without cloud write access.',
@@ -94,6 +96,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'image-publishing',
           label: 'SHA image artifact',
+          shortLabel: 'Image',
           authorityHolder: 'Image publishing workflow',
           inputState: 'A protected-main commit that has passed the baseline checks.',
           allowedAction: 'Assume the scoped image role through OIDC, build affected services, and push immutable commit-SHA images to ECR.',
@@ -106,6 +109,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'manifest-promotion-pr',
           label: 'Manifest promotion PR',
+          shortLabel: 'Promote',
           authorityHolder: 'Promotion automation + reviewer',
           inputState: 'A newly published image tag and current GitOps workload manifests.',
           allowedAction: 'Create a manifest change proposal that points selected workloads at the new immutable image tag.',
@@ -119,6 +123,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'accepted-desired-state',
           conceptId: 'accepted-desired-state',
           label: 'Accepted Desired State',
+          shortLabel: 'Accepted',
           authorityHolder: 'Reviewed Git state',
           inputState: 'A promotion PR that has passed checks and review expectations.',
           allowedAction: 'Record the approved workload manifest change as the state Argo CD may reconcile.',
@@ -132,6 +137,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'gitops-runtime-convergence',
           conceptId: 'gitops-convergence',
           label: 'GitOps runtime convergence',
+          shortLabel: 'Runtime',
           authorityHolder: 'Argo CD + Kubernetes controllers',
           inputState: 'Accepted Desired State committed to the watched GitOps path.',
           allowedAction: 'Detect the Git change, sync manifests, and let Kubernetes roll workloads toward the declared state.',
@@ -145,6 +151,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'deploy-smoke',
           conceptId: 'verification-evidence',
           label: 'Public smoke verification',
+          shortLabel: 'Smoke',
           authorityHolder: 'Deploy smoke workflow',
           inputState: 'A converged or converging runtime exposed through the public edge.',
           allowedAction: 'Verify public behavior, DNS/TLS reachability, API response, and reported GitOps health.',
@@ -172,6 +179,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'infra-static-checks',
           label: 'Credentialless static checks',
+          shortLabel: 'Static',
           authorityHolder: 'Infrastructure PR checks',
           inputState: 'A proposed Terraform or platform configuration change.',
           allowedAction: 'Run formatting, validation, linting, and safe plan-oriented checks appropriate to pull request context.',
@@ -184,6 +192,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'platform-core-plan',
           label: 'Trusted/pre-approval plan',
+          shortLabel: 'Plan',
           authorityHolder: 'Terraform plan workflow',
           inputState: 'A trusted infrastructure change selected for cloud-impact review.',
           allowedAction: 'Generate plan evidence for Platform Core before an environment-gated apply is allowed.',
@@ -196,6 +205,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'environment-approval',
           label: 'Environment approval',
+          shortLabel: 'Approval',
           authorityHolder: 'GitHub environment gate',
           inputState: 'A requested infrastructure apply with plan evidence.',
           allowedAction: 'Require human approval before high-impact AWS mutation credentials are used.',
@@ -208,6 +218,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'platform-core-apply',
           label: 'Platform Core apply',
+          shortLabel: 'Apply',
           authorityHolder: 'Environment-gated Terraform apply role',
           inputState: 'Approved Platform Core infrastructure intent.',
           allowedAction: 'Apply the cloud substrate changes for VPC, EKS, IAM/IRSA, DNS/ACM primitives, and admin secret prerequisites.',
@@ -220,6 +231,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'cluster-bootstrap-handoff',
           label: 'Cluster Bootstrap handoff',
+          shortLabel: 'Bootstrap',
           authorityHolder: 'Cluster bootstrap apply role',
           inputState: 'A rebuilt or updated cluster that needs GitOps control established.',
           allowedAction: 'Install or refresh Argo CD handoff resources, AppProjects, and the root application entry point.',
@@ -233,6 +245,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'gitops-platform-ownership',
           conceptId: 'gitops-convergence',
           label: 'GitOps platform ownership',
+          shortLabel: 'GitOps',
           authorityHolder: 'Argo CD platform applications',
           inputState: 'Cluster Bootstrap has established the GitOps root and project boundaries.',
           allowedAction: 'Continuously reconcile platform add-ons, namespaces, controllers, monitoring, and workload application definitions from Git.',
@@ -260,6 +273,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'rollback-request',
           label: 'Operator rollback request',
+          shortLabel: 'Request',
           authorityHolder: 'Operator-triggered rollback workflow',
           inputState: 'A selected service, target image tag, and rollback reason.',
           allowedAction: 'Start a controlled recovery proposal with explicit target and reason metadata.',
@@ -272,6 +286,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'rollback-image-verification',
           label: 'ECR tag verification',
+          shortLabel: 'ECR check',
           authorityHolder: 'Rollback verification step',
           inputState: 'A requested rollback target image tag.',
           allowedAction: 'Verify the target image exists in ECR before proposing runtime desired-state changes.',
@@ -284,6 +299,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'rollback-manifest-diff',
           label: 'Manifest rollback diff',
+          shortLabel: 'Diff',
           authorityHolder: 'Rollback manifest automation',
           inputState: 'A verified target image and current GitOps workload manifests.',
           allowedAction: 'Prepare the minimal manifest diff that points the service back to the selected image tag.',
@@ -296,6 +312,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
         {
           id: 'rollback-pr',
           label: 'Rollback PR',
+          shortLabel: 'PR',
           authorityHolder: 'Rollback automation + reviewer',
           inputState: 'A validated rollback manifest diff.',
           allowedAction: 'Open or update the rollback pull request so the recovery path remains reviewed and auditable.',
@@ -309,6 +326,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'rollback-accepted-desired-state',
           conceptId: 'accepted-desired-state',
           label: 'Accepted Desired State',
+          shortLabel: 'Accepted',
           authorityHolder: 'Reviewed Git state',
           inputState: 'A rollback PR accepted through the same Git review path.',
           allowedAction: 'Record the rollback manifest as the desired runtime state Argo CD may reconcile.',
@@ -322,6 +340,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           id: 'rollback-convergence',
           conceptId: 'gitops-convergence',
           label: 'GitOps rollback convergence',
+          shortLabel: 'Converge',
           authorityHolder: 'Argo CD + Kubernetes controllers',
           inputState: 'Accepted rollback desired state in the watched GitOps path.',
           allowedAction: 'Reconcile the rollback manifest and let Kubernetes converge pods to the selected image tag.',
