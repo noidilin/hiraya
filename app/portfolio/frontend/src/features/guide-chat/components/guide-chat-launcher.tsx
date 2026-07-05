@@ -22,12 +22,12 @@ export function GuideChatLauncher() {
       ) : null}
       <button
         type="button"
-        className="inline-flex items-center gap-2 rounded-full border bg-card/95 px-4 py-3 text-sm font-medium shadow-2xl backdrop-blur-md transition duration-150 hover:bg-accent"
+        className="inline-flex h-[38px] items-center gap-1.5 rounded-xl border bg-card/95 px-3 text-xs font-medium shadow-xl backdrop-blur-md transition duration-150 hover:bg-accent"
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
         aria-controls="hiraya-guide-panel"
       >
-        {isOpen ? <X className="size-4" /> : <Bot className="size-4 text-primary" />}
+        {isOpen ? <X className="size-3.5" /> : <Bot className="size-3.5 text-primary" />}
         {isOpen ? t('guide.launcher.minimize') : t('guide.launcher.ask')}
       </button>
     </div>

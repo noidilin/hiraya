@@ -65,12 +65,12 @@ export function DockItem({
     <motion.span
       layoutId={pillLayoutId}
       transition={reduce ? { duration: 0 } : SPRING_LAYOUT}
-      className="absolute inset-0.5 -z-10 rounded-xl bg-primary/5"
+      className="absolute inset-0.5 -z-10 rounded-[inherit] bg-primary/5"
     />
   ) : null
   const sharedStyle = { width: size, height: size }
   const sharedClass = cn(
-    "relative flex shrink-0 items-center justify-center rounded-full text-foreground",
+    "relative flex shrink-0 items-center justify-center rounded-[10px] text-foreground",
     className,
   )
 

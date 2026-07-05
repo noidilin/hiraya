@@ -296,7 +296,7 @@ export function ExpandableActionBar({
                 {isHighlighted ? (
                   <motion.span
                     layoutId="action-bar-highlight"
-                    className="absolute inset-0 -z-10 rounded-full bg-primary/[0.07]"
+                    className="absolute inset-0 -z-10 rounded-[inherit] bg-primary/[0.07]"
                     transition={ITEM_TRANSITION}
                   />
                 ) : null}
