@@ -1,6 +1,6 @@
 # Deploy dev platform
 
-Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [infra README](../../../infra/README.md), [bootstrap runbook](bootstrap-infra-workflows.md), [destroy runbook](destroy-dev-platform.md).
+Related: [platform lifecycle](../../architecture/platform-lifecycle.md), [ownership boundaries](../../architecture/boundaries.md), [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [infra README](../../../infra/README.md), [bootstrap runbook](bootstrap-infra-workflows.md), [destroy runbook](destroy-dev-platform.md).
 
 ## When to use this
 
@@ -11,20 +11,6 @@ Use this runbook to manually deploy or recreate the disposable Hiraya dev EKS pl
 - Project Bootstrap has not been applied from current `main`. Apply [bootstrap-infra-workflows.md](bootstrap-infra-workflows.md) first.
 - You need to delete the platform. Use [destroy-dev-platform.md](destroy-dev-platform.md).
 - You need to roll back one service image. Use [../services/rollback-dev-service-image.md](../services/rollback-dev-service-image.md).
-
-## Ownership model
-
-Hiraya dev follows the ADR-0007 layered model:
-
-| Layer | Owner | What it owns |
-|---|---|---|
-| Project Bootstrap | manual/local Terraform in `infra/envs/dev/bootstrap` | durable state access, GitHub OIDC roles, ECR repositories, and durable Vintage Storefront secrets |
-| Platform Core | GitHub deploy Terraform in `infra/envs/dev/platform-core` | VPC, EKS, managed add-ons, ACM/DNS primitives, IAM/IRSA, and disposable platform admin secrets |
-| Cluster Bootstrap | GitHub deploy Terraform in `infra/envs/dev/cluster-bootstrap` | the `argocd` namespace, Argo CD Helm release, AppProjects, and root app-of-apps handoff |
-| Cluster Platform | Argo CD from `gitops/platform/**` | shared in-cluster controllers, CRDs, namespaces, edge Gateway resources, logging, monitoring, and public admin routes |
-| GitOps Apps | Argo CD from `gitops/apps/**` | workload desired state, starting with the Vintage Storefront |
-
-Platform Core must not use Kubernetes or Helm providers. Cluster Platform add-ons are no longer Terraform-owned. Argo CD reconciles them from Git after Cluster Bootstrap installs the root Application.
 
 ## Safety boundary
 

@@ -1,6 +1,9 @@
 # Hiraya Portfolio i18n Hybrid Localization
 
-Status: accepted
+- Status: Accepted
+- Current architecture: [Portfolio stack](../architecture/portfolio-stack.md)
+- Supersedes: none
+- Superseded by: none
 
 Hiraya portfolio i18n will target the `/hiraya/*` portfolio pages first. The CI/CD lab routes under `/chapters/*` and `/visuals` are explicitly out of scope for the first i18n implementation pass, except where shared navigation chrome needs to remain coherent across routes.
 

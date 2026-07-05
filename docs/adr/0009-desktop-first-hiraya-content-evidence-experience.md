@@ -1,6 +1,9 @@
 # Desktop-first Hiraya Content and Evidence Experience
 
-Status: accepted
+- Status: Accepted
+- Current architecture: [Portfolio stack](../architecture/portfolio-stack.md)
+- Supersedes: none
+- Superseded by: none
 
 The Hiraya portfolio routes under `/hiraya` will prioritize the desktop presentation experience. The primary visitor experience is expected to be a recruiter, reviewer, interviewer, or self-guided demo viewer using a laptop/desktop screen, so the route layouts may use dense technical cards, wide tables, architecture frames, timeline views, and hover/focus evidence previews. Mobile layouts must remain readable and navigable, but mobile parity is not the primary design constraint for this section.
 

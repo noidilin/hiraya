@@ -40,20 +40,11 @@ The seed stores only the bcrypt hash, not plaintext credentials, and includes on
 
 Docker Compose mounts `database/init/` into the PostgreSQL container, so `20-init-schema.sql` creates the service databases and starter data automatically on first container startup.
 
-To reset all local Vintage app database state and reseed from `20-init-schema.sql`, run from the repository root:
-
-```bash
-docker compose -f app/microservices/docker-compose.yml down --volumes --remove-orphans
-pnpm run docker:up
-```
+To reset all local Vintage app database state and reseed from `20-init-schema.sql`, use the Docker Compose commands in [`../../../docs/references/commands.md`](../../../docs/references/commands.md#docker-compose) from the repository root and include Compose volume removal when intentionally resetting state.
 
 The local full-stack smoke command (`pnpm run app:smoke:compose`) intentionally performs this reset, starts from the clean seed state, creates one new pending checkout order, and tears volumes down again.
 
-For quick manual reseeding against an existing products database only:
-
-```bash
-psql -d products_db -f quick-seed.sql
-```
+For quick manual reseeding against an existing products database only, run `psql -d products_db -f quick-seed.sql` from this directory.
 
 That helper is product/catalog scoped; it does not reseed the demo auth user or sample order. Use the Compose volume reset when validating login, checkout, and order-history behavior.
 

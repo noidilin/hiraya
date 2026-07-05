@@ -1,6 +1,9 @@
 # Dev EKS node instance size
 
-Status: accepted
+- Status: Accepted; amended by the later cost/capacity update recorded in this ADR
+- Current architecture: [Platform lifecycle](../architecture/platform-lifecycle.md)
+- Supersedes: none
+- Superseded by: none
 
 The dev EKS managed node group originally used three Spot `t3.large` nodes instead of three Spot `t3.medium` nodes. The Vintage microservice stack ran alongside platform add-ons, Gateway API, monitoring, logging, and Argo CD, and the previous `t3.medium` capacity hit the EKS pod-density limit before the AZ-bound `vintage-postgres-0` StatefulSet could schedule. Because the Postgres EBS volume is bound to a single Availability Zone, simply relying on another small node was less deterministic than increasing per-node pod capacity across all existing AZs.
 

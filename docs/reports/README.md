@@ -19,8 +19,4 @@ The Standards Alignment Report is evidence-based and intentionally avoids formal
 
 ## Weekly audit
 
-`weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. From the repository root, recompile it after edits:
-
-```sh
-gh aw compile .github/workflows/weekly-permission-audit.md
-```
+`weekly-permission-audit.md` is the GitHub Agentic Workflow source for the rolling weekly audit issue. Recompile it after edits with the reports command in [`../references/commands.md#reports-and-agentic-workflows`](../references/commands.md#reports-and-agentic-workflows).

@@ -1,6 +1,6 @@
 # Destroy dev platform
 
-Related: [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [destroy workflow issue #106](https://github.com/noidilin/hiraya/issues/106).
+Related: [platform lifecycle](../../architecture/platform-lifecycle.md), [ownership boundaries](../../architecture/boundaries.md), [ADR 0007: GitOps-owned Cluster Platform](../../adr/0007-gitops-owned-cluster-platform.md), [GitOps refactor PRD #93](https://github.com/noidilin/hiraya/issues/93), [destroy workflow issue #106](https://github.com/noidilin/hiraya/issues/106).
 
 ## When to use this
 

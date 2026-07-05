@@ -1,89 +1,31 @@
-# DevOps + AIOps Series
+# Hiraya DevOps Portfolio
 
-## Tech Stack
+Hiraya is a DevOps portfolio project demonstrating ownership design, AWS/EKS architecture, GitOps delivery, CI/CD automation, observability, and an AI-assisted operations narrative.
 
-| Layer | Technology |
-|-------|-----------|
-| Application | React, Node.js, PostgreSQL |
-| Containers | Docker, Docker Compose |
-| Orchestration | Kubernetes (AWS EKS) |
-| Infrastructure | Terraform |
-| CI/CD | GitHub Actions |
-| GitOps | ArgoCD + Kustomize |
-| Monitoring | Prometheus + Grafana |
-| Log Forwarding | Deferred until future AIOps logging design |
-| AIOps | AWS Bedrock Agent (Kira) |
+For non-trivial work, start with [`docs/INDEX.md`](docs/INDEX.md). It routes agents to the smallest useful reading set by task.
 
-## Root pnpm monorepo
+## Major systems
 
-The repository root is the only pnpm workspace. Run package-manager, report, app baseline, changed-service, and Docker/Compose commands from the repository root.
+| System | Purpose | Entry point |
+|---|---|---|
+| Vintage Storefront | Disposable EKS-hosted demo commerce workload | [`app/microservices/`](app/microservices/) |
+| Hiraya Portfolio | Durable public project explanation experience | [`app/portfolio/`](app/portfolio/) |
+| AWS/EKS infrastructure | Terraform-managed durable and disposable cloud boundaries | [`infra/`](infra/) |
+| GitOps desired state | Argo CD app-of-apps, Cluster Platform add-ons, and app manifests | [`gitops/`](gitops/) |
+| CI/CD automation | GitHub Actions workflows and helper scripts | [`.github/workflows/`](.github/workflows/) |
+| Documentation | Architecture, runbooks, ADRs, references, and curated Guide knowledge | [`docs/`](docs/) |
 
-```sh
-corepack enable
-corepack prepare pnpm@11.8.0 --activate
-pnpm install --frozen-lockfile
-```
+## Documentation map
 
-Common root commands:
+- Task router: [`docs/INDEX.md`](docs/INDEX.md)
+- Canonical language: [`CONTEXT.md`](CONTEXT.md)
+- Current architecture: [`docs/architecture/`](docs/architecture/)
+- Operational procedures: [`docs/runbooks/`](docs/runbooks/)
+- Historical decisions: [`docs/adr/`](docs/adr/)
+- Command/path/workflow references: [`docs/references/`](docs/references/)
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm run app:baseline` | Run the no-AWS Vintage Storefront baseline used by PR checks. |
-| `pnpm run app:smoke:compose` | Reset local Compose volumes, start the real Vintage Storefront stack, verify shell/API/auth/images/orders/checkout, and tear it down. |
-| `pnpm run reports:permissions:validate` | Validate report control data and standards mappings. |
-| `pnpm run reports:permissions` | Generate ignored report artifacts under `docs/reports/build/`. |
-| `pnpm run services:changed -- --all` | Render the full service image matrix. Pass changed file paths instead of `--all` for targeted detection. |
-| `pnpm run docker:build` | Build the Docker Compose stack using the root build context and `app/microservices/docker-compose.yml`. |
-| `pnpm run docker:up` / `pnpm run docker:down` | Start or stop the production-like local Compose stack from the repository root. The Storefront is served by nginx on `http://localhost:3000` and proxies `/api/` to the gateway. Use `docker compose -f app/microservices/docker-compose.yml down --volumes` when intentionally resetting local database state. |
-| `pnpm run docker:up:frontend-dev` | Start the profiled Vite hot-reload Storefront service on `http://localhost:3000` against the same Compose backend stack. |
+## Workspace quickstart
 
-## Structure
+The repository root is the only pnpm workspace. Setup and validation commands are maintained in [`docs/references/commands.md`](docs/references/commands.md).
 
-- Terraform owns AWS/EKS foundation resources; Argo CD owns in-cluster platform add-ons
-- GitHub Actions owns image build/push + manifest image tag updates
-- ECR stores built images
-- ArgoCD owns application deployment into Kubernetes
-- Kubernetes runs workloads and controllers
-- Git repo is desired state for application layer
-
-GitHub Actions
-  → builds images
-  → pushes to ECR
-  → updates image tags in gitops manifests
-
-Terraform
-  → creates AWS/EKS foundation resources
-  → installs Argo CD
-  → creates the root GitOps Application handoff
-
-Argo CD
-  → clones repo
-  → reads gitops/
-  → applies platform add-ons and app manifests into EKS
-  → keeps cluster in sync with Git
-
-Kubernetes
-  → runs Pods
-  → creates Services
-  → runs DB restore Job
-  → exposes metrics through ServiceMonitor
-
----
-
-## DevOps Project Implementation
-
-- Docker containers and Docker Compose
-- Infrastructure provisioning with Terraform
-- Kubernetes deployments on EKS
-- CI/CD pipelines with GitHub Actions
-- GitOps automation with ArgoCD
-- Observability with Prometheus and Grafana
-
----
-
-## AIOps Integration
-
-- Monitoring and anomaly detection
-- Log analysis at scale
-- Incident response automation
-- DevOps troubleshooting
+Use boundary READMEs for local orientation and runbooks for deploy/destroy/rollback procedures.

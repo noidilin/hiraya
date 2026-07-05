@@ -32,9 +32,10 @@ Use this page to choose a runbook by scenario or action. These runbooks target t
 
 ## Safety boundaries
 
-- Durable bootstrap resources are preserved during normal platform deploy/destroy operations.
-- Disposable platform resources live in `infra/envs/dev/platform-core` and `infra/envs/dev/cluster-bootstrap`; the legacy `infra/envs/dev/platform` stack is retired.
-- Project Bootstrap is durable and owns state access, GitHub OIDC roles, ECR repositories, and durable Vintage Storefront secrets.
-- Argo CD owns Cluster Platform and GitOps Apps desired state from `gitops/platform/**` and `gitops/apps/**` after Cluster Bootstrap installs the root app.
-- Generated Argo CD and Grafana credentials are secrets in AWS Secrets Manager. Do not print them into workflow logs, issue comments, screenshots, or documentation.
-- Prometheus remains private. Do not add emergency public routes for debugging.
+Use the safety section inside the specific runbook before acting. For background, read [platform lifecycle](../architecture/platform-lifecycle.md), [ownership boundaries](../architecture/boundaries.md), and [GitOps ownership](../architecture/gitops-ownership.md).
+
+Global cautions:
+
+- Do not destroy Project Bootstrap during routine lab shutdown.
+- Do not print generated Argo CD or Grafana credentials into logs, issue comments, screenshots, or documentation.
+- Keep Prometheus private; do not add emergency public routes for debugging.
