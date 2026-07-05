@@ -2,67 +2,17 @@
 
 Use this runbook to set up `app/portfolio/` and `infra/portfolio/` for the first dev deployment.
 
-The Portfolio Stack is intentionally separate from the EKS/GitOps Vintage Storefront platform. Applying this stack creates durable AWS resources for the public portfolio site and Hiraya Guide.
+The Portfolio Stack is intentionally separate from the EKS/GitOps Vintage Storefront platform. See [Portfolio Stack architecture](../../architecture/portfolio-stack.md) for the current resource and ownership model.
 
 ## Deployment impact
 
-`infra/portfolio/` creates and manages:
-
-- private S3 bucket for SPA assets
-- private S3 bucket for Curated Project Knowledge
-- S3 Vectors vector bucket and index
-- Amazon Bedrock Knowledge Base and Guardrail
-- Lambda Guide API
-- API Gateway HTTP API
-- CloudFront distribution
-- ACM certificate in `us-east-1`
-- Route 53 record for `lazyhiraya.noidilin.dev`
-- Secrets Manager origin-header secret
-- CloudWatch log group
-
-This stack does **not** deploy to EKS and does **not** change Argo CD desired state.
+This runbook creates durable AWS resources for the public portfolio site and Hiraya Guide through `infra/portfolio/`. It does **not** deploy to EKS and does **not** change Argo CD desired state.
 
 ## Local setup and validation
 
-From the repository root, with Node.js 24.x available:
+From the repository root, use the workspace setup and Portfolio validation commands in [`../../references/commands.md`](../../references/commands.md#portfolio).
 
-```sh
-corepack enable
-corepack prepare pnpm@11.8.0 --activate
-pnpm install --frozen-lockfile
-```
-
-Run the no-AWS Portfolio baseline:
-
-```sh
-pnpm run portfolio:frontend:test
-pnpm run portfolio:frontend:build
-pnpm run portfolio:frontend:lint
-pnpm run portfolio:guide-api:test
-pnpm run portfolio:guide-api:package
-pnpm run portfolio:knowledge:validate
-```
-
-Run the local Guide API:
-
-```sh
-pnpm run portfolio:guide-api:build
-pnpm run portfolio:guide-api:dev
-```
-
-In another terminal, run the Portfolio frontend:
-
-```sh
-pnpm --filter @hiraya/portfolio-frontend dev
-```
-
-Open:
-
-```text
-http://localhost:3002
-```
-
-The frontend proxies `/api/*` to the local Guide API at `http://localhost:3001`.
+For local Guide API/frontend development, run the Guide API dev command from the reference, then run the Portfolio frontend package dev command in another terminal. The local frontend opens on `http://localhost:3002` and proxies `/api/*` to the Guide API at `http://localhost:3001`.
 
 ## AWS prerequisites
 

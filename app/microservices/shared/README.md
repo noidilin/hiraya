@@ -48,10 +48,4 @@ Use `storefrontContractPaths` for mocked route registration so browser tests fol
 
 ## Validation command
 
-From `app/microservices` run:
-
-```sh
-corepack pnpm@11.8.0 run app:test:contract
-```
-
-`app:baseline` also runs this Vitest shared contract validation and consumer smoke suite.
+Run the shared contract validation from the repository root with the Vintage Storefront commands in [`../../../docs/references/commands.md`](../../../docs/references/commands.md#vintage-storefront). `app:baseline` also runs this Vitest shared contract validation and consumer smoke suite.

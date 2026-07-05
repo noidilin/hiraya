@@ -1,42 +1,33 @@
 # Hiraya Portfolio
 
-Durable public portfolio app described in `docs/portfolio/PROJECT_BRIEF.md` and `docs/portfolio/ARCHITECTURE.md`. The code is deploy-ready; the AWS Portfolio Stack still needs first approved apply.
+The Hiraya Portfolio is the durable public explanation experience for the project. It includes a React/Vite frontend and the same-origin Hiraya Guide API.
 
-## Frontend
+## Read first
 
-The frontend lives in `app/portfolio/frontend` and is intentionally lean while the Guide API is wired:
+- Portfolio architecture: [`../../docs/architecture/portfolio-stack.md`](../../docs/architecture/portfolio-stack.md)
+- Curated Hiraya Guide knowledge: [`../../docs/portfolio/README.md`](../../docs/portfolio/README.md)
+- Portfolio first-deploy runbook: [`../../docs/runbooks/portfolio/first-deploy.md`](../../docs/runbooks/portfolio/first-deploy.md)
+- Portfolio ADRs: [`../../docs/adr/0008-durable-portfolio-stack.md`](../../docs/adr/0008-durable-portfolio-stack.md), [`../../docs/adr/0009-desktop-first-hiraya-content-evidence-experience.md`](../../docs/adr/0009-desktop-first-hiraya-content-evidence-experience.md), [`../../docs/adr/0010-hiraya-portfolio-i18n-hybrid-localization.md`](../../docs/adr/0010-hiraya-portfolio-i18n-hybrid-localization.md)
+
+## Local surfaces
+
+| Path | Purpose |
+|---|---|
+| `frontend/` | Public Portfolio SPA |
+| `guide-api/` | Same-origin Guide API used by local dev and Lambda packaging |
+
+Frontend stack highlights:
 
 - React + Vite SPA.
 - Tailwind CSS v4 through `@tailwindcss/vite`.
-- shadcn registry config aligned with the lazycicd pattern.
-- prompt-kit registry alias for chat primitives: `@prompt-kit` -> `https://prompt-kit.com/c/{name}.json`.
-- Browser-scoped Bedrock session handling via the API response `sessionId`.
-- Relative API call to `POST /api/guide/chat` for CloudFront `/api/*` routing.
+- shadcn and prompt-kit component registries.
+- Relative `POST /api/guide/chat` call for same-origin routing.
 
-## Guide API
+Guide API contract:
 
-The Guide API lives in `app/portfolio/guide-api` and provides the same-origin contract used locally and by the Lambda package:
+- `GET /api/health`
+- `POST /api/guide/chat`
 
-- `GET /api/health` returns `{ "ok": true, "service": "hiraya-guide-api" }`.
-- `POST /api/guide/chat` accepts `{ "message": string, "sessionId"?: string }`.
-- Chat responses return `answered`, `refused`, `not_ready`, or `error` with normalized citation objects.
-- The local dev server defaults to port `3001`, matching the frontend Vite `/api` proxy target.
+## Validation
 
-Useful commands from the repository root:
-
-```sh
-pnpm run portfolio:frontend:build
-pnpm run portfolio:frontend:lint
-pnpm run portfolio:frontend:test
-pnpm run portfolio:guide-api:build
-pnpm run portfolio:guide-api:test
-pnpm run portfolio:guide-api:package
-pnpm run portfolio:guide-api:dev
-pnpm run portfolio:static
-```
-
-To add more prompt-kit components later:
-
-```sh
-pnpm --filter @hiraya/portfolio-frontend exec shadcn add "https://prompt-kit.com/c/<component>.json"
-```
+Run validation from the repository root with the Portfolio commands in [`../../docs/references/commands.md`](../../docs/references/commands.md#portfolio).

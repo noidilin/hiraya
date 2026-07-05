@@ -1,6 +1,9 @@
 # Durable Portfolio Stack for Hiraya Portfolio
 
-Status: accepted
+- Status: Accepted
+- Current architecture: [Portfolio stack](../architecture/portfolio-stack.md)
+- Supersedes: none
+- Superseded by: none
 
 Hiraya Portfolio is a second public app beside Vintage Storefront and is not deployed to the disposable EKS platform. It lives in a durable Portfolio Stack under `infra/portfolio` so `lazyhiraya.noidilin.dev` and Hiraya Guide remain available when Platform Core and Cluster Bootstrap are destroyed to save cost. This trades away using EKS for the portfolio app in favor of reliable public availability, while Vintage Storefront remains the EKS/GitOps demonstration workload.
 

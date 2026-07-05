@@ -1,6 +1,9 @@
 # EKS network redesign for dev
 
-Status: accepted; shared-controller ownership superseded by ADR-0007
+- Status: Accepted; shared-controller ownership seam superseded by [ADR-0007](0007-gitops-owned-cluster-platform.md)
+- Current architecture: [Platform lifecycle](../architecture/platform-lifecycle.md), [Ownership boundaries](../architecture/boundaries.md)
+- Supersedes: none
+- Superseded by: partial ownership model superseded by [ADR-0007](0007-gitops-owned-cluster-platform.md)
 
 The dev EKS platform will move from public worker nodes to private EKS nodes in private subnets, with a single public shared ALB at the edge, one NAT Gateway plus an S3 gateway endpoint for private outbound egress, and EKS API private access enabled while public API access remains an explicit temporary dev toggle. This improves the portfolio network design without adopting the full cost of production HA networking.
 

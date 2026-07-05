@@ -4,15 +4,7 @@ React 19/Vite implementation for the Vintage Storefront, packaged as the existin
 
 ## Commands
 
-```bash
-pnpm --filter frontend dev
-pnpm --filter frontend lint
-pnpm --filter frontend build
-pnpm run docker:up
-pnpm run docker:up:frontend-dev
-```
-
-Default Compose serves the production build through nginx on `http://localhost:3000` with SPA fallback and `/api/` proxying to the gateway. The `frontend-dev` Compose profile runs Vite hot reload on the same port against the Compose gateway.
+Use the Vintage Storefront and Docker Compose commands in [`../../../docs/references/commands.md`](../../../docs/references/commands.md#vintage-storefront). Default Compose serves the production build through nginx on `http://localhost:3000` with SPA fallback and `/api/` proxying to the gateway. The `frontend-dev` Compose profile runs Vite hot reload on the same port against the Compose gateway.
 
 ## UI System
 

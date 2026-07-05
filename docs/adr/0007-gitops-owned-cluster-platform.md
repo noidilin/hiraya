@@ -1,6 +1,9 @@
 # GitOps-owned Cluster Platform add-ons
 
-Status: accepted; implemented
+- Status: Accepted; implemented
+- Current architecture: [GitOps ownership](../architecture/gitops-ownership.md), [Platform lifecycle](../architecture/platform-lifecycle.md), [Ownership boundaries](../architecture/boundaries.md)
+- Supersedes: shared-controller ownership seam from [ADR-0001](0001-eks-network-redesign.md)
+- Superseded by: none
 
 Hiraya dev is split into Project Bootstrap, Platform Core, Cluster Bootstrap, Cluster Platform, and GitOps app ownership. Platform Core Terraform owns AWS and EKS-side foundations only, including VPC, EKS, EKS managed add-ons, ACM/DNS primitives, IAM/IRSA roles and policies, Secrets Manager resources, and non-secret outputs consumed by GitOps; it must not use Kubernetes or Helm providers. A separate Cluster Bootstrap Terraform state runs after Platform Core apply and installs Argo CD plus the app-of-apps root, while Argo CD owns one Application per Cluster Platform add-on, including Gateway API CRDs, AWS Load Balancer Controller, ExternalDNS, External Secrets Operator, edge Gateway resources, monitoring, public admin routes, and workload app Applications.
 

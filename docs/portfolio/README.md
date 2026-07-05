@@ -15,10 +15,6 @@ The curated set is:
 
 These documents should stay polished but truthful. They may explain target-state ideas when clearly labeled, but they should not claim live operational access, formal compliance, production readiness, or implementation work that the repository does not support.
 
-Validate the curated set from the repository root:
-
-```sh
-pnpm run portfolio:knowledge:validate
-```
+Validate the curated set from the repository root with the Portfolio knowledge command in [`../references/commands.md#portfolio`](../references/commands.md#portfolio).
 
 The validator checks required frontmatter, the expected user / technical reviewer audience, expected categories, non-empty Markdown body content, and lightweight Markdown lint rules. It does not change the Vintage Storefront `app:baseline` command.

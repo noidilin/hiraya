@@ -1,6 +1,9 @@
 # Vintage Storefront in-place Vite migration
 
-Status: accepted
+- Status: Accepted
+- Current architecture: [Runtime flow](../architecture/runtime-flow.md)
+- Supersedes: none
+- Superseded by: none
 
 Hiraya will migrate the Hiraya Furugi React/Vite rewrite into the existing `app/microservices/frontend` Vintage Storefront service instead of introducing a parallel frontend service. This keeps the deployed service name, ECR repository, GitOps manifests, public HTTPRoute, and `/api` same-origin contract stable while replacing the internal frontend stack; the trade-off is that rollback depends on reverting the app change or promoting the prior `hiraya-frontend` image tag rather than switching traffic between two live frontend services.
 
