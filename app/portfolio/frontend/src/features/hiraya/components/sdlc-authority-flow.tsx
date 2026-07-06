@@ -148,23 +148,25 @@ function AuthorityLane({
   selectedStage,
   activeConnectorIds,
   onSelectStage,
+  content,
 }: {
   lane: SdlcAuthorityLane
   activeLaneId: SdlcAuthorityLaneId
   selectedStage: SdlcAuthorityStage
   activeConnectorIds: Set<string>
   onSelectStage: (stageId: SdlcAuthorityStageId) => void
+  content: SdlcAuthorityFlowContent
 }) {
   const activeLane = lane.id === activeLaneId
 
   return (
     <section
       className="grid gap-4 border border-border/75 bg-background/45 p-4 transition-colors"
-      aria-label={`${lane.label} authority lane`}
+      aria-label={`${lane.label} ${content.chrome.laneAriaSuffix}`}
     >
       <div className="grid gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
         <div className="border-b border-border/70 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">active authority path</p>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.activePathLabel}</p>
           <h3 className="mt-1.5 text-lg font-semibold tracking-normal text-foreground">{lane.label}</h3>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{lane.summary}</p>
         </div>
@@ -202,32 +204,32 @@ function AuthorityLane({
   )
 }
 
-function StageDetail({ stage }: { stage: SdlcAuthorityStage }) {
+function StageDetail({ stage, content }: { stage: SdlcAuthorityStage; content: SdlcAuthorityFlowContent }) {
   return (
     <aside className="border-t border-border bg-card/78 p-5">
       <div className="grid gap-5">
         <div className="grid gap-4 xl:grid-cols-[0.72fr_1fr_1fr] xl:items-stretch">
           <div className="border-b border-border/70 pb-4 xl:border-b-0 xl:border-r xl:pb-0 xl:pr-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">selected authority stage</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{content.chrome.selectedStageLabel}</p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-foreground">{stage.label}</h3>
           </div>
 
           <div className="border-l-2 border-primary pl-4">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">allowed action</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{content.chrome.allowedActionLabel}</p>
             <p className="mt-2 text-base leading-7 text-foreground">{stage.allowedAction}</p>
           </div>
 
           <div className="border-l-2 border-primary pl-4">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">authority holder</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{content.chrome.authorityHolderLabel}</p>
             <p className="mt-2 text-base leading-7 text-foreground">{stage.authorityHolder}</p>
           </div>
         </div>
 
         <div className="grid gap-5 border-t border-border pt-5 xl:grid-cols-[1fr_1fr_1.1fr_0.9fr]">
-          <DetailSection title="input state">{stage.inputState}</DetailSection>
-          <DetailSection title="output state">{stage.outputState}</DetailSection>
+          <DetailSection title={content.chrome.inputStateLabel}>{stage.inputState}</DetailSection>
+          <DetailSection title={content.chrome.outputStateLabel}>{stage.outputState}</DetailSection>
 
-          <DetailSection title="evidence produced">
+          <DetailSection title={content.chrome.evidenceProducedLabel}>
             <div className="flex flex-wrap gap-2">
               {stage.evidence.map((item) => (
                 <HirayaTag key={item}>{item}</HirayaTag>
@@ -235,7 +237,7 @@ function StageDetail({ stage }: { stage: SdlcAuthorityStage }) {
             </div>
           </DetailSection>
 
-          <DetailSection title="does not own">
+          <DetailSection title={content.chrome.doesNotOwnLabel}>
             <ul className="grid gap-1.5">
               {stage.doesNotOwn.map((item) => (
                 <li key={item} className="text-xs leading-5">
@@ -286,7 +288,7 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
   return (
     <HirayaSectionShell
       className={cn('overflow-hidden', className)}
-      eyebrow="Authority flow"
+      eyebrow={content.chrome.eyebrow}
       title={content.title}
       description={content.summary}
       tabs={{
@@ -305,11 +307,12 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
             selectedStage={selectedStage}
             activeConnectorIds={activeConnectorIds}
             onSelectStage={handleStageSelect}
+            content={content}
           />
         </div>
 
         <div className="relative">
-          <StageDetail stage={selectedStage} />
+          <StageDetail stage={selectedStage} content={content} />
         </div>
       </div>
     </HirayaSectionShell>

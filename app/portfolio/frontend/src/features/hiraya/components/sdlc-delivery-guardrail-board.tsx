@@ -2,26 +2,15 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, GitMerge, KeyRound, ShieldCheck } from 'lucide-react'
 
 import type { SdlcAuthorityFlowContent, SdlcAuthorityStageId } from '@/content/hiraya/sdlcAuthorityFlow'
-import type {
-  SdlcDeliveryGuardrail,
-  SdlcDeliveryGuardrailAuthorityBadge,
-} from '@/content/hiraya/sdlcDeliveryGuardrails'
+import type { SdlcDeliveryGuardrail, SdlcDeliveryGuardrailBoardContent } from '@/content/hiraya/sdlcDeliveryGuardrails'
 import { cn } from '@/lib/utils'
 
 import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-section'
 
 type SdlcDeliveryGuardrailBoardProps = {
-  guardrails: readonly SdlcDeliveryGuardrail[]
+  content: SdlcDeliveryGuardrailBoardContent
   authorityFlow: SdlcAuthorityFlowContent
   className?: string
-}
-
-const authorityBadgeCopy: Record<SdlcDeliveryGuardrailAuthorityBadge, { label: string }> = {
-  'no-aws': { label: 'No AWS write authority' },
-  'scoped-oidc': { label: 'Scoped OIDC' },
-  'reviewed-git': { label: 'Reviewed Git' },
-  gitops: { label: 'GitOps convergence' },
-  'environment-gated': { label: 'Environment-gated apply' },
 }
 
 function buildStageLabelMap(authorityFlow: SdlcAuthorityFlowContent) {
@@ -30,8 +19,8 @@ function buildStageLabelMap(authorityFlow: SdlcAuthorityFlowContent) {
   )
 }
 
-function GuardrailBadge({ badge }: { badge: SdlcDeliveryGuardrailAuthorityBadge }) {
-  const badgeCopy = authorityBadgeCopy[badge]
+function GuardrailBadge({ guardrail, content }: { guardrail: SdlcDeliveryGuardrail; content: SdlcDeliveryGuardrailBoardContent }) {
+  const badgeCopy = content.authorityBadges[guardrail.authorityBadge]
 
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/75 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
@@ -42,7 +31,8 @@ function GuardrailBadge({ badge }: { badge: SdlcDeliveryGuardrailAuthorityBadge 
 }
 
 
-export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, className }: SdlcDeliveryGuardrailBoardProps) {
+export function SdlcDeliveryGuardrailBoard({ content, authorityFlow, className }: SdlcDeliveryGuardrailBoardProps) {
+  const guardrails = content.guardrails
   const [expandedId, setExpandedId] = useState<SdlcDeliveryGuardrail['id']>(guardrails[0]?.id ?? 'validate-before-authorize')
   const stageLabels = useMemo(() => buildStageLabelMap(authorityFlow), [authorityFlow])
   const selectedGuardrail = guardrails.find((guardrail) => guardrail.id === expandedId) ?? guardrails[0]
@@ -51,9 +41,9 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
   return (
     <HirayaSectionFrame className={className}>
       <HirayaSectionHeader
-        eyebrow="Delivery Guardrails"
-        title="Five authority decisions that keep CI from becoming deployment authority"
-        description="Each guardrail states what a delivery actor may do, which shortcut is intentionally forbidden, and what handoff proves authority stayed in the correct boundary."
+        eyebrow={content.eyebrow}
+        title={content.title}
+        description={content.description}
       />
       <div className="grid gap-4 p-5 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start">
         <div className="grid gap-2">
@@ -98,7 +88,7 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
             <div className="border-b border-border bg-muted/35 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
-                  Guardrail {String(selectedGuardrailIndex + 1).padStart(2, '0')}
+                  {content.chrome.guardrailLabel} {String(selectedGuardrailIndex + 1).padStart(2, '0')}
                 </p>
                 <div className="flex flex-wrap justify-end gap-2">
                   <div className="group relative">
@@ -106,10 +96,10 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
                       tabIndex={0}
                       className="inline-flex cursor-help items-center rounded-full border border-border bg-background/75 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
-                      Authority Flow stages
+                      {content.chrome.authorityFlowStagesLabel}
                     </span>
                     <div className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-80 border border-border bg-popover p-3 shadow-xl group-hover:block group-focus-within:block">
-                      <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">Mapped stages</p>
+                      <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.mappedStagesLabel}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {selectedGuardrail.flowStageIds.map((stageId) => (
                           <HirayaTag key={stageId}>{stageLabels.get(stageId) ?? stageId}</HirayaTag>
@@ -117,7 +107,7 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
                       </div>
                     </div>
                   </div>
-                  <GuardrailBadge badge={selectedGuardrail.authorityBadge} />
+                  <GuardrailBadge guardrail={selectedGuardrail} content={content} />
                 </div>
               </div>
               <h3 className="mt-3 text-lg font-semibold tracking-normal text-foreground">{selectedGuardrail.rule}</h3>
@@ -128,21 +118,21 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
                 <div className="border border-border bg-background/70 p-4">
                   <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
                     <CheckCircle2 className="size-3" aria-hidden="true" />
-                    Allowed action
+                    {content.chrome.allowedActionLabel}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{selectedGuardrail.allowedAction}</p>
                 </div>
                 <div className="border border-border bg-background/70 p-4">
                   <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
                     <AlertTriangle className="size-3" aria-hidden="true" />
-                    Forbidden shortcut
+                    {content.chrome.forbiddenShortcutLabel}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{selectedGuardrail.forbiddenShortcut}</p>
                 </div>
                 <div className="border border-border bg-background/70 p-4">
                   <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
                     <GitMerge className="size-3" aria-hidden="true" />
-                    Handoff result
+                    {content.chrome.handoffResultLabel}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{selectedGuardrail.handoffResult}</p>
                 </div>
@@ -151,7 +141,7 @@ export function SdlcDeliveryGuardrailBoard({ guardrails, authorityFlow, classNam
               <div className="border border-border bg-background/70 p-4">
                 <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
                   <KeyRound className="size-3" aria-hidden="true" />
-                  Why the shortcut is dangerous
+                  {content.chrome.shortcutRiskLabel}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">{selectedGuardrail.shortcutRisk}</p>
               </div>

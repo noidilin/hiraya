@@ -63,6 +63,46 @@ describe('Hiraya localized content parity', () => {
     }))
   })
 
+  it('keeps SDLC authority flow semantics stable while localizing authority copy', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.sdlcAuthorityFlow.title).toBe('從驗證證據到 Runtime State 的 Authority Flow')
+    expect(zhTW.sdlcAuthorityFlow.chrome.selectedStageLabel).toBe('已選擇的權責階段')
+    expect(zhTW.sdlcAuthorityFlow.lanes[0]?.label).toBe('Application 交付')
+    expect(zhTW.sdlcAuthorityFlow.lanes[0]?.stages[0]?.label).toBe('PR 驗證證據')
+
+    expectStableListParity(zhTW.sdlcAuthorityFlow.lanes, en.sdlcAuthorityFlow.lanes, (lane) => ({
+      id: lane.id,
+      defaultStageId: lane.defaultStageId,
+      stages: lane.stages.map((stage) => ({
+        id: stage.id,
+        conceptId: stage.conceptId,
+        credentialTone: stage.credentialPosture.tone,
+        evidenceRefs: stage.evidenceRefs ?? [],
+      })),
+      connectors: lane.connectors.map((connector) => ({ from: connector.from, to: connector.to })),
+    }))
+  })
+
+  it('keeps SDLC delivery guardrails stable while localizing rule copy and badges', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.sdlcDeliveryGuardrails.title).toBe('五項避免 CI 變成部署權限的 Delivery Guardrails')
+    expect(zhTW.sdlcDeliveryGuardrails.chrome.authorityFlowStagesLabel).toBe('Authority Flow 階段')
+    expect(zhTW.sdlcDeliveryGuardrails.authorityBadges['no-aws'].label).toBe('無 AWS 寫入權限')
+    expect(zhTW.sdlcDeliveryGuardrails.guardrails[0]?.rule).toBe('先驗證，後授權')
+
+    expectStableListParity(zhTW.sdlcDeliveryGuardrails.guardrails, en.sdlcDeliveryGuardrails.guardrails, (guardrail) => ({
+      id: guardrail.id,
+      authorityBadge: guardrail.authorityBadge,
+      flowStageIds: guardrail.flowStageIds,
+      sourceRefs: guardrail.sourceRefs,
+      evidenceRefs: guardrail.evidenceRefs ?? [],
+    }))
+  })
+
   it('keeps evidence asset metadata stable while localizing titles and captions', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')

@@ -10,8 +10,8 @@ import { briefPlatformProofMapContent, type BriefPlatformProofMapContent } from 
 import { getBriefProofPathOverviewContent, type BriefProofPathCard } from './briefProofPathOverview'
 import { costCapacityTradeoffLedgerContent, type CostCapacityTradeoffLedgerContent } from './costTradeoffLedger'
 import { getHirayaEvidenceAssets, type HirayaEvidenceAsset } from './evidence-assets'
-import { sdlcAuthorityFlowContent, type SdlcAuthorityFlowContent } from './sdlcAuthorityFlow'
-import { sdlcDeliveryGuardrails, type SdlcDeliveryGuardrail } from './sdlcDeliveryGuardrails'
+import { getSdlcAuthorityFlowContent, type SdlcAuthorityFlowContent } from './sdlcAuthorityFlow'
+import { getSdlcDeliveryGuardrailContent, type SdlcDeliveryGuardrailBoardContent } from './sdlcDeliveryGuardrails'
 import { getWafMaturityJudgmentContent, type WafMaturityJudgmentContent } from './wafMaturityJudgment'
 
 export type HirayaRouteDesignContent = {
@@ -22,7 +22,7 @@ export type HirayaRouteDesignContent = {
   architectureRuntimeInteractions: ArchitectureRuntimeInteractionsContent
   costCapacityTradeoffLedger: CostCapacityTradeoffLedgerContent
   sdlcAuthorityFlow: SdlcAuthorityFlowContent
-  sdlcDeliveryGuardrails: readonly SdlcDeliveryGuardrail[]
+  sdlcDeliveryGuardrails: SdlcDeliveryGuardrailBoardContent
   wafMaturityJudgment: WafMaturityJudgmentContent
   evidenceAssets: readonly HirayaEvidenceAsset[]
 }
@@ -35,8 +35,8 @@ export function getHirayaRouteDesignContent(locale: AppLocale): HirayaRouteDesig
     architectureExposureBoundaries: exposureBoundaryContent,
     architectureRuntimeInteractions: architectureRuntimeInteractionsContent,
     costCapacityTradeoffLedger: costCapacityTradeoffLedgerContent,
-    sdlcAuthorityFlow: sdlcAuthorityFlowContent,
-    sdlcDeliveryGuardrails,
+    sdlcAuthorityFlow: getSdlcAuthorityFlowContent(locale),
+    sdlcDeliveryGuardrails: getSdlcDeliveryGuardrailContent(locale),
     wafMaturityJudgment: getWafMaturityJudgmentContent(locale),
     evidenceAssets: getHirayaEvidenceAssets(locale),
   }
