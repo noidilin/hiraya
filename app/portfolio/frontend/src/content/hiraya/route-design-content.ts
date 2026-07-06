@@ -9,10 +9,10 @@ import {
 import { briefPlatformProofMapContent, type BriefPlatformProofMapContent } from './briefPlatformProofMap'
 import { getBriefProofPathOverviewContent, type BriefProofPathCard } from './briefProofPathOverview'
 import { costCapacityTradeoffLedgerContent, type CostCapacityTradeoffLedgerContent } from './costTradeoffLedger'
-import { hirayaEvidenceAssetManifest, type HirayaEvidenceAsset } from './evidence-assets'
+import { getHirayaEvidenceAssets, type HirayaEvidenceAsset } from './evidence-assets'
 import { sdlcAuthorityFlowContent, type SdlcAuthorityFlowContent } from './sdlcAuthorityFlow'
 import { sdlcDeliveryGuardrails, type SdlcDeliveryGuardrail } from './sdlcDeliveryGuardrails'
-import { wafMaturityJudgmentContent, type WafMaturityJudgmentContent } from './wafMaturityJudgment'
+import { getWafMaturityJudgmentContent, type WafMaturityJudgmentContent } from './wafMaturityJudgment'
 
 export type HirayaRouteDesignContent = {
   briefProofPathOverview: readonly BriefProofPathCard[]
@@ -37,7 +37,7 @@ export function getHirayaRouteDesignContent(locale: AppLocale): HirayaRouteDesig
     costCapacityTradeoffLedger: costCapacityTradeoffLedgerContent,
     sdlcAuthorityFlow: sdlcAuthorityFlowContent,
     sdlcDeliveryGuardrails,
-    wafMaturityJudgment: wafMaturityJudgmentContent,
-    evidenceAssets: hirayaEvidenceAssetManifest,
+    wafMaturityJudgment: getWafMaturityJudgmentContent(locale),
+    evidenceAssets: getHirayaEvidenceAssets(locale),
   }
 }

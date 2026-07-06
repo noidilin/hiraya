@@ -1,3 +1,5 @@
+import type { AppLocale } from '@/i18n/locales'
+
 import type { HirayaEvidenceItem, HirayaRouteId } from './types'
 
 export type WafMaturityState = 'strong-now' | 'dev-tradeoff' | 'harden-next'
@@ -29,20 +31,62 @@ export type WafMaturityPillar = {
   tools: readonly string[]
 }
 
+export type WafMaturityStateCopy = {
+  label: string
+  shortLabel: string
+  description: string
+}
+
+export type WafMaturityJudgmentChrome = {
+  selectedPillarLabel: string
+  priorityLabel: string
+  evidenceSupportLabel: string
+  pillarSwitcherLabel: string
+  evidenceCarouselTitle: string
+  evidenceCarouselDescription: string
+}
+
 export type WafMaturityJudgmentContent = {
   routeId: Extract<HirayaRouteId, 'waf'>
   eyebrow: string
   title: string
   summary: string
+  stateCopy: Record<WafMaturityState, WafMaturityStateCopy>
+  chrome: WafMaturityJudgmentChrome
   pillars: readonly WafMaturityPillar[]
 }
 
-export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
+const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
   routeId: 'waf',
   eyebrow: 'Well-Architected Maturity Judgment',
   title: 'Separate proven strengths, accepted dev trade-offs, and hardening path',
   summary:
     'Hiraya uses the six pillars as a judgment board: each row shows what is demonstrably strong now, which limitation is intentionally accepted for a disposable dev platform, and what would need hardening before production.',
+  stateCopy: {
+    'strong-now': {
+      label: 'Strong now',
+      shortLabel: 'Strong',
+      description: 'Implemented capability with visible project evidence.',
+    },
+    'dev-tradeoff': {
+      label: 'Dev trade-off',
+      shortLabel: 'Trade-off',
+      description: 'Intentional limitation accepted for a disposable dev platform.',
+    },
+    'harden-next': {
+      label: 'Harden next',
+      shortLabel: 'Harden',
+      description: 'Production hardening direction, not an implemented claim.',
+    },
+  },
+  chrome: {
+    selectedPillarLabel: 'Selected pillar',
+    priorityLabel: 'Priority',
+    evidenceSupportLabel: 'Evidence support',
+    pillarSwitcherLabel: 'Well-Architected pillar switcher',
+    evidenceCarouselTitle: 'Evidence behind the Well-Architected review',
+    evidenceCarouselDescription: 'The pillar review stays judgment-led while captures support one implementation claim at a time.',
+  },
   pillars: [
     {
       id: 'operational-excellence',
@@ -342,3 +386,199 @@ export const wafMaturityJudgmentContent: WafMaturityJudgmentContent = {
     },
   ],
 }
+
+
+const wafZhTWText = {
+  eyebrow: 'Well-Architected 成熟度判斷',
+  title: '區分已被證明的強項、可接受的 dev 取捨，以及下一步強化路徑',
+  summary:
+    'Hiraya 把六大支柱當成判斷板：每一列都說明目前有證據支持的強項、作為可拋棄 dev 平台刻意接受的限制，以及進入 production 前需要補強的方向。',
+  stateCopy: {
+    'strong-now': {
+      label: '目前強項',
+      shortLabel: '強項',
+      description: '已有實作能力，並能用專案證據說明。',
+    },
+    'dev-tradeoff': {
+      label: 'Dev 取捨',
+      shortLabel: '取捨',
+      description: '為可拋棄 dev 平台刻意接受的限制。',
+    },
+    'harden-next': {
+      label: '下一步強化',
+      shortLabel: '強化',
+      description: 'production 強化方向，不宣稱已經完成。',
+    },
+  },
+  chrome: {
+    selectedPillarLabel: '目前支柱',
+    priorityLabel: '優先事項',
+    evidenceSupportLabel: '證據支撐',
+    pillarSwitcherLabel: 'Well-Architected 支柱切換器',
+    evidenceCarouselTitle: 'Well-Architected review 背後的證據',
+    evidenceCarouselDescription: '支柱 review 維持以判斷為主，截圖與影片則一次支撐一個 implementation claim。',
+  },
+} satisfies Pick<WafMaturityJudgmentContent, 'eyebrow' | 'title' | 'summary' | 'stateCopy' | 'chrome'>
+
+const wafPillarZhTW = {
+  'operational-excellence': {
+    title: '卓越營運',
+    stance: '當變更可審查、由 GitOps 接管、可觀測，並能透過可重複 workflow 復原時，營運能力最強。',
+    switcherSummary: '變更如何被操作、驗證與復原。',
+    priorityRecommendation: '擴充 incident signals',
+  },
+  security: {
+    title: '安全性',
+    stance: 'Hiraya 在縮小自動化憑證範圍、集中 public ingress，並讓 secrets 留在 Git 之外時，安全性最強。',
+    switcherSummary: '如何控制存取、暴露面與 secrets。',
+    priorityRecommendation: '收緊 privileged access',
+  },
+  reliability: {
+    title: '可靠性',
+    stance: '目前可靠性著重於可重建、GitOps 修正、dev persistence 與已驗證 rollback，而不是高可用宣稱。',
+    switcherSummary: '平台如何重建、reconcile 與 rollback。',
+    priorityRecommendation: '加入 workload resilience',
+  },
+  'performance-efficiency': {
+    title: '效能效率',
+    stance: '當 service boundaries、shared ingress 與 metrics 讓未來 right-sizing 可被檢視時，效能成熟度最強。',
+    switcherSummary: 'service shape 與 metrics 如何支援 right-sizing。',
+    priorityRecommendation: '加入 resource signals',
+  },
+  'cost-optimization': {
+    title: '成本最佳化',
+    stance: '當平台支出被視為明確架構取捨，而且 dev runtime 保持可銷毀時，成本成熟度最強。',
+    switcherSummary: '支出如何被合理化、限制與治理。',
+    priorityRecommendation: '驗證實際支出',
+  },
+  sustainability: {
+    title: '永續性',
+    stance: '永續性被定位為避免閒置 dev 資源、減少重複基礎設施，並在需要證明時能容易重建平台。',
+    switcherSummary: '如何降低閒置資源與重複基礎設施。',
+    priorityRecommendation: '自動化清理',
+  },
+} satisfies Record<WafMaturityPillar['id'], Pick<WafMaturityPillar, 'title' | 'stance' | 'switcherSummary' | 'priorityRecommendation'>>
+
+const wafItemZhTW: Record<string, Pick<WafMaturityItem, 'title' | 'summary'>> = {
+  'ops-gitops-delivery-loop': {
+    title: '可審查的 delivery loop',
+    summary: 'Terraform、GitHub Actions、Argo CD、smoke tests 與 rollback workflows，讓一般變更與復原路徑都可被看見。',
+  },
+  'ops-dev-evidence-scope': {
+    title: '證據優先，而非完整營運平台',
+    summary: '目前營運敘事強調 GitOps health、smoke checks 與 Grafana，而不是完整 incident automation 或 log ingestion。',
+  },
+  'ops-harden-incident-signals': {
+    title: '擴充營運訊號',
+    summary: '在宣稱 production operations maturity 前，重新導入 deliberate log ingestion、alert routing、runbooks 與更強的 incident evidence。',
+  },
+  'security-identity-boundaries': {
+    title: '有範圍的 cloud 與 runtime identity',
+    summary: 'GitHub OIDC、分離的 automation roles、IRSA、Secrets Manager 與 External Secrets 降低長期憑證暴露。',
+  },
+  'security-private-backends': {
+    title: '私有 backend boundary',
+    summary: 'Storefront 透過 shared public edge 進入，而 backend services 與 PostgreSQL 留在 private Kubernetes services 後方。',
+  },
+  'security-public-admin-dev': {
+    title: '公開的 dev admin surfaces',
+    summary: 'Argo CD 與 Grafana 可能為 demo visibility 而 publicly routable，搭配產生式 credentials；這是 dev posture，不是 production access design。',
+  },
+  'security-advisory-scans': {
+    title: '建議性 vulnerability scans',
+    summary: 'Trivy findings 先在 image path 提供可見性，再逐步提升為 blocking release gates。',
+  },
+  'security-harden-access': {
+    title: '收緊 privileged access',
+    summary: '限制 EKS API public CIDRs 或把 privileged workflows 移到 private runners，加入更強的 admin access controls，並 codify 更細的 RBAC。',
+  },
+  'security-harden-secrets': {
+    title: '自動化 secret assurance',
+    summary: '加入 secret rotation 與 CloudTrail audit evidence，之後再考慮讓 supply-chain scans 成為 blocking。',
+  },
+  'reliability-rebuild-gitops': {
+    title: '可重建且可 reconcile 的 runtime',
+    summary: 'Terraform 重建 disposable platform layers，Argo CD 則把 accepted Git state reconcile 回 Kubernetes。',
+  },
+  'reliability-rollback-proof': {
+    title: '已審查的 rollback path',
+    summary: 'Rollback 透過 manifest PR review 與 GitOps convergence，把 workloads 回到選定的 ECR image tags。',
+  },
+  'reliability-dev-availability': {
+    title: 'Dev availability floor',
+    summary: '平台展示 multi-AZ placement 與 persistence，但低 replicas 與 in-cluster PostgreSQL 讓 availability 保持在 dev proof 範圍。',
+  },
+  'reliability-harden-workloads': {
+    title: '加入 workload resilience controls',
+    summary: '為 production posture 加入 readiness/liveness probes、PodDisruptionBudgets、resource requests/limits、HPA、replicas 與 managed database options。',
+  },
+  'performance-service-shape': {
+    title: '可檢視的 service paths',
+    summary: 'Service decomposition、gateway aggregation、same-origin proxying 與 public smoke checks 讓 request behavior 清楚可讀。',
+  },
+  'performance-observation-baseline': {
+    title: 'Metrics baseline',
+    summary: 'Prometheus 與 Grafana 提供觀察 request、latency、error 與 pod resource behavior 的起點。',
+  },
+  'performance-dev-sizing': {
+    title: '為展示而 right-sized',
+    summary: 't3.medium Spot node group 顧及成本並受 pod density 限制；它不是 production throughput baseline。',
+  },
+  'performance-harden-autoscaling': {
+    title: '用 metrics 做 scaling decisions',
+    summary: '擴充 ServiceMonitor coverage、加入 resource requests/limits、導入 autoscaling，並從 dashboard data 進行 right-size。',
+  },
+  'cost-explicit-ledger': {
+    title: '明確的平台成本選擇',
+    summary: 'Spot workers、shared ingress、S3 Gateway Endpoint 與 destroy workflows，讓 cost control 成為 architecture story 的一部分。',
+  },
+  'cost-fixed-floors': {
+    title: '接受固定成本底線',
+    summary: 'EKS control plane、NAT Gateway、ALB、Route 53、Secrets Manager 與 ECR 是為了證明真實平台行為而刻意支付。',
+  },
+  'cost-harden-governance': {
+    title: '持續驗證支出',
+    summary: '使用 Cost Explorer、AWS Budgets、right-sizing recommendations 與 lifecycle policies，讓 dev cost model 可被問責。',
+  },
+  'sustainability-disposable-runtime': {
+    title: '可銷毀的 runtime model',
+    summary: 'Disposable Platform Core 與 Cluster Bootstrap layers 可以被拆除，同時 durable bootstrap resources 保留重建能力。',
+  },
+  'sustainability-shared-resources': {
+    title: 'Shared resource footprint',
+    summary: 'Shared ingress、受限制的 node count 與 reusable artifacts，避免 dev demonstration 產生不必要的重複基礎設施。',
+  },
+  'sustainability-dev-proof-spend': {
+    title: '證明有時需要 live infrastructure',
+    summary: '真實 EKS/GitOps platform 會比 static portfolio page 消耗更多資源，因此 sustainability 取決於 shutdown discipline。',
+  },
+  'sustainability-harden-cleanup': {
+    title: '自動化 cleanup 與 right-sizing',
+    summary: '加入 ECR lifecycle enforcement、budget guardrails 與 metrics-based right-sizing，讓重複 demos 不會累積浪費。',
+  },
+}
+
+function localizeWafItems(items: readonly WafMaturityItem[]): readonly WafMaturityItem[] {
+  return items.map((item) => ({
+    ...item,
+    ...wafItemZhTW[item.id],
+  }))
+}
+
+const wafMaturityJudgmentContentZhTW: WafMaturityJudgmentContent = {
+  ...wafMaturityJudgmentContentEn,
+  ...wafZhTWText,
+  pillars: wafMaturityJudgmentContentEn.pillars.map((pillar) => ({
+    ...pillar,
+    ...wafPillarZhTW[pillar.id],
+    strongNow: localizeWafItems(pillar.strongNow),
+    devTradeoffs: localizeWafItems(pillar.devTradeoffs),
+    hardenNext: localizeWafItems(pillar.hardenNext),
+  })),
+}
+
+export function getWafMaturityJudgmentContent(locale: AppLocale): WafMaturityJudgmentContent {
+  return locale === 'zh-TW' ? wafMaturityJudgmentContentZhTW : wafMaturityJudgmentContentEn
+}
+
+export const wafMaturityJudgmentContent = wafMaturityJudgmentContentEn
