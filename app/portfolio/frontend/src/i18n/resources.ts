@@ -49,6 +49,76 @@ export const resources = {
         hero: {
           evidenceSlots: 'Evidence slots',
         },
+        evidence: {
+          eyebrow: 'Evidence',
+          previous: 'Previous evidence',
+          next: 'Next evidence',
+          screenshotEvidence: 'screenshot evidence',
+          status: {
+            planned: 'planned',
+            captured: 'captured',
+            deferred: 'deferred',
+          },
+          kind: {
+            screenshot: 'screenshot',
+            video: 'video',
+            diagram: 'diagram',
+            externalLink: 'external link',
+          },
+          frame: {
+            video: 'Video walkthrough frame · 16:9',
+            screenshot: 'MacBook Pro 14-inch capture frame · 1512 × 982',
+          },
+          placeholder: {
+            videoSlot: 'Video evidence slot',
+            videoDescription: 'Add a video source to the evidence manifest to turn this support card into a playable walkthrough.',
+          },
+          briefVideo: {
+            title: 'Primary portfolio walkthrough',
+            fallbackCaption: 'A focused recording keeps the Brief route proof-led without turning the overview into a long media gallery.',
+            stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke'],
+            frameLabel: 'Brief proof video · delivery walkthrough',
+            missingTitle: 'Video evidence slot',
+            missingDescription: 'Drop the final walkthrough file into the evidence manifest and this frame becomes the playable Brief proof.',
+            walkthroughBadge: '16:9 walkthrough',
+            routeAnchorBadge: 'Brief route anchor',
+          },
+          carousels: {
+            architecture: {
+              title: 'Evidence behind the architecture decisions',
+              description: 'Each capture anchors one architecture claim without turning the page into a detached screenshot gallery.',
+              previews: {
+                publicIngress: ['Route 53 records', 'ALB target group health', 'Browser TLS and /api smoke test'],
+                appOfApps: ['Root app Synced/Healthy', 'Platform child applications', 'Vintage resource tree'],
+                privateWorkloads: ['Private node group subnets', 'ClusterIP services', 'NAT and route table evidence'],
+              },
+            },
+            cost: {
+              title: 'Evidence behind the cost decisions',
+              description: 'Financial proof stays close to the trade-off analysis, one operational capture at a time.',
+              previews: {
+                destroyWorkflow: ['Destroy workflow run', 'Terraform destroy logs', 'AWS console cleanup check'],
+                privateWorkloads: ['kubectl pod density', 'Managed node group sizing', 'Scheduling headroom'],
+              },
+            },
+            sdlc: {
+              title: 'Evidence behind the delivery loop',
+              description: 'Pipeline captures sit beside the SDLC model so each delivery stage has concrete proof.',
+              previews: {
+                deliveryFlow: ['GitHub Actions checks', 'ECR image push + scan', 'Argo CD sync + smoke test'],
+                rollbackPath: ['Target image verification', 'Rollback PR diff', 'Post-rollback smoke test'],
+                infraApproval: ['Terraform plan', 'Environment approval', 'Platform smoke result'],
+              },
+            },
+            waf: {
+              previews: {
+                secrets: ['Secrets Manager list', 'ExternalSecret Ready', 'No secret values shown'],
+                grafana: ['Request rate', 'Response time', 'Pod CPU/memory'],
+                destroyWorkflow: ['Destroy workflow', 'PVC/EBS cleanup', 'EKS/VPC/ALB removed'],
+              },
+            },
+          },
+        },
         proofPoints: {
           eyebrow: 'Proof points',
           title: 'Claims are connected to implementation evidence',
@@ -167,6 +237,76 @@ export const resources = {
       hiraya: {
         hero: {
           evidenceSlots: '證據素材槽',
+        },
+        evidence: {
+          eyebrow: '證據',
+          previous: '上一個證據',
+          next: '下一個證據',
+          screenshotEvidence: '截圖證據',
+          status: {
+            planned: '規劃中',
+            captured: '已擷取',
+            deferred: '延後',
+          },
+          kind: {
+            screenshot: '截圖',
+            video: '影片',
+            diagram: '圖表',
+            externalLink: '外部連結',
+          },
+          frame: {
+            video: 'Video walkthrough frame · 16:9',
+            screenshot: 'MacBook Pro 14-inch capture frame · 1512 × 982',
+          },
+          placeholder: {
+            videoSlot: '影片證據槽',
+            videoDescription: '把影片來源接到 evidence manifest 後，這張支援卡就會變成可播放的 walkthrough。',
+          },
+          briefVideo: {
+            title: '主要 portfolio walkthrough',
+            fallbackCaption: '聚焦的錄影讓 Brief route 維持證據導向，而不把 overview 變成冗長媒體相簿。',
+            stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke'],
+            frameLabel: 'Brief proof video · delivery walkthrough',
+            missingTitle: '影片證據槽',
+            missingDescription: '把最終 walkthrough 檔案放進 evidence manifest 後，這個 frame 就會成為可播放的 Brief proof。',
+            walkthroughBadge: '16:9 walkthrough',
+            routeAnchorBadge: 'Brief route anchor',
+          },
+          carousels: {
+            architecture: {
+              title: '支撐架構決策的證據',
+              description: '每張擷取畫面都錨定一個 architecture claim，而不是把頁面變成脫節的 screenshot gallery。',
+              previews: {
+                publicIngress: ['Route 53 records', 'ALB target group health', 'Browser TLS 與 /api smoke test'],
+                appOfApps: ['Root app Synced/Healthy', 'Platform child applications', 'Vintage resource tree'],
+                privateWorkloads: ['Private node group subnets', 'ClusterIP services', 'NAT 與 route table evidence'],
+              },
+            },
+            cost: {
+              title: '支撐成本決策的證據',
+              description: '財務證據貼近取捨分析，一次只展示一個 operational capture。',
+              previews: {
+                destroyWorkflow: ['Destroy workflow run', 'Terraform destroy logs', 'AWS console cleanup check'],
+                privateWorkloads: ['kubectl pod density', 'Managed node group sizing', 'Scheduling headroom'],
+              },
+            },
+            sdlc: {
+              title: '支撐 delivery loop 的證據',
+              description: 'Pipeline captures 放在 SDLC model 旁邊，讓每個 delivery stage 都有具體 proof。',
+              previews: {
+                deliveryFlow: ['GitHub Actions checks', 'ECR image push + scan', 'Argo CD sync + smoke test'],
+                rollbackPath: ['Target image verification', 'Rollback PR diff', 'Post-rollback smoke test'],
+                infraApproval: ['Terraform plan', 'Environment approval', 'Platform smoke result'],
+              },
+            },
+            waf: {
+              previews: {
+                secrets: ['Secrets Manager list', 'ExternalSecret Ready', '不顯示 secret values'],
+                grafana: ['Request rate', 'Response time', 'Pod CPU/memory'],
+                destroyWorkflow: ['Destroy workflow', 'PVC/EBS cleanup', 'EKS/VPC/ALB removed'],
+              },
+            },
+          },
         },
         proofPoints: {
           eyebrow: '證據重點',
