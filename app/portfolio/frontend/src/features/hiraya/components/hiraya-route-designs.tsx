@@ -1,4 +1,5 @@
 import { useState, type ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, MonitorPlay, PlayCircle } from 'lucide-react'
 import {
   Carousel,
@@ -6,7 +7,7 @@ import {
   CarouselIndicator,
   CarouselItem,
 } from '@/components/motion-primitives/carousel'
-import { getHirayaEvidenceAsset, type HirayaEvidenceAsset } from '@/content/hiraya/evidence-assets'
+import { getHirayaEvidenceAsset, type HirayaEvidenceAsset, type HirayaEvidenceAssetKind } from '@/content/hiraya/evidence-assets'
 import type { HirayaRouteDesignContent } from '@/content/hiraya/route-design-content'
 import type { HirayaEvidenceItem, HirayaMediaSlot, HirayaPageContent } from '@/content/hiraya/types'
 
@@ -20,6 +21,10 @@ import { SdlcDeliveryGuardrailBoard } from './sdlc-delivery-guardrail-board'
 import { SdlcAuthorityFlow } from './sdlc-authority-flow'
 import { WafMaturityJudgmentBoard } from './waf-maturity-judgment-board'
 import { HirayaMetricGrid } from './hiraya-metric-grid'
+
+function translateEvidenceKind(kind: HirayaEvidenceAssetKind, t: (key: string) => string) {
+  return t(`hiraya.evidence.kind.${kind === 'external-link' ? 'externalLink' : kind}`)
+}
 
 function EvidenceCarouselCard({
   evidenceId,
@@ -36,12 +41,16 @@ function EvidenceCarouselCard({
   imageSrc?: string
   evidenceAssets: readonly HirayaEvidenceAsset[]
 }) {
+  const { t } = useTranslation()
   const asset = getHirayaEvidenceAsset(evidenceId, evidenceAssets)
   const displayTitle = title ?? asset?.title ?? evidenceId
   const displaySummary = summary ?? ''
   const isVideoAsset = asset?.kind === 'video'
   const resolvedImageSrc = isVideoAsset ? imageSrc : (imageSrc ?? asset?.src)
   const videoSrc = isVideoAsset ? asset.src : undefined
+  const statusLabel = asset
+    ? `${t(`hiraya.evidence.status.${asset.status}`)} ${translateEvidenceKind(asset.kind, t)}`
+    : t('hiraya.evidence.screenshotEvidence')
 
   return (
     <article className="grid gap-5 lg:grid-cols-[minmax(16rem,0.36fr)_minmax(0,0.64fr)] lg:items-stretch">
@@ -61,7 +70,7 @@ function EvidenceCarouselCard({
           ))}
         </div>
         <p className="w-fit border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-          {asset ? `${asset.status} ${asset.kind}` : 'screenshot evidence'}
+          {statusLabel}
         </p>
       </div>
 
@@ -71,7 +80,7 @@ function EvidenceCarouselCard({
           <span className="size-2 rounded-full bg-amber-400/80" />
           <span className="size-2 rounded-full bg-emerald-400/80" />
           <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
-            {isVideoAsset ? 'Video walkthrough frame · 16:9' : 'MacBook Pro 14-inch capture frame · 1512 × 982'}
+            {isVideoAsset ? t('hiraya.evidence.frame.video') : t('hiraya.evidence.frame.screenshot')}
           </span>
         </div>
         <div className={`${isVideoAsset ? 'aspect-video' : 'aspect-[1512/982]'} bg-background`}>
@@ -93,10 +102,10 @@ function EvidenceCarouselCard({
                   <PlayCircle className="size-7" aria-hidden="true" />
                 </span>
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/80">
-                  Video evidence slot
+                  {t('hiraya.evidence.placeholder.videoSlot')}
                 </p>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Add a video source to the evidence manifest to turn this support card into a playable walkthrough.
+                  {t('hiraya.evidence.placeholder.videoDescription')}
                 </p>
               </div>
             </div>
@@ -141,6 +150,7 @@ function EvidenceCarousel({
   cards: Array<Omit<ComponentProps<typeof EvidenceCarouselCard>, 'evidenceAssets'>>
   evidenceAssets: readonly HirayaEvidenceAsset[]
 }) {
+  const { t } = useTranslation()
   const [activeIndex, setActiveIndex] = useState(0)
 
   const activeCard = cards[activeIndex] ?? cards[0]
@@ -151,7 +161,7 @@ function EvidenceCarousel({
         <div className="grid gap-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <header className="max-w-5xl">
-              <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">Evidence</p>
+              <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">{t('hiraya.evidence.eyebrow')}</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">{title}</h2>
               <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{description}</p>
             </header>
@@ -162,7 +172,7 @@ function EvidenceCarousel({
               <div className="inline-flex h-9 items-center gap-3 rounded-xl border border-border bg-card/75 px-1.5 shadow-sm">
                 <button
                   type="button"
-                  aria-label="Previous evidence"
+                  aria-label={t('hiraya.evidence.previous')}
                   disabled={activeIndex === 0}
                   onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
                   className="grid size-7 place-items-center rounded-[10px] bg-transparent text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
@@ -172,7 +182,7 @@ function EvidenceCarousel({
                 <CarouselIndicator className="static w-auto" classNameButton="size-1.5 data-[active=true]:bg-primary/80" />
                 <button
                   type="button"
-                  aria-label="Next evidence"
+                  aria-label={t('hiraya.evidence.next')}
                   disabled={activeIndex + 1 === cards.length}
                   onClick={() => setActiveIndex((index) => Math.min(cards.length - 1, index + 1))}
                   className="grid size-7 place-items-center rounded-[10px] bg-transparent text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
@@ -197,8 +207,6 @@ function EvidenceCarousel({
   )
 }
 
-const briefVideoProofStages = ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke']
-
 function BriefVideoEvidence({
   slots,
   evidenceAssets,
@@ -206,10 +214,15 @@ function BriefVideoEvidence({
   slots?: readonly HirayaMediaSlot[]
   evidenceAssets: readonly HirayaEvidenceAsset[]
 }) {
+  const { t } = useTranslation()
   const videoSlot = slots?.find((slot) => slot.type === 'intro-video')
   const evidenceId = videoSlot?.evidenceRefs?.[0]
   const asset = evidenceId ? getHirayaEvidenceAsset(evidenceId, evidenceAssets) : undefined
   const videoSrc = asset?.kind === 'video' ? asset.src : undefined
+  const proofStages = t('hiraya.evidence.briefVideo.stages', { returnObjects: true }) as string[]
+  const statusLabel = asset
+    ? `${t(`hiraya.evidence.status.${asset.status}`)} ${translateEvidenceKind(asset.kind, t)}`
+    : `${videoSlot?.status} ${t('hiraya.evidence.kind.video')}`
 
   if (!videoSlot) {
     return null
@@ -219,7 +232,7 @@ function BriefVideoEvidence({
     <section className="border-l-4 border-primary/70 py-4 pl-6 sm:pl-8">
       <div className="grid gap-5">
         <header className="max-w-5xl">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">Evidence</p>
+          <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary/80">{t('hiraya.evidence.eyebrow')}</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">{videoSlot.title}</h2>
           <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{videoSlot.description}</p>
         </header>
@@ -231,15 +244,15 @@ function BriefVideoEvidence({
                 {evidenceId ?? videoSlot.id}
               </p>
               <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">
-                Primary portfolio walkthrough
+                {t('hiraya.evidence.briefVideo.title')}
               </h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {asset?.caption ?? 'A focused recording keeps the Brief route proof-led without turning the overview into a long media gallery.'}
+                {asset?.caption ?? t('hiraya.evidence.briefVideo.fallbackCaption')}
               </p>
             </div>
 
             <div className="grid gap-2">
-              {briefVideoProofStages.map((stage) => (
+              {proofStages.map((stage) => (
                 <div key={stage} className="flex items-center gap-2 text-xs leading-5 text-muted-foreground">
                   <span className="size-1.5 shrink-0 rounded-full bg-primary" />
                   <span>{stage}</span>
@@ -257,7 +270,7 @@ function BriefVideoEvidence({
                 </span>
               ))}
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
-                {asset ? `${asset.status} ${asset.kind}` : `${videoSlot.status} video`}
+                {statusLabel}
               </span>
             </div>
           </div>
@@ -268,7 +281,7 @@ function BriefVideoEvidence({
               <span className="size-2 rounded-full bg-amber-400/80" />
               <span className="size-2 rounded-full bg-emerald-400/80" />
               <span className="ml-2 truncate font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
-                Brief proof video · delivery walkthrough
+                {t('hiraya.evidence.briefVideo.frameLabel')}
               </span>
             </div>
             <div className="aspect-video bg-background">
@@ -289,19 +302,19 @@ function BriefVideoEvidence({
                     </span>
                     <div>
                       <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/80">
-                        Video evidence slot
+                        {t('hiraya.evidence.briefVideo.missingTitle')}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Drop the final walkthrough file into the evidence manifest and this frame becomes the playable Brief proof.
+                        {t('hiraya.evidence.briefVideo.missingDescription')}
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
                         <MonitorPlay className="size-3" aria-hidden="true" />
-                        16:9 walkthrough
+                        {t('hiraya.evidence.briefVideo.walkthroughBadge')}
                       </span>
                       <span className="rounded-full border border-border bg-card/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
-                        Brief route anchor
+                        {t('hiraya.evidence.briefVideo.routeAnchorBadge')}
                       </span>
                     </div>
                   </div>
@@ -326,6 +339,9 @@ function BriefRouteDesign({ page, content }: { page: HirayaPageContent; content:
 }
 
 function ArchitectureRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
+  const { t } = useTranslation()
+  const previews = t('hiraya.evidence.carousels.architecture.previews', { returnObjects: true }) as Record<string, string[]>
+
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
@@ -333,27 +349,21 @@ function ArchitectureRouteDesign({ page, content }: { page: HirayaPageContent; c
       <ArchitectureExposureBoundaryMatrix content={content.architectureExposureBoundaries} />
       <ArchitectureRuntimeInteractionExplorer content={content.architectureRuntimeInteractions} />
       <EvidenceCarousel
-        title="Evidence behind the architecture decisions"
-        description="Each capture anchors one architecture claim without turning the page into a detached screenshot gallery."
+        title={t('hiraya.evidence.carousels.architecture.title')}
+        description={t('hiraya.evidence.carousels.architecture.description')}
         evidenceAssets={content.evidenceAssets}
         cards={[
           {
             evidenceId: 'p0-public-ingress',
-            title: 'Ingress, DNS, and TLS',
-            summary: 'Route 53, ALB target health, Gateway/HTTPRoute status, certificate, and storefront smoke evidence.',
-            previewLines: ['Route 53 records', 'ALB target group health', 'Browser TLS and /api smoke test'],
+            previewLines: previews.publicIngress,
           },
           {
             evidenceId: 'p0-argocd-app-of-apps',
-            title: 'GitOps resource tree',
-            summary: 'Argo CD root application, child app health, and owned Kubernetes resources.',
-            previewLines: ['Root app Synced/Healthy', 'Platform child applications', 'Vintage resource tree'],
+            previewLines: previews.appOfApps,
           },
           {
             evidenceId: 'p1-private-workloads',
-            title: 'Private workload boundary',
-            summary: 'Private subnets, ClusterIP services, security groups, and controlled egress evidence.',
-            previewLines: ['Private node group subnets', 'ClusterIP services', 'NAT and route table evidence'],
+            previewLines: previews.privateWorkloads,
           },
         ]}
       />
@@ -362,6 +372,9 @@ function ArchitectureRouteDesign({ page, content }: { page: HirayaPageContent; c
 }
 
 function CostRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
+  const { t } = useTranslation()
+  const previews = t('hiraya.evidence.carousels.cost.previews', { returnObjects: true }) as Record<string, string[]>
+
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
@@ -375,21 +388,17 @@ function CostRouteDesign({ page, content }: { page: HirayaPageContent; content: 
         capacity={content.costCapacityTradeoffLedger.capacity}
       />
       <EvidenceCarousel
-        title="Evidence behind the cost decisions"
-        description="Financial proof stays close to the trade-off analysis, one operational capture at a time."
+        title={t('hiraya.evidence.carousels.cost.title')}
+        description={t('hiraya.evidence.carousels.cost.description')}
         evidenceAssets={content.evidenceAssets}
         cards={[
           {
             evidenceId: 'p2-cost-destroy-workflow',
-            title: 'Destroy workflow as governance',
-            summary: 'Typed confirmation, GitOps prune, PVC/EBS cleanup, platform destroy, and console cleanup proof.',
-            previewLines: ['Destroy workflow run', 'Terraform destroy logs', 'AWS console cleanup check'],
+            previewLines: previews.destroyWorkflow,
           },
           {
             evidenceId: 'p1-private-workloads',
-            title: 'Capacity and node group evidence',
-            summary: 'kubectl node/pod density and managed node group sizing evidence.',
-            previewLines: ['kubectl pod density', 'Managed node group sizing', 'Scheduling headroom'],
+            previewLines: previews.privateWorkloads,
           },
         ]}
       />
@@ -398,33 +407,30 @@ function CostRouteDesign({ page, content }: { page: HirayaPageContent; content: 
 }
 
 function SdlcRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
+  const { t } = useTranslation()
+  const previews = t('hiraya.evidence.carousels.sdlc.previews', { returnObjects: true }) as Record<string, string[]>
+
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <SdlcAuthorityFlow content={content.sdlcAuthorityFlow} />
       <SdlcDeliveryGuardrailBoard content={content.sdlcDeliveryGuardrails} authorityFlow={content.sdlcAuthorityFlow} />
       <EvidenceCarousel
-        title="Evidence behind the delivery loop"
-        description="Pipeline captures sit beside the SDLC model so each delivery stage has concrete proof."
+        title={t('hiraya.evidence.carousels.sdlc.title')}
+        description={t('hiraya.evidence.carousels.sdlc.description')}
         evidenceAssets={content.evidenceAssets}
         cards={[
           {
             evidenceId: 'p0-cicd-delivery-flow',
-            title: 'End-to-end delivery',
-            summary: 'PR checks, image publishing, promotion PR, Argo CD sync, rollout, and smoke verification.',
-            previewLines: ['GitHub Actions checks', 'ECR image push + scan', 'Argo CD sync + smoke test'],
+            previewLines: previews.deliveryFlow,
           },
           {
             evidenceId: 'p1-rollback-path',
-            title: 'Rollback through GitOps',
-            summary: 'Rollback uses an image-tag manifest PR and Argo CD reconciliation instead of manual patching.',
-            previewLines: ['Target image verification', 'Rollback PR diff', 'Post-rollback smoke test'],
+            previewLines: previews.rollbackPath,
           },
           {
             evidenceId: 'p0-infra-approval-gate',
-            title: 'Infrastructure approval gate',
-            summary: 'High-permission Terraform operations are separated from normal application delivery.',
-            previewLines: ['Terraform plan', 'Environment approval', 'Platform smoke result'],
+            previewLines: previews.infraApproval,
           },
         ]}
       />
@@ -433,6 +439,9 @@ function SdlcRouteDesign({ page, content }: { page: HirayaPageContent; content: 
 }
 
 function WafRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
+  const { t } = useTranslation()
+  const previews = t('hiraya.evidence.carousels.waf.previews', { returnObjects: true }) as Record<string, string[]>
+
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
@@ -444,15 +453,15 @@ function WafRouteDesign({ page, content }: { page: HirayaPageContent; content: H
         cards={[
           {
             evidenceId: 'p1-secrets',
-            previewLines: ['Secrets Manager list', 'ExternalSecret Ready', 'No secret values shown'],
+            previewLines: previews.secrets,
           },
           {
             evidenceId: 'p1-grafana',
-            previewLines: ['Request rate', 'Response time', 'Pod CPU/memory'],
+            previewLines: previews.grafana,
           },
           {
             evidenceId: 'p2-cost-destroy-workflow',
-            previewLines: ['Destroy workflow', 'PVC/EBS cleanup', 'EKS/VPC/ALB removed'],
+            previewLines: previews.destroyWorkflow,
           },
         ]}
       />

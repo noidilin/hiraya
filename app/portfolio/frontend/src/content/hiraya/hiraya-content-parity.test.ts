@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { hirayaPagesEn } from './en'
 import { hirayaPagesZhTW } from './zh-TW'
 import { expectStableListParity } from './parity-test-helpers'
+import { resources } from '@/i18n/resources'
+
 import { getHirayaRouteDesignContent } from './route-design-content'
 import type { HirayaPageContent } from './types'
 
@@ -249,6 +251,18 @@ describe('Hiraya localized content parity', () => {
       routes: asset.routes,
       src: asset.src,
     }))
+  })
+
+  it('keeps reusable evidence carousel chrome covered by i18next resources', () => {
+    const enEvidence = resources.en.translation.hiraya.evidence
+    const zhEvidence = resources['zh-TW'].translation.hiraya.evidence
+
+    expect(zhEvidence.eyebrow).toBe('證據')
+    expect(zhEvidence.previous).toBe('上一個證據')
+    expect(zhEvidence.carousels.architecture.title).toBe('支撐架構決策的證據')
+    expect(zhEvidence.carousels.cost.previews.destroyWorkflow).toHaveLength(enEvidence.carousels.cost.previews.destroyWorkflow.length)
+    expect(zhEvidence.carousels.sdlc.previews.deliveryFlow).toHaveLength(enEvidence.carousels.sdlc.previews.deliveryFlow.length)
+    expect(zhEvidence.carousels.waf.previews.secrets).toHaveLength(enEvidence.carousels.waf.previews.secrets.length)
   })
 
   it('keeps locale page structures aligned', () => {
