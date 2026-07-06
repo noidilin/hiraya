@@ -2,12 +2,35 @@ import { describe, expect, it } from 'vitest'
 
 import { hirayaPagesEn } from './en'
 import { hirayaPagesZhTW } from './zh-TW'
+import { expectStableListParity } from './parity-test-helpers'
+import { getHirayaRouteDesignContent } from './route-design-content'
 import type { HirayaPageContent } from './types'
 
 const enPages: readonly HirayaPageContent[] = hirayaPagesEn
 const zhPages: readonly HirayaPageContent[] = hirayaPagesZhTW
 
 describe('Hiraya localized content parity', () => {
+  it('resolves route-design content from an explicit locale', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(en.briefProofPathOverview[0]?.label).toBe('Design goals')
+    expect(zhTW.briefProofPathOverview[0]?.label).toBe('設計目標')
+  })
+
+  it('keeps Brief proof-path stable structure aligned while allowing translated prose', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expectStableListParity(zhTW.briefProofPathOverview, en.briefProofPathOverview, (card) => ({
+      id: card.id,
+      value: card.value,
+      evidenceRefs: card.evidenceRefs ?? [],
+      sourceRefs: card.sourceRefs,
+      bulletCount: card.detailBullets.length,
+    }))
+  })
+
   it('keeps locale page structures aligned', () => {
     expect(zhPages).toHaveLength(enPages.length)
 
