@@ -4,7 +4,7 @@ Stable map of workflow files and their primary responsibility. See workflow YAML
 
 | Workflow | Purpose |
 |---|---|
-| `.github/workflows/app-pr-baseline.yml` | Required no-AWS PR baseline for Vintage Storefront/app changes |
+| `.github/workflows/app-pr-baseline.yml` | Required no-AWS PR baseline for Vintage Storefront/app changes; stable required branch protection status is `app-baseline` |
 | `.github/workflows/image-ci.yml` | Build and push service images, then create GitOps image-tag promotion PRs |
 | `.github/workflows/deploy-smoke.yml` | Read-only public smoke after GitOps changes land on `main` |
 | `.github/workflows/service-image-dev-rollback.yml` | Manual rollback of one dev service to an existing ECR image tag |
@@ -19,10 +19,10 @@ Stable map of workflow files and their primary responsibility. See workflow YAML
 
 | Path | Purpose |
 |---|---|
-| `.github/scripts/src/` | TypeScript source for workflow helper scripts |
+| `.github/scripts/src/` | TypeScript source for workflow helper scripts, including the changed-service detector and PR classifier |
 | `.github/scripts/dist/` | Compiled Node runtime files used by workflows |
 | `.github/scripts/*.test.mjs` | Node test suites for workflow helpers |
-| `.github/utils/services.json` | App service catalog: packages, images, paths, build contexts, manifest targets |
+| `.github/utils/services.json` | App service catalog: packages, images, path ownership, build contexts, manifest targets |
 
 ## Validation commands
 

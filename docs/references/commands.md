@@ -37,6 +37,17 @@ pnpm run storefront:static
 pnpm --filter frontend dev
 ```
 
+| Command | Purpose |
+|---|---|
+| `pnpm run app:baseline` | Main no-AWS app gate reused by PR checks. Runs catalog checks, backend contract suites, Storefront Vitest unit tests, changed-service detection, GitOps render assertions, and static checks. |
+| `pnpm run app:static` | Runs Storefront build, typecheck, and lint checks, then the backend build. Lint errors block while warnings remain allowed. |
+| `pnpm run app:gitops` | Renders desired state and runs GitOps render assertions without Kubernetes cluster credentials. |
+| `pnpm run app:smoke:public` | Runs the read-only public deploy smoke against `STOREFRONT_PUBLIC_URL`, checking the Storefront shell and product envelope. |
+| `pnpm run app:smoke:compose` | Runs the local full-stack Compose smoke from a clean Compose database state. |
+| `pnpm run app:test:backend-contract` | Runs the gateway, auth, product, and orders contract suites with mocked database and upstream boundaries, without AWS credentials, PostgreSQL, Kubernetes, or real backend services. |
+| `pnpm run app:test:frontend` | Runs the Storefront Vitest unit tests in jsdom. |
+| `pnpm run storefront:static` | Reusable Storefront build, typecheck, and lint sequence for local and CI use. |
+
 ## Docker Compose
 
 ```sh
