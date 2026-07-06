@@ -8,7 +8,7 @@ import {
 } from './architectureRuntimeInteractions'
 import { briefPlatformProofMapContent, type BriefPlatformProofMapContent } from './briefPlatformProofMap'
 import { getBriefProofPathOverviewContent, type BriefProofPathCard } from './briefProofPathOverview'
-import { costCapacityTradeoffLedgerContent, type CostCapacityTradeoffLedgerContent } from './costTradeoffLedger'
+import { getCostCapacityTradeoffLedgerContent, type CostCapacityTradeoffLedgerContent } from './costTradeoffLedger'
 import { getHirayaEvidenceAssets, type HirayaEvidenceAsset } from './evidence-assets'
 import { getSdlcAuthorityFlowContent, type SdlcAuthorityFlowContent } from './sdlcAuthorityFlow'
 import { getSdlcDeliveryGuardrailContent, type SdlcDeliveryGuardrailBoardContent } from './sdlcDeliveryGuardrails'
@@ -34,7 +34,7 @@ export function getHirayaRouteDesignContent(locale: AppLocale): HirayaRouteDesig
     architectureOwnership: architectureOwnershipContent,
     architectureExposureBoundaries: exposureBoundaryContent,
     architectureRuntimeInteractions: architectureRuntimeInteractionsContent,
-    costCapacityTradeoffLedger: costCapacityTradeoffLedgerContent,
+    costCapacityTradeoffLedger: getCostCapacityTradeoffLedgerContent(locale),
     sdlcAuthorityFlow: getSdlcAuthorityFlowContent(locale),
     sdlcDeliveryGuardrails: getSdlcDeliveryGuardrailContent(locale),
     wafMaturityJudgment: getWafMaturityJudgmentContent(locale),
