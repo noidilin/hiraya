@@ -1,9 +1,9 @@
 import type { AppLocale } from '@/i18n/locales'
 
-import { exposureBoundaryContent, type ExposureBoundaryContent } from './architectureExposureBoundaries'
-import { architectureOwnershipContent, type ArchitectureOwnershipContent } from './architectureOwnership'
+import { getExposureBoundaryContent, type ExposureBoundaryContent } from './architectureExposureBoundaries'
+import { getArchitectureOwnershipContent, type ArchitectureOwnershipContent } from './architectureOwnership'
 import {
-  architectureRuntimeInteractionsContent,
+  getArchitectureRuntimeInteractionsContent,
   type ArchitectureRuntimeInteractionsContent,
 } from './architectureRuntimeInteractions'
 import { briefPlatformProofMapContent, type BriefPlatformProofMapContent } from './briefPlatformProofMap'
@@ -31,9 +31,9 @@ export function getHirayaRouteDesignContent(locale: AppLocale): HirayaRouteDesig
   return {
     briefProofPathOverview: getBriefProofPathOverviewContent(locale),
     briefPlatformProofMap: briefPlatformProofMapContent,
-    architectureOwnership: architectureOwnershipContent,
-    architectureExposureBoundaries: exposureBoundaryContent,
-    architectureRuntimeInteractions: architectureRuntimeInteractionsContent,
+    architectureOwnership: getArchitectureOwnershipContent(locale),
+    architectureExposureBoundaries: getExposureBoundaryContent(locale),
+    architectureRuntimeInteractions: getArchitectureRuntimeInteractionsContent(locale),
     costCapacityTradeoffLedger: getCostCapacityTradeoffLedgerContent(locale),
     sdlcAuthorityFlow: getSdlcAuthorityFlowContent(locale),
     sdlcDeliveryGuardrails: getSdlcDeliveryGuardrailContent(locale),
