@@ -24,8 +24,8 @@ const indexRoute = createRoute({
   path: '/',
   beforeLoad: () => {
     throw redirect({
-      to: topicRoutePath,
-      params: firstTopicParams,
+      to: '/hiraya/$pageId',
+      params: { pageId: 'brief' },
       replace: true,
     })
   },
