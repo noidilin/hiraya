@@ -12,7 +12,7 @@ The Vintage Storefront is Hiraya's demo commerce workload. It lives under `app/m
 
 ## Local development
 
-Run commands from the repository root. The root is the only pnpm workspace.
+All commands run from the repository root. The root is the only pnpm workspace.
 
 Default local Storefront URL: `http://localhost:3000`. Use the Docker Compose commands in [`../../docs/references/commands.md`](../../docs/references/commands.md#docker-compose) for production-like local mode or Vite hot reload mode.
 

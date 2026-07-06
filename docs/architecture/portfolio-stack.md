@@ -22,7 +22,7 @@ Portfolio Visitor
 | Durable AWS stack | `infra/portfolio/` |
 | Curated Guide knowledge | `docs/portfolio/` |
 | Portfolio runbook | `docs/runbooks/portfolio/first-deploy.md` |
-| Portfolio ADRs | `docs/adr/0008-durable-portfolio-stack.md`, `0009`, `0010` |
+| Portfolio ADRs | [`0008`](../adr/0008-durable-portfolio-stack.md), [`0009`](../adr/0009-desktop-first-hiraya-content-evidence-experience.md), [`0010`](../adr/0010-hiraya-portfolio-i18n-hybrid-localization.md) |
 
 ## Content rule
 

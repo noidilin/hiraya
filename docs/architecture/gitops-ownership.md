@@ -26,7 +26,7 @@ Child Applications
 | `gitops/clusters/dev/root/` | Root app-of-apps desired state for the dev cluster |
 | `gitops/platform/` | Shared Cluster Platform add-ons and config |
 | `gitops/apps/vintage/` | Vintage Storefront workload manifests |
-| `infra/envs/dev/cluster-bootstrap/` | Argo CD installation and root handoff only |
+| `infra/envs/dev/cluster-bootstrap/` | Argo CD installation, AppProjects, and root handoff |
 
 ## Ownership rule
 

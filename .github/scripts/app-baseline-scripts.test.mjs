@@ -13,6 +13,8 @@ const legacyAppLockfilePath = path.join(repoRoot, 'app/microservices/pnpm-lock.y
 const legacyAppWorkspacePath = path.join(repoRoot, 'app/microservices/pnpm-workspace.yaml');
 const legacyFiltersPath = path.join(repoRoot, '.github/utils/file-filters.yml');
 const appWorkspaceReadmePath = path.join(repoRoot, 'app/microservices/README.md');
+const commandReferencePath = path.join(repoRoot, 'docs/references/commands.md');
+const workflowReferencePath = path.join(repoRoot, 'docs/references/workflows.md');
 const appBaselineRequiredCheckRunbookPath = path.join(repoRoot, 'docs/runbooks/platform/enforce-app-baseline-required-check.md');
 
 const appPrBaselineWorkflowPath = path.join(repoRoot, '.github/workflows/app-pr-baseline.yml');
@@ -79,10 +81,10 @@ test('root workspace exposes the reusable baseline command surface', async () =>
 });
 
 test('Storefront exposes explicit reusable static check commands', async () => {
-  const [workspaceScripts, frontendScripts, readme] = await Promise.all([
+  const [workspaceScripts, frontendScripts, commandReference] = await Promise.all([
     readWorkspaceScripts(),
     readFrontendScripts(),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
   ]);
 
   for (const scriptName of ['build', 'typecheck', 'lint']) {
@@ -94,15 +96,15 @@ test('Storefront exposes explicit reusable static check commands', async () => {
   assert.match(frontendScripts.lint, /eslint\b/, 'lint should run eslint explicitly');
   assert.doesNotMatch(frontendScripts.lint, /--max-warnings\s+0/, 'lint warnings should remain allowed initially');
   assert.match(workspaceScripts['app:static'], /storefront:static/, 'app:static should reuse explicit Storefront static scripts');
-  assert.match(readme, /Storefront build, typecheck, and lint/i);
-  assert.match(readme, /lint errors block while warnings remain allowed/i);
+  assert.match(commandReference, /Storefront build, typecheck, and lint/i);
+  assert.match(commandReference, /lint errors block while warnings remain allowed/i);
 });
 
 test('Storefront unit tests run through Vitest and are part of the app baseline', async () => {
-  const [workspaceScripts, frontendScripts, readme] = await Promise.all([
+  const [workspaceScripts, frontendScripts, commandReference] = await Promise.all([
     readWorkspaceScripts(),
     readFrontendScripts(),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
   ]);
 
   assert.match(frontendScripts.test, /vitest\b.*run|vitest\b/, 'frontend test script should run Vitest');
@@ -110,7 +112,7 @@ test('Storefront unit tests run through Vitest and are part of the app baseline'
   assert.match(frontendScripts.test, /jsdom/, 'frontend tests should run in a browser-like DOM environment');
   assert.match(workspaceScripts['app:test:frontend'], /--filter frontend test/, 'workspace should expose the frontend unit-test gate');
   assert.match(workspaceScripts['app:baseline'], /app:test:frontend/, 'app:baseline should fail when Storefront unit tests are broken');
-  assert.match(readme, /Storefront Vitest unit tests/i);
+  assert.match(commandReference, /Storefront Vitest unit tests/i);
 });
 
 test('implemented contract and browser baseline commands run shared validation', async () => {
@@ -128,10 +130,10 @@ test('implemented contract and browser baseline commands run shared validation',
 });
 
 test('backend contract baseline command names and gates each active Storefront suite', async () => {
-  const [scripts, backendScripts, readme] = await Promise.all([
+  const [scripts, backendScripts, commandReference] = await Promise.all([
     readWorkspaceScripts(),
     readBackendScripts(),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
   ]);
 
   assert.match(
@@ -149,19 +151,19 @@ test('backend contract baseline command names and gates each active Storefront s
     /pnpm --dir \.\.\/\.\.\/\.\. run app:test:backend-contract/,
     'backend aggregate test should reuse the implemented contract gate instead of placeholder service tests',
   );
-  assert.match(readme, /gateway, auth, product, and orders contract suites/i);
-  assert.match(readme, /mocked database and upstream boundaries/i);
-  assert.match(readme, /AWS credentials, PostgreSQL, Kubernetes, or real backend services/i);
+  assert.match(commandReference, /gateway, auth, product, and orders contract suites/i);
+  assert.match(commandReference, /mocked database and upstream boundaries/i);
+  assert.match(commandReference, /AWS credentials, PostgreSQL, Kubernetes, or real backend services/i);
 });
 
 test('legacy duplicated path-filter metadata is removed', async () => {
   await assert.rejects(access(legacyFiltersPath), /ENOENT/);
 
-  const appReadme = await readFile(appWorkspaceReadmePath, 'utf8');
-  assert.match(appReadme, /service catalog/i, 'app README should document the service catalog transition');
-  assert.match(appReadme, /changed-service detector/i, 'app README should name the verified detector path');
-  assert.match(appReadme, /compiled runtime/i, 'app README should explain that TypeScript CI scripts run from compiled JavaScript');
-  assert.doesNotMatch(appReadme, /legacy path-filter/i, 'app README should not point agents at removed legacy filters');
+  const workflowReference = await readFile(workflowReferencePath, 'utf8');
+  assert.match(workflowReference, /service catalog/i, 'workflow reference should document the service catalog transition');
+  assert.match(workflowReference, /changed-service detector/i, 'workflow reference should name the verified detector path');
+  assert.match(workflowReference, /compiled Node runtime/i, 'workflow reference should explain that TypeScript CI scripts run from compiled JavaScript');
+  assert.doesNotMatch(workflowReference, /legacy path-filter/i, 'workflow reference should not point agents at removed legacy filters');
 });
 
 test('legacy nested app pnpm workspace boundary is removed', async () => {
@@ -171,10 +173,13 @@ test('legacy nested app pnpm workspace boundary is removed', async () => {
     assert.rejects(access(legacyAppWorkspacePath), /ENOENT/),
   ]);
 
-  const appReadme = await readFile(appWorkspaceReadmePath, 'utf8');
-  assert.match(appReadme, /commands run from the repository root/i);
+  const [appReadme, commandReference] = await Promise.all([
+    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
+  ]);
+  assert.match(commandReference, /Run commands from the repository root/i);
   assert.doesNotMatch(appReadme, /Run commands from `app\/microservices`/);
-  assert.doesNotMatch(appReadme, /pnpm run app:install|pnpm run app:workspace|pnpm run app:changed/);
+  assert.doesNotMatch(commandReference, /pnpm run app:install|pnpm run app:workspace|pnpm run app:changed/);
 });
 
 test('app PR baseline workflow builds changed service images without AWS or registry push', async () => {
@@ -198,10 +203,10 @@ test('app PR baseline workflow builds changed service images without AWS or regi
 });
 
 test('GitOps render assertions cover Storefront deploy invariants', async () => {
-  const [scripts, assertSource, readme] = await Promise.all([
+  const [scripts, assertSource, commandReference] = await Promise.all([
     readWorkspaceScripts(),
     readFile(gitopsAssertSourcePath, 'utf8'),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
   ]);
 
   assert.match(scripts['app:gitops'], /kubectl kustomize gitops/, 'app:gitops should render desired state without cluster credentials');
@@ -212,16 +217,16 @@ test('GitOps render assertions cover Storefront deploy invariants', async () => 
   assert.match(assertSource, /AUTH_SERVICE_URL/, 'assertions should verify gateway active API wiring');
   assert.match(assertSource, /ORDERS_SERVICE_URL/, 'assertions should verify active orders wiring');
   assert.match(assertSource, /targetPort .* must match a Deployment\//, 'assertions should verify deployed Deployment/Service port consistency');
-  assert.match(readme, /GitOps render assertions/i);
-  assert.match(readme, /without Kubernetes cluster credentials/i);
+  assert.match(commandReference, /GitOps render assertions/i);
+  assert.match(commandReference, /without Kubernetes cluster credentials/i);
 });
 
 test('app PR baseline workflow is a no-AWS read-only required-check candidate', async () => {
-  const [workflow, setupNodePnpmAction, scripts, readme] = await Promise.all([
+  const [workflow, setupNodePnpmAction, scripts, workflowReference] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
     readFile(setupNodePnpmActionPath, 'utf8'),
     readWorkspaceScripts(),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(workflowReferencePath, 'utf8'),
   ]);
 
   assert.match(workflow, /^name: storefront-app-baseline$/m);
@@ -254,14 +259,14 @@ test('app PR baseline workflow is a no-AWS read-only required-check candidate', 
   assert.match(workflow, /classify-app-pr\.mjs/, 'workflow should use the compiled app PR classifier');
   assert.match(scripts['app:baseline'], /app:catalog/);
   assert.match(scripts['app:baseline'], /app:gitops/, 'app:baseline should include the GitOps render assertions');
-  assert.match(readme, /required branch protection status is `app-baseline`/i);
-  assert.match(readme, /required branch protection/i);
+  assert.match(workflowReference, /required branch protection status is `app-baseline`/i);
+  assert.match(workflowReference, /Required no-AWS PR baseline/i);
 });
 
 test('required app baseline branch rule is documented with non-AWS evidence', async () => {
-  const [workflow, readme, runbook] = await Promise.all([
+  const [workflow, workflowReference, runbook] = await Promise.all([
     readFile(appPrBaselineWorkflowPath, 'utf8'),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(workflowReferencePath, 'utf8'),
     readFile(appBaselineRequiredCheckRunbookPath, 'utf8'),
   ]);
 
@@ -269,7 +274,7 @@ test('required app baseline branch rule is documented with non-AWS evidence', as
 
   assert.match(workflow, /^  pull_request:$/m, 'required check must run on pull requests');
   assert.doesNotMatch(workflow, /pull_request:\n\s+paths:/, 'required check must not depend on path filters');
-  assert.match(readme, new RegExp(requiredCheck.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(workflowReference, new RegExp(requiredCheck.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(runbook, /GitHub repository ruleset/i);
   assert.match(runbook, /main/i);
   assert.match(runbook, new RegExp(requiredCheck.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -318,10 +323,10 @@ test('main image CI gates ECR pushes and manifest updates behind the app baselin
 });
 
 test('public Storefront deploy smoke is reusable and read-only', async () => {
-  const [scripts, smokeScript, readme] = await Promise.all([
+  const [scripts, smokeScript, commandReference] = await Promise.all([
     readWorkspaceScripts(),
     readFile(publicSmokeScriptPath, 'utf8'),
-    readFile(appWorkspaceReadmePath, 'utf8'),
+    readFile(commandReferencePath, 'utf8'),
   ]);
 
   assert.match(scripts['app:smoke:public'], /storefront-public-smoke\.mjs/, 'workspace should expose the public deploy smoke script');
@@ -331,8 +336,8 @@ test('public Storefront deploy smoke is reusable and read-only', async () => {
   assert.match(smokeScript, /Array\.isArray/, 'smoke script should validate product data is an array');
   assert.match(smokeScript, /<div id="root"><\/div>|id="root"/, 'smoke script should verify the Storefront shell document');
   assert.doesNotMatch(smokeScript, /aws |kubectl|argocd|terraform|EKS|KUBECONFIG/i, 'public smoke must not require cloud or cluster credentials');
-  assert.match(readme, /public deploy smoke/i);
-  assert.match(readme, /read-only/i);
+  assert.match(commandReference, /public deploy smoke/i);
+  assert.match(commandReference, /read-only/i);
 });
 
 test('manifest update workflows use protected bot PRs and post-merge smoke', async () => {
