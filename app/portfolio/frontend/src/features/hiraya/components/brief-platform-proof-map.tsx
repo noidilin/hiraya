@@ -343,14 +343,6 @@ function CompactProofMapNodeCard({ node, className }: { node: BriefProofMapNode;
       </div>
 
       <p className="mt-3 text-xs leading-5 text-muted-foreground">{node.detail}</p>
-
-      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-        {node.sourceRefs.slice(0, 3).map((ref) => (
-          <span key={ref} className="border border-border bg-background/80 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-normal text-muted-foreground">
-            {ref}
-          </span>
-        ))}
-      </div>
     </div>
   )
 }

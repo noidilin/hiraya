@@ -6,7 +6,7 @@ import {
   getArchitectureRuntimeInteractionsContent,
   type ArchitectureRuntimeInteractionsContent,
 } from './architectureRuntimeInteractions'
-import { briefPlatformProofMapContent, type BriefPlatformProofMapContent } from './briefPlatformProofMap'
+import { getBriefPlatformProofMapContent, type BriefPlatformProofMapContent } from './briefPlatformProofMap'
 import { getBriefProofPathOverviewContent, type BriefProofPathCard } from './briefProofPathOverview'
 import { getCostCapacityTradeoffLedgerContent, type CostCapacityTradeoffLedgerContent } from './costTradeoffLedger'
 import { getHirayaEvidenceAssets, type HirayaEvidenceAsset } from './evidence-assets'
@@ -30,7 +30,7 @@ export type HirayaRouteDesignContent = {
 export function getHirayaRouteDesignContent(locale: AppLocale): HirayaRouteDesignContent {
   return {
     briefProofPathOverview: getBriefProofPathOverviewContent(locale),
-    briefPlatformProofMap: briefPlatformProofMapContent,
+    briefPlatformProofMap: getBriefPlatformProofMapContent(locale),
     architectureOwnership: getArchitectureOwnershipContent(locale),
     architectureExposureBoundaries: getExposureBoundaryContent(locale),
     architectureRuntimeInteractions: getArchitectureRuntimeInteractionsContent(locale),

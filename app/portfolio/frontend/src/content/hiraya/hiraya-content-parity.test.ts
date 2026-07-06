@@ -31,6 +31,45 @@ describe('Hiraya localized content parity', () => {
     }))
   })
 
+  it('keeps Brief Platform Proof Map stable while localizing proof lenses and node explanations', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.briefPlatformProofMap.title).toBe('從 source authority 到 public proof 的一張地圖')
+    expect(zhTW.briefPlatformProofMap.lenses[0]?.label).toBe('Visitor request 證據')
+    expect(zhTW.briefPlatformProofMap.nodes.find((node) => node.id === 'repo-change')?.detail).toBe(
+      'Application、GitOps 或 infrastructure intent 先從可 review 的 source 開始，而不是 console mutation。',
+    )
+
+    expectStableListParity(zhTW.briefPlatformProofMap.zones, en.briefPlatformProofMap.zones, (zone) => ({
+      id: zone.id,
+      position: zone.position,
+      size: zone.size,
+    }))
+    expectStableListParity(zhTW.briefPlatformProofMap.nodes, en.briefPlatformProofMap.nodes, (node) => ({
+      id: node.id,
+      zoneId: node.zoneId,
+      code: node.code,
+      kind: node.kind,
+      role: node.role,
+      toolIcon: node.toolIcon,
+      position: node.position,
+      sourceRefs: node.sourceRefs,
+    }))
+    expectStableListParity(zhTW.briefPlatformProofMap.edges, en.briefPlatformProofMap.edges, (edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      lensIds: edge.lensIds,
+    }))
+    expectStableListParity(zhTW.briefPlatformProofMap.lenses, en.briefPlatformProofMap.lenses, (lens) => ({
+      id: lens.id,
+      highlightedNodeIds: lens.highlightedNodeIds,
+      evidenceRefs: lens.evidenceRefs ?? [],
+      nextRoute: lens.nextRoute,
+    }))
+  })
+
   it('keeps Architecture ownership structures aligned while localizing visitor-facing copy', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')
