@@ -1,25 +1,14 @@
 import { useState, type ComponentProps } from 'react'
 import { ChevronLeft, ChevronRight, MonitorPlay, PlayCircle } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-
 import {
   Carousel,
   CarouselContent,
   CarouselIndicator,
   CarouselItem,
 } from '@/components/motion-primitives/carousel'
-import { architectureOwnershipContent } from '@/content/hiraya/architectureOwnership'
-import { architectureRuntimeInteractionsContent } from '@/content/hiraya/architectureRuntimeInteractions'
-import { briefPlatformProofMapContent } from '@/content/hiraya/briefPlatformProofMap'
-import { getBriefProofPathOverviewContent } from '@/content/hiraya/briefProofPathOverview'
-import { costCapacityTradeoffLedgerContent } from '@/content/hiraya/costTradeoffLedger'
 import { getHirayaEvidenceAsset } from '@/content/hiraya/evidence-assets'
-import { exposureBoundaryContent } from '@/content/hiraya/architectureExposureBoundaries'
-import { sdlcAuthorityFlowContent } from '@/content/hiraya/sdlcAuthorityFlow'
-import { sdlcDeliveryGuardrails } from '@/content/hiraya/sdlcDeliveryGuardrails'
-import { wafMaturityJudgmentContent } from '@/content/hiraya/wafMaturityJudgment'
+import type { HirayaRouteDesignContent } from '@/content/hiraya/route-design-content'
 import type { HirayaEvidenceItem, HirayaMediaSlot, HirayaPageContent } from '@/content/hiraya/types'
-import { normalizeAppLocale } from '@/i18n/locales'
 
 import { ArchitectureExposureBoundaryMatrix } from './architecture-exposure-boundary-matrix'
 import { ArchitectureOwnershipExplorer } from './architecture-ownership-explorer'
@@ -314,27 +303,23 @@ function BriefVideoEvidence({ slots }: { slots?: readonly HirayaMediaSlot[] }) {
   )
 }
 
-function BriefRouteDesign({ page }: { page: HirayaPageContent }) {
-  const { i18n } = useTranslation()
-  const locale = normalizeAppLocale(i18n.resolvedLanguage) ?? 'en'
-  const overviewCards = getBriefProofPathOverviewContent(locale)
-
+function BriefRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   return (
     <div className="grid gap-6">
-      <BriefProofPathOverview cards={overviewCards} />
-      <BriefPlatformProofMap content={briefPlatformProofMapContent} />
+      <BriefProofPathOverview cards={content.briefProofPathOverview} />
+      <BriefPlatformProofMap content={content.briefPlatformProofMap} />
       <BriefVideoEvidence slots={page.mediaSlots} />
     </div>
   )
 }
 
-function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
+function ArchitectureRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      <ArchitectureOwnershipExplorer content={architectureOwnershipContent} />
-      <ArchitectureExposureBoundaryMatrix content={exposureBoundaryContent} />
-      <ArchitectureRuntimeInteractionExplorer content={architectureRuntimeInteractionsContent} />
+      <ArchitectureOwnershipExplorer content={content.architectureOwnership} />
+      <ArchitectureExposureBoundaryMatrix content={content.architectureExposureBoundaries} />
+      <ArchitectureRuntimeInteractionExplorer content={content.architectureRuntimeInteractions} />
       <EvidenceCarousel
         title="Evidence behind the architecture decisions"
         description="Each capture anchors one architecture claim without turning the page into a detached screenshot gallery."
@@ -363,17 +348,17 @@ function ArchitectureRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function CostRouteDesign({ page }: { page: HirayaPageContent }) {
+function CostRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <CostCapacityTradeoffLedger
-        title={costCapacityTradeoffLedgerContent.title}
-        summary={costCapacityTradeoffLedgerContent.summary}
-        tabs={costCapacityTradeoffLedgerContent.tabs}
-        tradeoffs={costCapacityTradeoffLedgerContent.tradeoffs}
-        estimateRows={costCapacityTradeoffLedgerContent.estimateRows}
-        capacity={costCapacityTradeoffLedgerContent.capacity}
+        title={content.costCapacityTradeoffLedger.title}
+        summary={content.costCapacityTradeoffLedger.summary}
+        tabs={content.costCapacityTradeoffLedger.tabs}
+        tradeoffs={content.costCapacityTradeoffLedger.tradeoffs}
+        estimateRows={content.costCapacityTradeoffLedger.estimateRows}
+        capacity={content.costCapacityTradeoffLedger.capacity}
       />
       <EvidenceCarousel
         title="Evidence behind the cost decisions"
@@ -397,12 +382,12 @@ function CostRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function SdlcRouteDesign({ page }: { page: HirayaPageContent }) {
+function SdlcRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      <SdlcAuthorityFlow content={sdlcAuthorityFlowContent} />
-      <SdlcDeliveryGuardrailBoard guardrails={sdlcDeliveryGuardrails} authorityFlow={sdlcAuthorityFlowContent} />
+      <SdlcAuthorityFlow content={content.sdlcAuthorityFlow} />
+      <SdlcDeliveryGuardrailBoard guardrails={content.sdlcDeliveryGuardrails} authorityFlow={content.sdlcAuthorityFlow} />
       <EvidenceCarousel
         title="Evidence behind the delivery loop"
         description="Pipeline captures sit beside the SDLC model so each delivery stage has concrete proof."
@@ -431,11 +416,11 @@ function SdlcRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-function WafRouteDesign({ page }: { page: HirayaPageContent }) {
+function WafRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   return (
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
-      <WafMaturityJudgmentBoard content={wafMaturityJudgmentContent} />
+      <WafMaturityJudgmentBoard content={content.wafMaturityJudgment} />
       <EvidenceCarousel
         title="Evidence behind the Well-Architected review"
         description="The pillar review stays judgment-led while captures support one implementation claim at a time."
@@ -464,18 +449,18 @@ function WafRouteDesign({ page }: { page: HirayaPageContent }) {
   )
 }
 
-export function HirayaRouteDesign({ page }: { page: HirayaPageContent }) {
+export function HirayaRouteDesign({ page, content }: { page: HirayaPageContent; content: HirayaRouteDesignContent }) {
   switch (page.id) {
     case 'brief':
-      return <BriefRouteDesign page={page} />
+      return <BriefRouteDesign page={page} content={content} />
     case 'arch':
-      return <ArchitectureRouteDesign page={page} />
+      return <ArchitectureRouteDesign page={page} content={content} />
     case 'cost':
-      return <CostRouteDesign page={page} />
+      return <CostRouteDesign page={page} content={content} />
     case 'sdlc':
-      return <SdlcRouteDesign page={page} />
+      return <SdlcRouteDesign page={page} content={content} />
     case 'waf':
-      return <WafRouteDesign page={page} />
+      return <WafRouteDesign page={page} content={content} />
     default:
       return null
   }

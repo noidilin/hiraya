@@ -22,6 +22,7 @@ import {
   type HirayaPageContent as HirayaPageContentModel,
   type HirayaRouteId,
 } from '@/content/hiraya/content'
+import { getHirayaRouteDesignContent, type HirayaRouteDesignContent } from '@/content/hiraya/route-design-content'
 import { GuideChatLauncher } from '@/features/guide-chat/components/guide-chat-launcher'
 import { useAppLocale } from '@/i18n/use-app-locale'
 import { HirayaHero } from '@/features/hiraya/components/hiraya-hero'
@@ -43,8 +44,14 @@ function getHirayaHref(pageId: HirayaRouteId) {
   return `/hiraya/${pageId}`
 }
 
-function HirayaPageContent({ page }: { page: HirayaPageContentModel }) {
-  return <HirayaRouteDesign page={page} />
+function HirayaPageContent({
+  page,
+  routeDesignContent,
+}: {
+  page: HirayaPageContentModel
+  routeDesignContent: HirayaRouteDesignContent
+}) {
+  return <HirayaRouteDesign page={page} content={routeDesignContent} />
 }
 
 function HirayaActionBar({ activePageId, pages }: { activePageId: HirayaRouteId; pages: readonly HirayaPageContentModel[] }) {
@@ -96,6 +103,7 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
   const resolvedPageId = resolveHirayaRouteId(activePageId)
   const pages = getHirayaPages(locale)
   const activePage = findHirayaPage(activePageId, locale)
+  const routeDesignContent = getHirayaRouteDesignContent(locale)
   return (
     <AppPageShell
       dock={
@@ -107,7 +115,7 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
       contentClassName="mx-auto flex min-h-svh w-full max-w-[1680px] flex-col gap-8 px-4 py-24 sm:px-6 lg:px-8"
     >
       <HirayaHero page={activePage} />
-      <HirayaPageContent page={activePage} />
+      <HirayaPageContent page={activePage} routeDesignContent={routeDesignContent} />
       <GuideChatLauncher />
     </AppPageShell>
   )

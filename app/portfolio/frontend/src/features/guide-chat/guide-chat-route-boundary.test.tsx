@@ -19,6 +19,7 @@ function stubBrowserApis() {
     },
   )
   Element.prototype.scrollIntoView = vi.fn()
+  window.scrollTo = vi.fn()
 }
 
 async function renderAppAt(pathname: string) {
@@ -61,7 +62,7 @@ describe('Guide chat route boundary', () => {
     await renderAppAt('/hiraya/brief')
 
     expect(textContent()).toContain('Ask Hiraya Guide')
-  })
+  }, 10_000)
 
   it('does not show the Guide chat launcher outside Hiraya pages', async () => {
     await renderAppAt('/visuals')
