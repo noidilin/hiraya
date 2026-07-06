@@ -103,6 +103,35 @@ describe('Hiraya localized content parity', () => {
     }))
   })
 
+  it('keeps Cost capacity trade-off ledger stable while localizing visitor-facing decisions', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.costCapacityTradeoffLedger.title).toBe('容量取捨帳本')
+    expect(zhTW.costCapacityTradeoffLedger.tabs.tradeoffAnalysis.label).toBe('取捨分析')
+    expect(zhTW.costCapacityTradeoffLedger.chrome.tableColumns.justification).toBe('支出合理性')
+    expect(zhTW.costCapacityTradeoffLedger.capacity.currentTerraformSizing).toEqual(en.costCapacityTradeoffLedger.capacity.currentTerraformSizing)
+
+    expectStableListParity(zhTW.costCapacityTradeoffLedger.tradeoffs, en.costCapacityTradeoffLedger.tradeoffs, (tradeoff) => ({
+      id: tradeoff.id,
+      tradeoffClass: tradeoff.tradeoffClass,
+      monthlyEstimate: tradeoff.monthlyEstimate,
+      sourceRefs: tradeoff.sourceRefs,
+    }))
+    expectStableListParity(zhTW.costCapacityTradeoffLedger.estimateRows, en.costCapacityTradeoffLedger.estimateRows, (row) => ({
+      category: row.category,
+      monthlyEstimate: row.monthlyEstimate,
+    }))
+    expect(zhTW.costCapacityTradeoffLedger.capacity).toMatchObject({
+      nodeCount: en.costCapacityTradeoffLedger.capacity.nodeCount,
+      podLimitPerNode: en.costCapacityTradeoffLedger.capacity.podLimitPerNode,
+      totalPodSlots: en.costCapacityTradeoffLedger.capacity.totalPodSlots,
+      currentRunningPods: en.costCapacityTradeoffLedger.capacity.currentRunningPods,
+      remainingPodSlots: en.costCapacityTradeoffLedger.capacity.remainingPodSlots,
+      sourceRefs: en.costCapacityTradeoffLedger.capacity.sourceRefs,
+    })
+  })
+
   it('keeps evidence asset metadata stable while localizing titles and captions', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')

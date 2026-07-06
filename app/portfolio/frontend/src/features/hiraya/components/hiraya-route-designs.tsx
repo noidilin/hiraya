@@ -369,6 +369,7 @@ function CostRouteDesign({ page, content }: { page: HirayaPageContent; content: 
         title={content.costCapacityTradeoffLedger.title}
         summary={content.costCapacityTradeoffLedger.summary}
         tabs={content.costCapacityTradeoffLedger.tabs}
+        chrome={content.costCapacityTradeoffLedger.chrome}
         tradeoffs={content.costCapacityTradeoffLedger.tradeoffs}
         estimateRows={content.costCapacityTradeoffLedger.estimateRows}
         capacity={content.costCapacityTradeoffLedger.capacity}

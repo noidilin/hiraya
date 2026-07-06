@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 
 import {
-  costTradeoffClassLabels,
   type CostCapacitySnapshot,
+  type CostCapacityTradeoffLedgerChrome,
   type CostCapacityTradeoffLedgerContent,
   type CostEstimateRow,
   type CostTradeoffClass,
@@ -15,28 +15,25 @@ import { HirayaSectionShell } from './hiraya-section'
 
 type LedgerTab = 'tradeoff-analysis' | 'estimate-details' | 'capacity-decision'
 
-const ledgerTabMeta: Record<LedgerTab, string> = {
-  'tradeoff-analysis': 'why it exists',
-  'estimate-details': 'monthly view',
-  'capacity-decision': 'pod headroom',
-}
-
-function buildLedgerTabs(tabs: CostCapacityTradeoffLedgerContent['tabs']): readonly { id: LedgerTab; label: string; meta: string }[] {
+function buildLedgerTabs(
+  tabs: CostCapacityTradeoffLedgerContent['tabs'],
+  chromeTabs: CostCapacityTradeoffLedgerChrome['tabs'],
+): readonly { id: LedgerTab; label: string; meta: string }[] {
   return [
-    { id: 'tradeoff-analysis', label: tabs.tradeoffAnalysis, meta: ledgerTabMeta['tradeoff-analysis'] },
-    { id: 'estimate-details', label: tabs.estimateDetails, meta: ledgerTabMeta['estimate-details'] },
-    { id: 'capacity-decision', label: tabs.capacityDecision, meta: ledgerTabMeta['capacity-decision'] },
+    { id: 'tradeoff-analysis', label: tabs.tradeoffAnalysis.label, meta: chromeTabs.tradeoffAnalysis.meta },
+    { id: 'estimate-details', label: tabs.estimateDetails.label, meta: chromeTabs.estimateDetails.meta },
+    { id: 'capacity-decision', label: tabs.capacityDecision.label, meta: chromeTabs.capacityDecision.meta },
   ]
 }
 
-function classLabel(tradeoffClass: CostTradeoffClass) {
-  return costTradeoffClassLabels[tradeoffClass]
+function classLabel(tradeoffClass: CostTradeoffClass, chrome: CostCapacityTradeoffLedgerChrome) {
+  return chrome.classLabels[tradeoffClass]
 }
 
-function TradeoffClassTag({ tradeoffClass }: { tradeoffClass: CostTradeoffClass }) {
+function TradeoffClassTag({ tradeoffClass, chrome }: { tradeoffClass: CostTradeoffClass; chrome: CostCapacityTradeoffLedgerChrome }) {
   return (
     <span className="w-fit font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-      {classLabel(tradeoffClass)}
+      {classLabel(tradeoffClass, chrome)}
     </span>
   )
 }
@@ -50,15 +47,15 @@ function DetailBlock({ title, children }: { title: string; children: string }) {
   )
 }
 
-function TradeoffCard({ item }: { item: CostTradeoffItem }) {
+function TradeoffCard({ item, chrome }: { item: CostTradeoffItem; chrome: CostCapacityTradeoffLedgerChrome }) {
   return (
     <article
       tabIndex={0}
-      aria-label={`${item.label}: ${classLabel(item.tradeoffClass)} trade-off`}
+      aria-label={`${item.label}: ${classLabel(item.tradeoffClass, chrome)} ${chrome.tradeoffAriaSuffix}`}
       className="grid min-w-0 gap-3 border border-border bg-background/78 p-3 outline-none transition-colors hover:border-primary/35 focus-visible:border-primary/45 focus-visible:ring-2 focus-visible:ring-ring/45 md:grid-cols-[160px_1fr]"
     >
       <div className="grid content-start gap-2">
-        <TradeoffClassTag tradeoffClass={item.tradeoffClass} />
+        <TradeoffClassTag tradeoffClass={item.tradeoffClass} chrome={chrome} />
         <h3 className="text-base font-semibold tracking-normal text-foreground">{item.label}</h3>
         {item.monthlyEstimate ? (
           <span className="w-fit border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
@@ -68,47 +65,45 @@ function TradeoffCard({ item }: { item: CostTradeoffItem }) {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <DetailBlock title="accepted benefit">{item.acceptedBenefit}</DetailBlock>
-        <DetailBlock title="saved / avoided">
-          {item.savingsMechanism ?? 'No direct savings claim; this is an accepted platform cost.'}
-        </DetailBlock>
+        <DetailBlock title={chrome.acceptedBenefitLabel}>{item.acceptedBenefit}</DetailBlock>
+        <DetailBlock title={chrome.savingsMechanismLabel}>{item.savingsMechanism ?? chrome.noDirectSavingsClaim}</DetailBlock>
       </div>
     </article>
   )
 }
 
-function EstimateDetails({ rows }: { rows: readonly CostEstimateRow[] }) {
+function EstimateDetails({ rows, chrome }: { rows: readonly CostEstimateRow[]; chrome: CostCapacityTradeoffLedgerChrome }) {
   const columns = useMemo<ColumnDef<CostEstimateRow>[]>(
     () => [
       {
         accessorKey: 'item',
-        header: 'Cost item',
+        header: chrome.tableColumns.item,
         cell: ({ row }) => <span className="font-semibold text-foreground">{row.original.item}</span>,
       },
       {
         accessorKey: 'category',
-        header: 'Category',
+        header: chrome.tableColumns.category,
         cell: ({ row }) => (
           <span className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-            {classLabel(row.original.category)}
+            {classLabel(row.original.category, chrome)}
           </span>
         ),
       },
       {
         accessorKey: 'assumption',
-        header: 'Estimate assumption',
+        header: chrome.tableColumns.assumption,
       },
       {
         accessorKey: 'monthlyEstimate',
-        header: 'Monthly estimate',
+        header: chrome.tableColumns.monthlyEstimate,
         cell: ({ row }) => <span className="font-mono text-xs font-semibold text-primary">{row.original.monthlyEstimate}</span>,
       },
       {
         accessorKey: 'justification',
-        header: 'Justification',
+        header: chrome.tableColumns.justification,
       },
     ],
-    [],
+    [chrome],
   )
 
   // TanStack Table intentionally returns table helpers from this hook; keep usage local to this component.
@@ -122,7 +117,7 @@ function EstimateDetails({ rows }: { rows: readonly CostEstimateRow[] }) {
   return (
     <div className="overflow-x-auto border border-border bg-background/72">
       <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-        <caption className="sr-only">Capacity trade-off ledger monthly estimate details</caption>
+        <caption className="sr-only">{chrome.tableCaption}</caption>
         <thead className="border-b border-border bg-muted/45">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
@@ -150,7 +145,7 @@ function EstimateDetails({ rows }: { rows: readonly CostEstimateRow[] }) {
   )
 }
 
-function CapacityDecision({ capacity }: { capacity: CostCapacitySnapshot }) {
+function CapacityDecision({ capacity, chrome }: { capacity: CostCapacitySnapshot; chrome: CostCapacityTradeoffLedgerChrome }) {
   const podUsagePercent = (capacity.currentRunningPods / capacity.totalPodSlots) * 100
   const terraform = capacity.currentTerraformSizing
   const twoNodeSlots = 2 * capacity.podLimitPerNode
@@ -160,31 +155,26 @@ function CapacityDecision({ capacity }: { capacity: CostCapacitySnapshot }) {
       <section className="border border-primary/35 bg-primary/10 p-5">
         <div className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr] xl:items-start">
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">node count decision</p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-foreground">Keep three t3.medium Spot nodes</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              The decision is driven by pod slots, not CPU or memory. The current workload needs{' '}
-              <span className="font-mono text-foreground">{capacity.currentRunningPods}</span> running pods; two nodes only provide{' '}
-              <span className="font-mono text-foreground">{twoNodeSlots}</span> slots, while three nodes provide{' '}
-              <span className="font-mono text-foreground">{capacity.totalPodSlots}</span>.
-            </p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.capacity.decisionEyebrow}</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-foreground">{chrome.capacity.decisionTitle}</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{chrome.capacity.decisionDescription}</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="border border-border bg-background/78 p-3">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">demand</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{chrome.capacity.demandLabel}</p>
               <p className="mt-2 text-xl font-semibold text-foreground">{capacity.currentRunningPods} pods</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">current running workload</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.currentWorkloadLabel}</p>
             </div>
             <div className="border border-border bg-background/78 p-3">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">2 nodes</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{chrome.capacity.twoNodesLabel}</p>
               <p className="mt-2 text-xl font-semibold text-foreground">{twoNodeSlots} slots</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">insufficient for current pods</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.insufficientLabel}</p>
             </div>
             <div className="border border-primary/35 bg-card p-3">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">3 nodes</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.capacity.threeNodesLabel}</p>
               <p className="mt-2 text-xl font-semibold text-foreground">{capacity.totalPodSlots} slots</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">fits with {capacity.remainingPodSlots} spare slots</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.fitsWithSpareSlotsLabel}</p>
             </div>
           </div>
         </div>
@@ -192,39 +182,37 @@ function CapacityDecision({ capacity }: { capacity: CostCapacitySnapshot }) {
         <div
           className="mt-5 h-4 overflow-hidden border border-border bg-background"
           role="meter"
-          aria-label="Pod slots used"
+          aria-label={chrome.capacity.slotsUsedAriaLabel}
           aria-valuemin={0}
           aria-valuemax={capacity.totalPodSlots}
           aria-valuenow={capacity.currentRunningPods}
-          aria-valuetext={`${capacity.currentRunningPods} of ${capacity.totalPodSlots} pod slots used`}
+          aria-valuetext={chrome.capacity.slotsUsedAriaText}
         >
           <div className="h-full bg-primary" style={{ width: `${podUsagePercent}%` }} />
         </div>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          {capacity.currentRunningPods} / {capacity.totalPodSlots} pod slots used. {capacity.cpuMemoryPressureSummary}
+          {capacity.currentRunningPods} / {capacity.totalPodSlots} {chrome.capacity.slotsUsedSummaryLabel}. {capacity.cpuMemoryPressureSummary}
         </p>
       </section>
 
       <section className="border border-border bg-background/78 p-5">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">sizing logic</p>
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{chrome.capacity.sizingLogicLabel}</p>
         <div className="mt-4 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="grid gap-3">
             <div className="border-l border-border pl-3">
-              <p className="text-sm font-semibold text-foreground">Current Terraform</p>
+              <p className="text-sm font-semibold text-foreground">{chrome.capacity.currentTerraformTitle}</p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                desired / min / max ={' '}
+                {chrome.capacity.terraformSizingPrefix}{' '}
                 <span className="font-mono text-foreground">
                   {terraform.desiredSize} / {terraform.minSize} / {terraform.maxSize}
                 </span>{' '}
                 on <span className="font-mono text-foreground">{terraform.instanceTypes.join(', ')}</span>{' '}
-                <span className="font-mono text-foreground">{terraform.capacityType}</span> capacity.
+                <span className="font-mono text-foreground">{terraform.capacityType}</span> {chrome.capacity.capacityWord}.
               </p>
             </div>
             <div className="border-l border-primary/60 pl-3">
-              <p className="text-sm font-semibold text-foreground">Gap to keep visible</p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Desired size already targets three nodes, but minSize is still 2 and maxSize is still 3. That means scale-down can remove the only safe pod-density floor, and there is no fourth-node buffer for Spot replacement or rollout overlap.
-              </p>
+              <p className="text-sm font-semibold text-foreground">{chrome.capacity.gapTitle}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{chrome.capacity.gapDescription}</p>
             </div>
           </div>
 
@@ -248,6 +236,7 @@ export function CostCapacityTradeoffLedger({
   title,
   summary,
   tabs,
+  chrome,
   tradeoffs,
   estimateRows,
   capacity,
@@ -256,18 +245,19 @@ export function CostCapacityTradeoffLedger({
   title: string
   summary: string
   tabs: CostCapacityTradeoffLedgerContent['tabs']
+  chrome: CostCapacityTradeoffLedgerContent['chrome']
   tradeoffs: readonly CostTradeoffItem[]
   estimateRows: readonly CostEstimateRow[]
   capacity: CostCapacitySnapshot
   className?: string
 }) {
   const [activeTab, setActiveTab] = useState<LedgerTab>('tradeoff-analysis')
-  const tabItems = useMemo(() => buildLedgerTabs(tabs), [tabs])
+  const tabItems = useMemo(() => buildLedgerTabs(tabs, chrome.tabs), [tabs, chrome.tabs])
 
   return (
     <HirayaSectionShell
       className={cn('overflow-hidden', className)}
-      eyebrow="Cost explanation model"
+      eyebrow={chrome.eyebrow}
       title={title}
       description={summary}
       tabs={{
@@ -280,14 +270,14 @@ export function CostCapacityTradeoffLedger({
         {activeTab === 'tradeoff-analysis' ? (
           <div className="grid gap-3">
             {tradeoffs.map((item) => (
-              <TradeoffCard key={item.id} item={item} />
+              <TradeoffCard key={item.id} item={item} chrome={chrome} />
             ))}
           </div>
         ) : null}
 
-        {activeTab === 'estimate-details' ? <EstimateDetails rows={estimateRows} /> : null}
+        {activeTab === 'estimate-details' ? <EstimateDetails rows={estimateRows} chrome={chrome} /> : null}
 
-        {activeTab === 'capacity-decision' ? <CapacityDecision capacity={capacity} /> : null}
+        {activeTab === 'capacity-decision' ? <CapacityDecision capacity={capacity} chrome={chrome} /> : null}
       </div>
     </HirayaSectionShell>
   )
