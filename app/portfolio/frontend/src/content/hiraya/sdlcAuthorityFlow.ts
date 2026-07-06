@@ -1,3 +1,5 @@
+import type { AppLocale } from '@/i18n/locales'
+
 import type { HirayaEvidenceItem, HirayaRouteId } from './types'
 
 export type SdlcAuthorityLaneId = 'application-delivery' | 'infrastructure-delivery' | 'rollback'
@@ -61,14 +63,40 @@ export type SdlcAuthorityLane = {
   connectors: readonly SdlcAuthorityConnector[]
 }
 
+export type SdlcAuthorityFlowChrome = {
+  eyebrow: string
+  activePathLabel: string
+  laneAriaSuffix: string
+  selectedStageLabel: string
+  allowedActionLabel: string
+  authorityHolderLabel: string
+  inputStateLabel: string
+  outputStateLabel: string
+  evidenceProducedLabel: string
+  doesNotOwnLabel: string
+}
+
 export type SdlcAuthorityFlowContent = {
   routeId: Extract<HirayaRouteId, 'sdlc'>
   title: string
   summary: string
+  chrome: SdlcAuthorityFlowChrome
   lanes: readonly SdlcAuthorityLane[]
 }
 
-export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
+const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
+  chrome: {
+    eyebrow: 'Authority flow',
+    activePathLabel: 'active authority path',
+    laneAriaSuffix: 'authority lane',
+    selectedStageLabel: 'selected authority stage',
+    allowedActionLabel: 'allowed action',
+    authorityHolderLabel: 'authority holder',
+    inputStateLabel: 'input state',
+    outputStateLabel: 'output state',
+    evidenceProducedLabel: 'evidence produced',
+    doesNotOwnLabel: 'does not own',
+  },
   routeId: 'sdlc',
   title: 'Authority flow from evidence to runtime state',
   summary:
@@ -89,7 +117,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           allowedAction: 'Classify the change, run application checks, validate rendered manifests, and produce review evidence without cloud write access.',
           outputState: 'A reviewable evidence bundle that says whether the proposed change is safe enough to merge.',
           credentialPosture: { label: 'no AWS', tone: 'safe' },
-          evidence: ['test results', 'Docker buildability', 'GitOps render output', 'static infra checks'],
+          evidence: ['測試結果', 'Docker 可建置性', 'GitOps render output', 'static infra checks'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['publishing ECR images', 'changing accepted Git state', 'runtime convergence', 'Terraform apply'],
         },
@@ -102,7 +130,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           allowedAction: 'Assume the scoped image role through OIDC, build affected services, and push immutable commit-SHA images to ECR.',
           outputState: 'Deployable ECR artifacts referenced by commit SHA tags.',
           credentialPosture: { label: 'OIDC image role', tone: 'scoped' },
-          evidence: ['ECR push record', 'commit SHA tags', 'image scan report'],
+          evidence: ['ECR push 紀錄', 'commit SHA tags', 'image scan report'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['approving runtime desired state', 'synchronizing Kubernetes', 'high-permission infrastructure mutation'],
         },
@@ -115,7 +143,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           allowedAction: 'Create a manifest change proposal that points selected workloads at the new immutable image tag.',
           outputState: 'A pull request containing the proposed desired-state diff.',
           credentialPosture: { label: 'Git proposal', tone: 'neutral' },
-          evidence: ['promotion PR diff', 'render validation', 'affected service list'],
+          evidence: ['promotion PR diff', 'render validation', '受影響服務清單'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['merging without review policy', 'direct cluster patching', 'post-merge convergence'],
         },
@@ -279,7 +307,7 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
           allowedAction: 'Start a controlled recovery proposal with explicit target and reason metadata.',
           outputState: 'A traceable rollback intent for one service/image selection.',
           credentialPosture: { label: 'manual trigger', tone: 'gated' },
-          evidence: ['selected service', 'target image tag', 'rollback reason'],
+          evidence: ['選定服務', 'target image tag', 'rollback reason'],
           evidenceRefs: ['p1-rollback-path'],
           doesNotOwn: ['patching live deployments', 'skipping Git review', 'creating new image artifacts'],
         },
@@ -361,3 +389,99 @@ export const sdlcAuthorityFlowContent: SdlcAuthorityFlowContent = {
     },
   ],
 }
+
+const sdlcAuthorityFlowZhTWText = {
+  title: '從驗證證據到 Runtime State 的 Authority Flow',
+  summary:
+    'Hiraya 將驗證變更、發布 artifact、提出 desired state、接受 Git state、收斂 runtime、變更 infrastructure 與恢復服務狀態的權責分開。',
+  chrome: {
+    eyebrow: 'Authority Flow',
+    activePathLabel: '目前權責路徑',
+    laneAriaSuffix: '權責泳道',
+    selectedStageLabel: '已選擇的權責階段',
+    allowedActionLabel: '允許動作',
+    authorityHolderLabel: '權責持有者',
+    inputStateLabel: '輸入狀態',
+    outputStateLabel: '輸出狀態',
+    evidenceProducedLabel: '產生的證據',
+    doesNotOwnLabel: '不擁有',
+  },
+} satisfies Pick<SdlcAuthorityFlowContent, 'title' | 'summary' | 'chrome'>
+
+const laneZhTW: Record<SdlcAuthorityLaneId, Pick<SdlcAuthorityLane, 'label' | 'summary'>> = {
+  'application-delivery': {
+    label: 'Application 交付',
+    summary: 'Application 變更先產生無雲端寫入權限的 PR 證據，經 reviewed Git state 接受後，再由 Argo CD 與 Kubernetes 收斂 runtime。',
+  },
+  'infrastructure-delivery': {
+    label: 'Infrastructure 交付',
+    summary: '高權限 cloud 變更保留在 Terraform 路徑，將 plan evidence、environment approval 與 bootstrap handoff 與 application delivery 分離。',
+  },
+  rollback: {
+    label: 'Rollback',
+    summary: '復原沿用同一套 reviewed GitOps 權責模型：驗證目標 image、提出 manifest diff、接受 Git state，並讓 Argo CD 收斂。',
+  },
+}
+
+const stageZhTW: Record<SdlcAuthorityStageId, Partial<SdlcAuthorityStage>> = {
+  'pr-validation-evidence': { label: 'PR 驗證證據', shortLabel: 'PR', authorityHolder: 'GitHub Actions PR checks', inputState: 'Pull request 中提出的 code、manifest 或 infrastructure 變更。', allowedAction: '分類變更、執行 application checks、驗證 rendered manifests，並在沒有 cloud write access 的情況下產生審查證據。', outputState: '可供 review 的證據包，用來判斷變更是否足夠安全可 merge。', credentialPosture: { label: '無 AWS', tone: 'safe' }, evidence: ['測試結果', 'Docker 可建置性', 'GitOps render output', 'static infra checks'], doesNotOwn: ['發布 ECR images', '變更 accepted Git state', 'runtime convergence', 'Terraform apply'] },
+  'image-publishing': { label: 'SHA image artifact', shortLabel: 'Image', authorityHolder: 'Image publishing workflow', inputState: '已通過 baseline checks 的 protected-main commit。', allowedAction: '透過 OIDC assume scoped image role，建置受影響服務，並將 immutable commit-SHA images 推送到 ECR。', outputState: '以 commit SHA tags 參照的可部署 ECR artifacts。', credentialPosture: { label: 'OIDC image role', tone: 'scoped' }, evidence: ['ECR push 紀錄', 'commit SHA tags', 'image scan report'], doesNotOwn: ['核准 runtime desired state', '同步 Kubernetes', '高權限 infrastructure mutation'] },
+  'manifest-promotion-pr': { label: 'Manifest promotion PR', shortLabel: 'Promote', authorityHolder: 'Promotion automation + reviewer', inputState: '新發布的 image tag 與目前 GitOps workload manifests。', allowedAction: '建立 manifest change proposal，讓指定 workloads 指向新的 immutable image tag。', outputState: '包含 proposed desired-state diff 的 pull request。', credentialPosture: { label: 'Git proposal', tone: 'neutral' }, evidence: ['promotion PR diff', 'render validation', '受影響服務清單'], doesNotOwn: ['未經 review policy 直接 merge', '直接 patch cluster', 'post-merge convergence'] },
+  'accepted-desired-state': { label: 'Accepted Desired State', shortLabel: 'Accepted', authorityHolder: 'Reviewed Git state', inputState: '已通過 checks 與 review expectations 的 promotion PR。', allowedAction: '將核准的 workload manifest 變更記錄為 Argo CD 可以 reconcile 的狀態。', outputState: 'GitOps repository path 中的 Accepted Desired State。', credentialPosture: { label: 'reviewed Git', tone: 'gitops' }, evidence: ['merged PR', 'Git manifest history', 'review trail'], doesNotOwn: ['自行運行 pods', '繞過 Argo CD', '手動 Kubernetes mutation'] },
+  'gitops-runtime-convergence': { label: 'GitOps runtime convergence', shortLabel: 'Runtime', authorityHolder: 'Argo CD + Kubernetes controllers', inputState: '已提交到 watched GitOps path 的 Accepted Desired State。', allowedAction: '偵測 Git change、sync manifests，並讓 Kubernetes 將 workloads rollout 到宣告狀態。', outputState: 'Application Runtime 朝 synced 與 healthy workload state 收斂。', credentialPosture: { label: 'GitOps', tone: 'gitops' }, evidence: ['Argo CD sync status', 'Kubernetes rollout status', 'application health'], doesNotOwn: ['建立新 artifacts', '核准 PRs', 'Terraform platform mutation'] },
+  'deploy-smoke': { label: 'Public smoke verification', shortLabel: 'Smoke', authorityHolder: 'Deploy smoke workflow', inputState: '透過 public edge 暴露且已收斂或正在收斂的 runtime。', allowedAction: '驗證 public behavior、DNS/TLS reachability、API response 與 reported GitOps health。', outputState: '證明 accepted state 可從外部使用的 release evidence。', credentialPosture: { label: 'verify only', tone: 'safe' }, evidence: ['public HTTP smoke', 'API response', 'DNS/TLS check', 'Argo CD health'], doesNotOwn: ['變更 manifests', '發布 images', 'mutating cluster resources'] },
+  'infra-static-checks': { label: '無憑證 static checks', shortLabel: 'Static', authorityHolder: 'Infrastructure PR checks', inputState: '提出的 Terraform 或 platform configuration 變更。', allowedAction: '在 pull request context 執行 formatting、validation、linting 與安全的 plan-oriented checks。', outputState: '任何 apply path 被考慮前，先提供 reviewers 的 static evidence。', credentialPosture: { label: '無 AWS', tone: 'safe' }, evidence: ['terraform fmt', 'terraform validate', 'policy/static check output'], doesNotOwn: ['建立 cloud resources', '核准 environments', 'cluster bootstrap apply'] },
+  'platform-core-plan': { label: 'Trusted/pre-approval plan', shortLabel: 'Plan', authorityHolder: 'Terraform plan workflow', inputState: '被選入 cloud-impact review 的 trusted infrastructure change。', allowedAction: '在 environment-gated apply 被允許前，產生 Platform Core plan evidence。', outputState: '將 intent 與 mutation 分開的可審查 Terraform plan evidence。', credentialPosture: { label: 'plan-scoped OIDC', tone: 'scoped' }, evidence: ['Terraform plan', 'resource diff', 'plan artifact/log'], doesNotOwn: ['app image publishing', 'automatic apply', 'Argo CD runtime convergence'] },
+  'environment-approval': { label: 'Environment approval', shortLabel: 'Approval', authorityHolder: 'GitHub environment gate', inputState: '帶有 plan evidence 的 infrastructure apply request。', allowedAction: '在使用高影響 AWS mutation credentials 前要求人工 approval。', outputState: '具有 auditable gate 的 approved apply attempt。', credentialPosture: { label: 'manual gate', tone: 'gated' }, evidence: ['environment approval', 'run metadata', 'approver trail'], doesNotOwn: ['變更 Terraform code', 'runtime workload rollout', 'smoke verification'] },
+  'platform-core-apply': { label: 'Platform Core apply', shortLabel: 'Apply', authorityHolder: 'Environment-gated Terraform apply role', inputState: '已核准的 Platform Core infrastructure intent。', allowedAction: 'Apply VPC、EKS、IAM/IRSA、DNS/ACM primitives 與 admin secret prerequisites 等 cloud substrate changes。', outputState: 'dev environment 可重建的 AWS Foundation 與 Platform Core resources。', credentialPosture: { label: 'env-gated apply', tone: 'gated' }, evidence: ['Terraform apply log', 'state update', 'platform smoke checks'], doesNotOwn: ['application promotion', 'workload image tags', 'continuous GitOps sync'] },
+  'cluster-bootstrap-handoff': { label: 'Cluster Bootstrap handoff', shortLabel: 'Bootstrap', authorityHolder: 'Cluster bootstrap apply role', inputState: '需要建立 GitOps control 的 rebuilt 或 updated cluster。', allowedAction: '安裝或刷新 Argo CD handoff resources、AppProjects 與 root application entry point。', outputState: '準備由 GitOps 管理 platform 與 workload state 的 cluster。', credentialPosture: { label: 'bootstrap gated', tone: 'gated' }, evidence: ['bootstrap apply log', 'Argo CD root app', 'handoff status'], doesNotOwn: ['ongoing workload release approval', 'business service behavior', 'public smoke interpretation'] },
+  'gitops-platform-ownership': { label: 'GitOps platform ownership', shortLabel: 'GitOps', authorityHolder: 'Argo CD platform applications', inputState: 'Cluster Bootstrap 已建立 GitOps root 與 project boundaries。', allowedAction: '從 Git 持續 reconcile platform add-ons、namespaces、controllers、monitoring 與 workload application definitions。', outputState: 'Cluster Platform state 由 GitOps 擁有，而非 manual post-install changes。', credentialPosture: { label: 'GitOps', tone: 'gitops' }, evidence: ['App-of-Apps health', 'platform app sync', 'resource tree'], doesNotOwn: ['AWS substrate provisioning', '核准新的 Terraform applies', '發布 application images'] },
+  'rollback-request': { label: 'Operator rollback request', shortLabel: 'Request', authorityHolder: 'Operator-triggered rollback workflow', inputState: '選定的 service、target image tag 與 rollback reason。', allowedAction: '以明確 target 與 reason metadata 啟動受控 recovery proposal。', outputState: '針對單一 service/image selection 的 traceable rollback intent。', credentialPosture: { label: 'manual trigger', tone: 'gated' }, evidence: ['選定服務', 'target image tag', 'rollback reason'], doesNotOwn: ['patch live deployments', '跳過 Git review', '建立新 image artifacts'] },
+  'rollback-image-verification': { label: 'ECR tag verification', shortLabel: 'ECR check', authorityHolder: 'Rollback verification step', inputState: '被請求的 rollback target image tag。', allowedAction: '在提出 runtime desired-state changes 前，確認 target image 存在於 ECR。', outputState: '已確認的 rollback artifact reference。', credentialPosture: { label: 'ECR read scope', tone: 'scoped' }, evidence: ['ECR describe result', 'image digest/tag confirmation'], doesNotOwn: ['發布 replacement images', '核准 manifest changes', 'Kubernetes rollout'] },
+  'rollback-manifest-diff': { label: 'Manifest rollback diff', shortLabel: 'Diff', authorityHolder: 'Rollback manifest automation', inputState: '已驗證的 target image 與目前 GitOps workload manifests。', allowedAction: '準備 minimal manifest diff，讓 service 回到選定 image tag。', outputState: '可審查的 rollback manifest change。', credentialPosture: { label: 'Git proposal', tone: 'neutral' }, evidence: ['manifest diff', 'render validation', 'target image reference'], doesNotOwn: ['merge 變更', '直接編輯 cluster state', 'post-rollback smoke'] },
+  'rollback-pr': { label: 'Rollback PR', shortLabel: 'PR', authorityHolder: 'Rollback automation + reviewer', inputState: '已驗證的 rollback manifest diff。', allowedAction: 'Open 或 update rollback pull request，讓 recovery path 維持 reviewed 與 auditable。', outputState: '經 review/merge 後可成為 Accepted Desired State 的 rollback PR。', credentialPosture: { label: 'reviewed PR', tone: 'gated' }, evidence: ['rollback PR', 'review comments', 'validated render output'], doesNotOwn: ['manual kubectl rollback', 'Argo CD sync execution', 'infrastructure apply'] },
+  'rollback-accepted-desired-state': { label: 'Accepted Desired State', shortLabel: 'Accepted', authorityHolder: 'Reviewed Git state', inputState: '透過同一 Git review path 接受的 rollback PR。', allowedAction: '將 rollback manifest 記錄為 Argo CD 可 reconcile 的 desired runtime state。', outputState: '指向 rollback image 的 Accepted Desired State。', credentialPosture: { label: 'reviewed Git', tone: 'gitops' }, evidence: ['merged rollback PR', 'Git manifest history', 'rollback audit trail'], doesNotOwn: ['直接執行 rollout', '變更 image registries', 'Terraform mutation'] },
+  'rollback-convergence': { label: 'GitOps rollback convergence', shortLabel: 'Converge', authorityHolder: 'Argo CD + Kubernetes controllers', inputState: 'watched GitOps path 中 accepted rollback desired state。', allowedAction: 'Reconcile rollback manifest，並讓 Kubernetes 將 pods 收斂到選定 image tag。', outputState: 'Runtime 回復到 accepted rollback image，並留下 post-rollback verification evidence。', credentialPosture: { label: 'GitOps', tone: 'gitops' }, evidence: ['Argo CD sync status', 'rollout status', 'post-rollback smoke'], doesNotOwn: ['選擇 rollback target', '核准 rollback PR', 'manual cluster edits'] },
+}
+
+const connectorZhTW: Record<SdlcAuthorityStageId, string> = {
+  'pr-validation-evidence': 'protected main 授權 artifact publishing',
+  'image-publishing': 'artifact 轉成 proposed manifest change',
+  'manifest-promotion-pr': 'reviewed merge 接受 desired state',
+  'accepted-desired-state': 'GitOps reconcile accepted Git state',
+  'gitops-runtime-convergence': 'runtime result 產生 verification evidence',
+  'infra-static-checks': 'trusted context 允許 cloud-impact planning',
+  'platform-core-plan': 'plan evidence 請求 approval',
+  'environment-approval': 'approval 解鎖 apply authority',
+  'platform-core-apply': 'cluster substrate 啟用 GitOps handoff',
+  'cluster-bootstrap-handoff': 'bootstrap 將持續 ownership 轉交 Argo CD',
+  'gitops-platform-ownership': '',
+  'deploy-smoke': '',
+  'rollback-request': 'target request 需要 artifact verification',
+  'rollback-image-verification': 'verified artifact 轉成 manifest diff',
+  'rollback-manifest-diff': 'diff 轉成 reviewed recovery proposal',
+  'rollback-pr': 'reviewed merge 接受 rollback state',
+  'rollback-accepted-desired-state': 'GitOps reconcile accepted rollback state',
+  'rollback-convergence': '',
+}
+
+function localizeSdlcAuthorityLane(lane: SdlcAuthorityLane): SdlcAuthorityLane {
+  return {
+    ...lane,
+    ...laneZhTW[lane.id],
+    stages: lane.stages.map((stage) => ({ ...stage, ...stageZhTW[stage.id] })),
+    connectors: lane.connectors.map((connector) => ({ ...connector, label: connectorZhTW[connector.from] || connector.label })),
+  }
+}
+
+const sdlcAuthorityFlowContentZhTW: SdlcAuthorityFlowContent = {
+  ...sdlcAuthorityFlowContentEn,
+  ...sdlcAuthorityFlowZhTWText,
+  lanes: sdlcAuthorityFlowContentEn.lanes.map(localizeSdlcAuthorityLane),
+}
+
+export function getSdlcAuthorityFlowContent(locale: AppLocale): SdlcAuthorityFlowContent {
+  return locale === 'zh-TW' ? sdlcAuthorityFlowContentZhTW : sdlcAuthorityFlowContentEn
+}
+
+export const sdlcAuthorityFlowContent = sdlcAuthorityFlowContentEn

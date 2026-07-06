@@ -401,7 +401,7 @@ function SdlcRouteDesign({ page, content }: { page: HirayaPageContent; content: 
     <div className="grid gap-6">
       {page.metrics ? <HirayaMetricGrid metrics={page.metrics} /> : null}
       <SdlcAuthorityFlow content={content.sdlcAuthorityFlow} />
-      <SdlcDeliveryGuardrailBoard guardrails={content.sdlcDeliveryGuardrails} authorityFlow={content.sdlcAuthorityFlow} />
+      <SdlcDeliveryGuardrailBoard content={content.sdlcDeliveryGuardrails} authorityFlow={content.sdlcAuthorityFlow} />
       <EvidenceCarousel
         title="Evidence behind the delivery loop"
         description="Pipeline captures sit beside the SDLC model so each delivery stage has concrete proof."

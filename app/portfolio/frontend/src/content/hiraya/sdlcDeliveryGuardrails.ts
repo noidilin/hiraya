@@ -1,3 +1,5 @@
+import type { AppLocale } from '@/i18n/locales'
+
 import type { HirayaEvidenceItem } from './types'
 import type { SdlcAuthorityStageId } from './sdlcAuthorityFlow'
 
@@ -9,6 +11,21 @@ export type SdlcDeliveryGuardrailId =
   | 'rollback-through-gitops'
 
 export type SdlcDeliveryGuardrailAuthorityBadge = 'no-aws' | 'scoped-oidc' | 'reviewed-git' | 'gitops' | 'environment-gated'
+
+export type SdlcDeliveryGuardrailAuthorityBadgeCopy = {
+  label: string
+}
+
+export type SdlcDeliveryGuardrailChrome = {
+  eyebrow: string
+  guardrailLabel: string
+  authorityFlowStagesLabel: string
+  mappedStagesLabel: string
+  allowedActionLabel: string
+  forbiddenShortcutLabel: string
+  handoffResultLabel: string
+  shortcutRiskLabel: string
+}
 
 export type SdlcDeliveryGuardrail = {
   id: SdlcDeliveryGuardrailId
@@ -23,7 +40,24 @@ export type SdlcDeliveryGuardrail = {
   shortcutRisk: string
 }
 
-export const sdlcDeliveryGuardrails = [
+export type SdlcDeliveryGuardrailBoardContent = {
+  eyebrow: string
+  title: string
+  description: string
+  chrome: SdlcDeliveryGuardrailChrome
+  authorityBadges: Record<SdlcDeliveryGuardrailAuthorityBadge, SdlcDeliveryGuardrailAuthorityBadgeCopy>
+  guardrails: readonly SdlcDeliveryGuardrail[]
+}
+
+const authorityBadgesEn: Record<SdlcDeliveryGuardrailAuthorityBadge, SdlcDeliveryGuardrailAuthorityBadgeCopy> = {
+  'no-aws': { label: 'No AWS write authority' },
+  'scoped-oidc': { label: 'Scoped OIDC' },
+  'reviewed-git': { label: 'Reviewed Git' },
+  gitops: { label: 'GitOps convergence' },
+  'environment-gated': { label: 'Environment-gated apply' },
+}
+
+const sdlcDeliveryGuardrailsEn = [
   {
     id: 'validate-before-authorize',
     rule: 'Validate first, authorize later',
@@ -85,3 +119,93 @@ export const sdlcDeliveryGuardrails = [
     shortcutRisk: 'Manual live-cluster patches create drift exactly when recovery needs traceability; GitOps rollback keeps the runtime and contract aligned.',
   },
 ] as const satisfies readonly SdlcDeliveryGuardrail[]
+
+const sdlcDeliveryGuardrailContentEn: SdlcDeliveryGuardrailBoardContent = {
+  eyebrow: 'Delivery Guardrails',
+  title: 'Five authority decisions that keep CI from becoming deployment authority',
+  description:
+    'Each guardrail states what a delivery actor may do, which shortcut is intentionally forbidden, and what handoff proves authority stayed in the correct boundary.',
+  chrome: {
+    eyebrow: 'Delivery Guardrails',
+    guardrailLabel: 'Guardrail',
+    authorityFlowStagesLabel: 'Authority Flow stages',
+    mappedStagesLabel: 'Mapped stages',
+    allowedActionLabel: 'Allowed action',
+    forbiddenShortcutLabel: 'Forbidden shortcut',
+    handoffResultLabel: 'Handoff result',
+    shortcutRiskLabel: 'Why the shortcut is dangerous',
+  },
+  authorityBadges: authorityBadgesEn,
+  guardrails: sdlcDeliveryGuardrailsEn,
+}
+
+const authorityBadgesZhTW: Record<SdlcDeliveryGuardrailAuthorityBadge, SdlcDeliveryGuardrailAuthorityBadgeCopy> = {
+  'no-aws': { label: '無 AWS 寫入權限' },
+  'scoped-oidc': { label: '受限 OIDC' },
+  'reviewed-git': { label: 'Reviewed Git 權責' },
+  gitops: { label: 'GitOps 收斂' },
+  'environment-gated': { label: '環境核准 apply' },
+}
+
+const guardrailZhTW: Record<SdlcDeliveryGuardrailId, Pick<SdlcDeliveryGuardrail, 'rule' | 'allowedAction' | 'forbiddenShortcut' | 'handoffResult' | 'shortcutRisk'>> = {
+  'validate-before-authorize': {
+    rule: '先驗證，後授權',
+    allowedAction: 'Pull request automation 可以分類變更、執行 checks、驗證 rendered manifests，並產生 review evidence。',
+    forbiddenShortcut: '不要讓 PR checks 擁有 cloud write authority，也不要讓未審查 branches 變更 AWS、ECR、GitOps state 或 live cluster。',
+    handoffResult: '一份可審查的證據包，可支援 merge decision，但本身不成為 deployment authority。',
+    shortcutRisk: '如果 validation jobs 可以寫入 cloud 或 cluster state，受入侵或錯誤的 PR path 就可能繞過 review，把證據收集變成 mutation。',
+  },
+  'immutable-artifacts-first': {
+    rule: '先發布 immutable artifacts，再部署',
+    allowedAction: 'Image workflow 可以 assume scoped OIDC role、建置受影響服務，並將 commit-SHA images 推送到 ECR。',
+    forbiddenShortcut: '不要讓 image publishing 同時核准 runtime desired state、patch Kubernetes，或取代 reviewed manifest promotion。',
+    handoffResult: '一個可部署 image reference，promotion automation 可將它轉成 GitOps manifest proposal。',
+    shortcutRisk: 'Artifact creation 與 deployment approval 是不同權力；合併兩者會讓每次成功 build 都可能變成 runtime change。',
+  },
+  'git-as-deployment-contract': {
+    rule: 'Git 是 deployment 契約',
+    allowedAction: 'Promotion automation 可以提出 manifest changes；reviewed Git 擁有 Argo CD 可 reconcile 的 accepted desired state。',
+    forbiddenShortcut: '不要將任意 CI output 直接 sync 到 cluster，也不要把 automation-generated PR 在 review/merge 前視為 accepted。',
+    handoffResult: 'watched GitOps path 中的 Accepted Desired State，並以 PR history 與 manifest diff 作為 audit trail。',
+    shortcutRisk: '繞過 reviewed Git 會移除 delivery automation、Argo CD 與 human review 之間的 durable contract。',
+  },
+  'gated-infrastructure-path': {
+    rule: 'Infrastructure 變更走 gated Terraform path',
+    allowedAction: 'Terraform 只能透過分離的 environment-gated workflow plan/apply AWS foundation、platform core 與 bootstrap changes。',
+    forbiddenShortcut: '不要讓 application delivery automation 繼承高影響 Terraform apply authority，或在 app promotion 中變更 cloud substrate。',
+    handoffResult: 'Auditable plan evidence、environment approval、apply logs，以及 GitOps-ready platform handoff。',
+    shortcutRisk: 'Cloud substrate mutation 的 blast radius 遠大於 app rollout，因此需要分開的 intent、approval 與 audit evidence。',
+  },
+  'rollback-through-gitops': {
+    rule: 'Rollback 走同一條 reviewed GitOps path',
+    allowedAction: 'Rollback automation 可以驗證 target image、準備 manifest diff、建立 rollback PR，並在 review 後讓 Argo CD 收斂。',
+    forbiddenShortcut: '不要在 incident recovery 時手動 patch live Deployments 或跳過 accepted desired-state path。',
+    handoffResult: '經 review 的 rollback desired-state change，接著由 Argo CD convergence 與 smoke verification evidence 支撐。',
+    shortcutRisk: 'Manual live-cluster patches 會在最需要 traceability 的復原時製造 drift；GitOps rollback 讓 runtime 與 contract 保持一致。',
+  },
+}
+
+const sdlcDeliveryGuardrailContentZhTW: SdlcDeliveryGuardrailBoardContent = {
+  eyebrow: 'Delivery Guardrails',
+  title: '五項避免 CI 變成部署權限的 Delivery Guardrails',
+  description:
+    '每項 guardrail 都說明 delivery actor 可以做什麼、刻意禁止哪個 shortcut，以及哪個 handoff result 證明權責仍留在正確邊界。',
+  chrome: {
+    eyebrow: 'Delivery Guardrails',
+    guardrailLabel: 'Guardrail',
+    authorityFlowStagesLabel: 'Authority Flow 階段',
+    mappedStagesLabel: '對應階段',
+    allowedActionLabel: '允許動作',
+    forbiddenShortcutLabel: '禁止 shortcut',
+    handoffResultLabel: '交接結果',
+    shortcutRiskLabel: '為什麼 shortcut 危險',
+  },
+  authorityBadges: authorityBadgesZhTW,
+  guardrails: sdlcDeliveryGuardrailsEn.map((guardrail) => ({ ...guardrail, ...guardrailZhTW[guardrail.id] })),
+}
+
+export function getSdlcDeliveryGuardrailContent(locale: AppLocale): SdlcDeliveryGuardrailBoardContent {
+  return locale === 'zh-TW' ? sdlcDeliveryGuardrailContentZhTW : sdlcDeliveryGuardrailContentEn
+}
+
+export const sdlcDeliveryGuardrails = sdlcDeliveryGuardrailsEn
