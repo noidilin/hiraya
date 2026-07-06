@@ -42,6 +42,7 @@ export type WafMaturityJudgmentChrome = {
   priorityLabel: string
   evidenceSupportLabel: string
   pillarSwitcherLabel: string
+  detailPanelAriaSuffix: string
   evidenceCarouselTitle: string
   evidenceCarouselDescription: string
 }
@@ -84,6 +85,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
     priorityLabel: 'Priority',
     evidenceSupportLabel: 'Evidence support',
     pillarSwitcherLabel: 'Well-Architected pillar switcher',
+    detailPanelAriaSuffix: 'maturity details',
     evidenceCarouselTitle: 'Evidence behind the Well-Architected review',
     evidenceCarouselDescription: 'The pillar review stays judgment-led while captures support one implementation claim at a time.',
   },
@@ -415,6 +417,7 @@ const wafZhTWText = {
     priorityLabel: '優先事項',
     evidenceSupportLabel: '證據支撐',
     pillarSwitcherLabel: 'Well-Architected 支柱切換器',
+    detailPanelAriaSuffix: '成熟度細節',
     evidenceCarouselTitle: 'Well-Architected review 背後的證據',
     evidenceCarouselDescription: '支柱 review 維持以判斷為主，截圖與影片則一次支撐一個 implementation claim。',
   },

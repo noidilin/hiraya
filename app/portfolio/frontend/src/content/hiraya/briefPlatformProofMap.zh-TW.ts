@@ -1,6 +1,8 @@
 import { briefPlatformProofMapContentEn } from './briefPlatformProofMap.en'
 import type { BriefPlatformProofMapContent, BriefProofMapLensId, BriefProofMapNodeId, BriefProofMapZoneId } from './briefPlatformProofMap'
 
+type BriefProofMapLabeledEdgeId = Extract<(typeof briefPlatformProofMapContentEn.edges)[number], { label: string }>['id']
+
 const zoneCopy: Record<BriefProofMapZoneId, Pick<BriefPlatformProofMapContent['zones'][number], 'label' | 'shortLabel' | 'summary' | 'posture'>> = {
   'source-delivery': {
     label: 'Source 與交付權責',
@@ -165,7 +167,7 @@ const nodeCopy: Record<BriefProofMapNodeId, Pick<BriefPlatformProofMapContent['n
   },
 }
 
-const edgeLabels: Record<string, string | undefined> = {
+const edgeLabels: Record<BriefProofMapLabeledEdgeId, string> = {
   'repo-actions': 'triggers',
   'actions-validation': 'checks',
   'actions-ecr': 'image push',
@@ -194,6 +196,10 @@ const edgeLabels: Record<string, string | undefined> = {
   'workload-metrics': 'signals',
   'prometheus-ops': 'dashboards',
   'smoke-public': 'public proof',
+}
+
+function localizeEdgeLabel(edge: (typeof briefPlatformProofMapContentEn.edges)[number]) {
+  return 'label' in edge ? edgeLabels[edge.id] : undefined
 }
 
 const lensCopy: Record<BriefProofMapLensId, Pick<BriefPlatformProofMapContent['lenses'][number], 'label' | 'summary' | 'claim'>> = {
@@ -236,7 +242,7 @@ export const briefPlatformProofMapContentZhTW = {
   })),
   edges: briefPlatformProofMapContentEn.edges.map((edge) => ({
     ...edge,
-    label: edgeLabels[edge.id],
+    label: localizeEdgeLabel(edge),
   })),
   lenses: briefPlatformProofMapContentEn.lenses.map((lens) => ({
     ...lens,

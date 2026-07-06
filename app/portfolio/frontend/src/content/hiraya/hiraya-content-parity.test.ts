@@ -217,15 +217,15 @@ describe('Hiraya localized content parity', () => {
     expect(zhTW.costCapacityTradeoffLedger.chrome.tableColumns.justification).toBe('支出合理性')
     expect(zhTW.costCapacityTradeoffLedger.capacity.currentTerraformSizing).toEqual(en.costCapacityTradeoffLedger.capacity.currentTerraformSizing)
 
+    expect(zhTW.costCapacityTradeoffLedger.tradeoffs[0]?.monthlyEstimate).toBe('約 73 美元')
+    expect(zhTW.costCapacityTradeoffLedger.estimateRows[0]?.monthlyEstimate).toBe('約 73 美元')
     expectStableListParity(zhTW.costCapacityTradeoffLedger.tradeoffs, en.costCapacityTradeoffLedger.tradeoffs, (tradeoff) => ({
       id: tradeoff.id,
       tradeoffClass: tradeoff.tradeoffClass,
-      monthlyEstimate: tradeoff.monthlyEstimate,
       sourceRefs: tradeoff.sourceRefs,
     }))
     expectStableListParity(zhTW.costCapacityTradeoffLedger.estimateRows, en.costCapacityTradeoffLedger.estimateRows, (row) => ({
       category: row.category,
-      monthlyEstimate: row.monthlyEstimate,
     }))
     expect(zhTW.costCapacityTradeoffLedger.capacity).toMatchObject({
       nodeCount: en.costCapacityTradeoffLedger.capacity.nodeCount,
