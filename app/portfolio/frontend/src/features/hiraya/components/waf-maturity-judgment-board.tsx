@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, FileText, Hammer } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Hammer } from 'lucide-react'
 
 import type {
   WafMaturityItem,
@@ -14,34 +14,22 @@ import { HirayaSectionFrame, HirayaSectionHeader, HirayaTag } from './hiraya-sec
 const maturityStateCopy: Record<
   WafMaturityState,
   {
-    label: string
-    shortLabel: string
-    description: string
     icon: typeof CheckCircle2
     className: string
     iconClassName: string
   }
 > = {
   'strong-now': {
-    label: 'Strong now',
-    shortLabel: 'Strong',
-    description: 'Implemented capability with visible project evidence.',
     icon: CheckCircle2,
     className: 'border-emerald-500/25 bg-emerald-500/10',
     iconClassName: 'text-emerald-500',
   },
   'dev-tradeoff': {
-    label: 'Dev trade-off',
-    shortLabel: 'Trade-off',
-    description: 'Intentional limitation accepted for a disposable dev platform.',
     icon: AlertTriangle,
     className: 'border-amber-500/30 bg-amber-500/10',
     iconClassName: 'text-amber-500',
   },
   'harden-next': {
-    label: 'Harden next',
-    shortLabel: 'Harden',
-    description: 'Production hardening direction, not an implemented claim.',
     icon: Hammer,
     className: 'border-primary/30 bg-primary/10',
     iconClassName: 'text-primary',
@@ -121,14 +109,23 @@ function PillarSwitcherButton({
   )
 }
 
-function DetailSection({ state, items }: { state: WafMaturityState; items: readonly WafMaturityItem[] }) {
-  const copy = maturityStateCopy[state]
-  const Icon = copy.icon
+function DetailSection({
+  state,
+  items,
+  content,
+}: {
+  state: WafMaturityState
+  items: readonly WafMaturityItem[]
+  content: WafMaturityJudgmentContent
+}) {
+  const tone = maturityStateCopy[state]
+  const copy = content.stateCopy[state]
+  const Icon = tone.icon
 
   return (
     <section className="border border-border bg-background/70 p-3">
       <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-        <Icon className={cn('size-3', copy.iconClassName)} aria-hidden="true" />
+        <Icon className={cn('size-3', tone.iconClassName)} aria-hidden="true" />
         {copy.label}
       </p>
       <div className="mt-3 grid gap-3">
@@ -144,26 +141,21 @@ function collectEvidenceRefs(pillar: WafMaturityPillar) {
   return maturityStates.flatMap((state) => pillar[pillarItemAccessors[state]].flatMap((item) => item.evidenceRefs ?? []))
 }
 
-function collectSourceRefs(pillar: WafMaturityPillar) {
-  return maturityStates.flatMap((state) => pillar[pillarItemAccessors[state]].flatMap((item) => item.sourceRefs))
-}
-
 function unique(values: readonly string[]) {
   return [...new Set(values)]
 }
 
-function PillarDetailPanel({ pillar }: { pillar: WafMaturityPillar }) {
+function PillarDetailPanel({ pillar, content }: { pillar: WafMaturityPillar; content: WafMaturityJudgmentContent }) {
   const evidenceRefs = unique(collectEvidenceRefs(pillar))
-  const sourceRefs = unique(collectSourceRefs(pillar))
 
   return (
     <section id="waf-maturity-detail-panel" className="min-w-0 border border-border bg-background/78" aria-label={`${pillar.title} maturity details`}>
       <div className="border-b border-border bg-muted/35 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">selected pillar</p>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{content.chrome.selectedPillarLabel}</p>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
             <Hammer className="size-3" aria-hidden="true" />
-            Priority: {pillar.priorityRecommendation}
+            {content.chrome.priorityLabel}: {pillar.priorityRecommendation}
           </span>
         </div>
         <h3 className="mt-2 text-lg font-semibold tracking-normal text-foreground">{pillar.title}</h3>
@@ -172,34 +164,19 @@ function PillarDetailPanel({ pillar }: { pillar: WafMaturityPillar }) {
 
       <div className="grid gap-4 p-4">
         <div className="grid gap-3 lg:grid-cols-3">
-          <DetailSection state="strong-now" items={pillar.strongNow} />
-          <DetailSection state="dev-tradeoff" items={pillar.devTradeoffs} />
-          <DetailSection state="harden-next" items={pillar.hardenNext} />
+          <DetailSection state="strong-now" items={pillar.strongNow} content={content} />
+          <DetailSection state="dev-tradeoff" items={pillar.devTradeoffs} content={content} />
+          <DetailSection state="harden-next" items={pillar.hardenNext} content={content} />
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
           {evidenceRefs.length > 0 ? (
             <section className="border border-border bg-card/55 p-3">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">evidence support</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.evidenceSupportLabel}</p>
               <div className="mt-2"><EvidenceRefs refs={evidenceRefs} /></div>
             </section>
           ) : null}
 
-          <section className="border border-border bg-card/55 p-3">
-            <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-              <FileText className="size-3" aria-hidden="true" />
-              source references
-            </p>
-            <ul className="mt-2 grid min-w-0 gap-1.5 sm:grid-cols-2">
-              {sourceRefs.map((ref) => (
-                <li key={ref} className="min-w-0 border border-border/70 bg-background/65 px-2 py-1">
-                  <code className="block overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-5 text-muted-foreground">
-                    {ref}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </section>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -227,7 +204,7 @@ export function WafMaturityJudgmentBoard({
       <HirayaSectionHeader eyebrow={content.eyebrow} title={content.title} description={content.summary} />
 
       <div className="grid gap-5 p-5 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start">
-        <nav className="grid gap-2 xl:sticky xl:top-24" aria-label="Well-Architected pillar switcher">
+        <nav className="grid gap-2 xl:sticky xl:top-24" aria-label={content.chrome.pillarSwitcherLabel}>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
             {content.pillars.map((pillar, index) => (
               <PillarSwitcherButton
@@ -241,7 +218,7 @@ export function WafMaturityJudgmentBoard({
           </div>
         </nav>
 
-        {selectedPillar ? <PillarDetailPanel pillar={selectedPillar} /> : null}
+        {selectedPillar ? <PillarDetailPanel pillar={selectedPillar} content={content} /> : null}
       </div>
     </HirayaSectionFrame>
   )
