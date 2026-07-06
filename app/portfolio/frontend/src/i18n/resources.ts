@@ -255,8 +255,8 @@ export const resources = {
             externalLink: '外部連結',
           },
           frame: {
-            video: 'Video walkthrough frame · 16:9',
-            screenshot: 'MacBook Pro 14-inch capture frame · 1512 × 982',
+            video: '影片導覽畫面 · 16:9',
+            screenshot: 'MacBook Pro 14 吋擷取畫面 · 1512 × 982',
           },
           placeholder: {
             videoSlot: '影片證據槽',
@@ -265,12 +265,12 @@ export const resources = {
           briefVideo: {
             title: '主要 portfolio walkthrough',
             fallbackCaption: '聚焦的錄影讓 Brief route 維持證據導向，而不把 overview 變成冗長媒體相簿。',
-            stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke'],
-            frameLabel: 'Brief proof video · delivery walkthrough',
+            stages: ['PR 驗證', '映像檔發布', 'Manifest 升版', 'Argo CD 同步', 'Rollout 與 smoke 檢查'],
+            frameLabel: 'Brief 證明影片 · 交付導覽',
             missingTitle: '影片證據槽',
             missingDescription: '把最終 walkthrough 檔案放進 evidence manifest 後，這個 frame 就會成為可播放的 Brief proof。',
-            walkthroughBadge: '16:9 walkthrough',
-            routeAnchorBadge: 'Brief route anchor',
+            walkthroughBadge: '16:9 導覽影片',
+            routeAnchorBadge: 'Brief 路由錨點',
           },
           carousels: {
             architecture: {

@@ -163,17 +163,17 @@ function CapacityDecision({ capacity, chrome }: { capacity: CostCapacitySnapshot
           <div className="grid gap-3 md:grid-cols-3">
             <div className="border border-border bg-background/78 p-3">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{chrome.capacity.demandLabel}</p>
-              <p className="mt-2 text-xl font-semibold text-foreground">{capacity.currentRunningPods} pods</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">{capacity.currentRunningPods} {chrome.capacity.podsUnitLabel}</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.currentWorkloadLabel}</p>
             </div>
             <div className="border border-border bg-background/78 p-3">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{chrome.capacity.twoNodesLabel}</p>
-              <p className="mt-2 text-xl font-semibold text-foreground">{twoNodeSlots} slots</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">{twoNodeSlots} {chrome.capacity.slotsUnitLabel}</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.insufficientLabel}</p>
             </div>
             <div className="border border-primary/35 bg-card p-3">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.capacity.threeNodesLabel}</p>
-              <p className="mt-2 text-xl font-semibold text-foreground">{capacity.totalPodSlots} slots</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">{capacity.totalPodSlots} {chrome.capacity.slotsUnitLabel}</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">{chrome.capacity.fitsWithSpareSlotsLabel}</p>
             </div>
           </div>
@@ -206,7 +206,7 @@ function CapacityDecision({ capacity, chrome }: { capacity: CostCapacitySnapshot
                 <span className="font-mono text-foreground">
                   {terraform.desiredSize} / {terraform.minSize} / {terraform.maxSize}
                 </span>{' '}
-                on <span className="font-mono text-foreground">{terraform.instanceTypes.join(', ')}</span>{' '}
+                {chrome.capacity.terraformSizingConnector} <span className="font-mono text-foreground">{terraform.instanceTypes.join(', ')}</span>{' '}
                 <span className="font-mono text-foreground">{terraform.capacityType}</span> {chrome.capacity.capacityWord}.
               </p>
             </div>

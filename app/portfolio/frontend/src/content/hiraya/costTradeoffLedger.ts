@@ -78,6 +78,9 @@ export type CostCapacityTradeoffLedgerChrome = {
     sizingLogicLabel: string
     currentTerraformTitle: string
     terraformSizingPrefix: string
+    terraformSizingConnector: string
+    podsUnitLabel: string
+    slotsUnitLabel: string
     capacityWord: string
     gapTitle: string
     gapDescription: string
@@ -152,6 +155,9 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
       sizingLogicLabel: 'sizing logic',
       currentTerraformTitle: 'Current Terraform',
       terraformSizingPrefix: 'desired / min / max =',
+      terraformSizingConnector: 'on',
+      podsUnitLabel: 'pods',
+      slotsUnitLabel: 'slots',
       capacityWord: 'capacity',
       gapTitle: 'Gap to keep visible',
       gapDescription:
@@ -299,6 +305,9 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
       sizingLogicLabel: 'Sizing 邏輯',
       currentTerraformTitle: '目前 Terraform 設定',
       terraformSizingPrefix: 'desired / min / max =',
+      terraformSizingConnector: '使用',
+      podsUnitLabel: '個 Pod',
+      slotsUnitLabel: '個槽位',
       capacityWord: 'capacity',
       gapTitle: '需要持續看見的缺口',
       gapDescription:
@@ -309,11 +318,13 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
     {
       ...costCapacityTradeoffLedgerContentEn.tradeoffs[0],
       label: 'EKS control plane',
+      monthlyEstimate: '約 73 美元',
       acceptedBenefit: '證明 Hiraya 跑在真實 managed Kubernetes control plane，而不是只能在本機展示的 demo。',
       remainingRisk: '即使 application traffic 接近零，這筆成本仍會存在；因此環境必須刻意維持 dev scope 且可銷毀。',
     },
     {
       ...costCapacityTradeoffLedgerContentEn.tradeoffs[1],
+      monthlyEstimate: '約 45-55+ 美元',
       acceptedBenefit: '讓 worker nodes 留在 private subnets，同時仍能進行 outbound image pulls、package downloads 與 AWS API access。',
       savingsMechanism: 'S3 Gateway Endpoint 降低 S3-bound traffic 對 NAT 的依賴。',
       remainingRisk: 'Single NAT Gateway 是可見的月費底線，也是 dev 階段的可用性取捨，不是 production HA egress design。',
@@ -321,6 +332,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
     {
       ...costCapacityTradeoffLedgerContentEn.tradeoffs[2],
       label: 'Spot worker nodes',
+      monthlyEstimate: '約 35-45 美元',
       acceptedBenefit: '三台 t3.medium Spot nodes 目前能以較低 compute cost 承載 Vintage services 與 platform add-ons。',
       savingsMechanism: 'Spot capacity 避免為 disposable dev platform 支付 on-demand rates。',
       remainingRisk: 'Spot replacement 與 t3.medium pod density 需要明確 headroom；兩台節點無法承載目前 workload。',
@@ -328,6 +340,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
     {
       ...costCapacityTradeoffLedgerContentEn.tradeoffs[3],
       label: 'Shared ALB edge',
+      monthlyEstimate: '約 18-25 美元',
       acceptedBenefit: '透過單一 edge path 為 storefront、Argo CD 與 Grafana 提供真實 public HTTPS proof。',
       savingsMechanism: 'Shared ingress 避免每個 service 都建立獨立 LoadBalancer。',
       remainingRisk: '多個 proof surfaces 依賴 shared edge，因此 route 與保護邊界必須保持清楚。',
@@ -347,14 +360,14 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
     },
   ],
   estimateRows: [
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[0], assumption: '1 個 cluster，約 730 小時/月', justification: 'EKS 與 GitOps demonstration 的固定核心成本。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[1], assumption: '3 x t3.medium Spot', justification: '以較低 compute cost 提供 microservices 與 observability 所需資源。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[2], assumption: 'Node disks 加上 PostgreSQL PVC', justification: 'Runtime storage 與 dev database persistence。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[3], assumption: 'Single NAT Gateway 加少量 processing', justification: 'Private node egress 用於 image pulls、packages 與 AWS APIs。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[4], assumption: '1 shared ALB，低流量', justification: 'Storefront、Argo CD 與 Grafana 共用 ingress。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[5], assumption: '1 hosted zone 與少量 DNS queries', justification: '真實 HTTPS domain demo；public ACM certs 不另外收費。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[6], assumption: '少量 app 與 admin secrets', justification: '避免 credentials 進入 Git 與 Terraform outputs。' },
-    { ...costCapacityTradeoffLedgerContentEn.estimateRows[7], assumption: '多個小型 image repositories', justification: '保存 deployable artifacts 與 rollback targets。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[0], assumption: '1 個 cluster，約 730 小時/月', monthlyEstimate: '約 73 美元', justification: 'EKS 與 GitOps demonstration 的固定核心成本。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[1], assumption: '3 x t3.medium Spot', monthlyEstimate: '約 35-45 美元', justification: '以較低 compute cost 提供 microservices 與 observability 所需資源。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[2], assumption: 'Node disks 加上 PostgreSQL PVC', monthlyEstimate: '約 6-8 美元', justification: 'Runtime storage 與 dev database persistence。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[3], assumption: 'Single NAT Gateway 加少量 processing', monthlyEstimate: '約 45-55+ 美元', justification: 'Private node egress 用於 image pulls、packages 與 AWS APIs。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[4], assumption: '1 shared ALB，低流量', monthlyEstimate: '約 18-25 美元', justification: 'Storefront、Argo CD 與 Grafana 共用 ingress。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[5], assumption: '1 hosted zone 與少量 DNS queries', monthlyEstimate: '約 0.5-1 美元', justification: '真實 HTTPS domain demo；public ACM certs 不另外收費。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[6], assumption: '少量 app 與 admin secrets', monthlyEstimate: '約 1-2 美元', justification: '避免 credentials 進入 Git 與 Terraform outputs。' },
+    { ...costCapacityTradeoffLedgerContentEn.estimateRows[7], assumption: '多個小型 image repositories', monthlyEstimate: '約 1-3 美元', justification: '保存 deployable artifacts 與 rollback targets。' },
   ],
   capacity: {
     ...costCapacityTradeoffLedgerContentEn.capacity,

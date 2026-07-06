@@ -1,4 +1,4 @@
-import type { HirayaRouteId } from './types'
+import type { ArchitectureRuntimeInteractionsContent } from './architectureRuntimeInteractions'
 
 export type ArchitectureRuntimeTabId = 'request-paths' | 'service-boundaries' | 'secret-materialization'
 
@@ -45,32 +45,7 @@ export type SecretMaterializationStep = {
   sourceRef?: string
 }
 
-export type ArchitectureRuntimeInteractionsContent = {
-  routeId: Extract<HirayaRouteId, 'arch'>
-  title: string
-  summary: string
-  defaultTabId: ArchitectureRuntimeTabId
-  facts: readonly ArchitectureRuntimeFact[]
-  requestPaths: {
-    title: string
-    summary: string
-    stages: readonly RuntimePathStage[]
-    examples: readonly RuntimeRequestExample[]
-  }
-  serviceBoundaries: {
-    title: string
-    summary: string
-    services: readonly RuntimeServiceBoundary[]
-  }
-  secretMaterialization: {
-    title: string
-    summary: string
-    steps: readonly SecretMaterializationStep[]
-    nonClaims: readonly string[]
-  }
-}
-
-export const architectureRuntimeInteractionsContentEn = {
+export const architectureRuntimeInteractionsContentEn: ArchitectureRuntimeInteractionsContent = {
   routeId: 'arch',
   title: 'How traffic, services, and secrets stay inside the right boundaries',
   summary:
@@ -357,4 +332,4 @@ export const architectureRuntimeInteractionsContentEn = {
       'This component does not claim automated rotation or production-grade audit hardening beyond the manifests and IAM policy shown here.',
     ],
   },
-} as const
+}

@@ -149,7 +149,7 @@ function PillarDetailPanel({ pillar, content }: { pillar: WafMaturityPillar; con
   const evidenceRefs = unique(collectEvidenceRefs(pillar))
 
   return (
-    <section id="waf-maturity-detail-panel" className="min-w-0 border border-border bg-background/78" aria-label={`${pillar.title} maturity details`}>
+    <section id="waf-maturity-detail-panel" className="min-w-0 border border-border bg-background/78" aria-label={`${pillar.title} ${content.chrome.detailPanelAriaSuffix}`}>
       <div className="border-b border-border bg-muted/35 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{content.chrome.selectedPillarLabel}</p>

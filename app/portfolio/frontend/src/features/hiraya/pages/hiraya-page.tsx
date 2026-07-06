@@ -103,7 +103,7 @@ export function HirayaPage({ activePageId }: HirayaPageProps) {
   const resolvedPageId = resolveHirayaRouteId(activePageId)
   const pages = getHirayaPages(locale)
   const activePage = findHirayaPage(activePageId, locale)
-  const routeDesignContent = getHirayaRouteDesignContent(locale)
+  const routeDesignContent = useMemo(() => getHirayaRouteDesignContent(locale), [locale])
   return (
     <AppPageShell
       dock={

@@ -149,13 +149,32 @@ jobs:
         run: terraform -chdir="${PLATFORM_DIR}" plan -input=false -out=tfplan.binary
 
       - name: apply-approved-binary-plan
+        id: platform_apply
         shell: bash
         run: terraform -chdir="${PLATFORM_DIR}" apply -input=false -auto-approve tfplan.binary
 
       - name: summarize-platform-core-deployment
         if: always()
         shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PLATFORM_APPLY_OUTCOME: ${{ steps.platform_apply.outcome }}
         run: |
+          case "$PLATFORM_APPLY_OUTCOME" in
+            success)
+              message="Terraform applied the AWS-only Platform Core foundation after the single dev environment approval. Cluster Bootstrap runs next with the dedicated bootstrap role."
+              ;;
+            failure)
+              message="Platform Core apply failed after approval. Cluster Bootstrap and smoke validation should not be treated as completed; inspect the failed Terraform step."
+              ;;
+            skipped)
+              message="Platform Core apply did not run because an earlier approved-job step failed or was skipped. No downstream deployment phase should be inferred from this run."
+              ;;
+            *)
+              message="Platform Core apply outcome was ${PLATFORM_APPLY_OUTCOME:-unknown}; inspect the workflow log before treating the deployment as complete."
+              ;;
+          esac
+
           {
             echo "## Platform Core deploy"
             echo
@@ -164,9 +183,10 @@ jobs:
             echo "| Stack | \`${PLATFORM_DIR}\` |"
             echo "| Commit | \`${GITHUB_SHA}\` |"
             echo "| Environment | \`dev\` |"
-            echo "| Result | \`${{ job.status }}\` |"
+            echo "| Result | \`${JOB_STATUS}\` |"
+            echo "| Platform apply | \`${PLATFORM_APPLY_OUTCOME:-unknown}\` |"
             echo
-            echo "Terraform applied the AWS-only Platform Core foundation after the single dev environment approval. Cluster Bootstrap runs next with the dedicated bootstrap role."
+            echo "$message"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: configure-aws-credentials-with-cluster-bootstrap-role
@@ -187,13 +207,32 @@ jobs:
         run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" plan -input=false -out=tfplan.binary
 
       - name: apply-cluster-bootstrap-binary-plan
+        id: cluster_bootstrap_apply
         shell: bash
         run: terraform -chdir="${CLUSTER_BOOTSTRAP_DIR}" apply -input=false -auto-approve tfplan.binary
 
       - name: summarize-cluster-bootstrap
         if: always()
         shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CLUSTER_BOOTSTRAP_OUTCOME: ${{ steps.cluster_bootstrap_apply.outcome }}
         run: |
+          case "$CLUSTER_BOOTSTRAP_OUTCOME" in
+            success)
+              message="Cluster Bootstrap installed Argo CD/root GitOps after the same dev environment approval. Smoke validation runs next through Kubernetes plus public route checks without Argo CD API credentials."
+              ;;
+            failure)
+              message="Cluster Bootstrap apply failed after Platform Core. Smoke validation should not be treated as completed; inspect the failed Terraform step."
+              ;;
+            skipped)
+              message="Cluster Bootstrap apply did not run because an earlier approved-job step failed or was skipped. Argo CD/root GitOps installation is not implied by this summary."
+              ;;
+            *)
+              message="Cluster Bootstrap apply outcome was ${CLUSTER_BOOTSTRAP_OUTCOME:-unknown}; inspect the workflow log before treating GitOps bootstrap as complete."
+              ;;
+          esac
+
           {
             echo "## Cluster Bootstrap"
             echo
@@ -201,9 +240,10 @@ jobs:
             echo "| --- | --- |"
             echo "| Stack | \`${CLUSTER_BOOTSTRAP_DIR}\` |"
             echo "| Commit | \`${GITHUB_SHA}\` |"
-            echo "| Result | \`${{ job.status }}\` |"
+            echo "| Result | \`${JOB_STATUS}\` |"
+            echo "| Cluster Bootstrap apply | \`${CLUSTER_BOOTSTRAP_OUTCOME:-unknown}\` |"
             echo
-            echo "Cluster Bootstrap installed Argo CD/root GitOps after the same dev environment approval. Smoke validation runs next through Kubernetes plus public route checks without Argo CD API credentials."
+            echo "$message"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: refresh-aws-credentials-with-cluster-bootstrap-role-for-smoke
@@ -218,13 +258,32 @@ jobs:
         run: terraform -chdir="${PLATFORM_DIR}" init -backend-config=backend.hcl -reconfigure -input=false
 
       - name: run-platform-route-smoke-checks
+        id: platform_smoke
         shell: bash
         run: .github/scripts/platform-route-smoke.sh
 
       - name: summarize-platform-smoke
         if: always()
         shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PLATFORM_SMOKE_OUTCOME: ${{ steps.platform_smoke.outcome }}
         run: |
+          case "$PLATFORM_SMOKE_OUTCOME" in
+            success)
+              message="Validated Argo Application sync/health, required namespaces, Gateway/HTTPRoute readiness, and public routes using the Cluster Bootstrap role. No Argo CD API credentials are used."
+              ;;
+            failure)
+              message="Dev Platform smoke checks ran and failed. Treat deployment health as unverified until the failed checks are resolved."
+              ;;
+            skipped)
+              message="Dev Platform smoke checks did not run because an earlier approved-job phase failed or was skipped. Runtime convergence and public route health are not verified by this run."
+              ;;
+            *)
+              message="Dev Platform smoke outcome was ${PLATFORM_SMOKE_OUTCOME:-unknown}; inspect the workflow log before treating the platform as validated."
+              ;;
+          esac
+
           {
             echo "## Dev Platform smoke"
             echo
@@ -232,7 +291,8 @@ jobs:
             echo "| --- | --- |"
             echo "| Stack outputs | \`${PLATFORM_DIR}\` |"
             echo "| Commit | \`${GITHUB_SHA}\` |"
-            echo "| Result | \`${{ job.status }}\` |"
+            echo "| Result | \`${JOB_STATUS}\` |"
+            echo "| Smoke checks | \`${PLATFORM_SMOKE_OUTCOME:-unknown}\` |"
             echo
-            echo "Validated Argo Application sync/health, required namespaces, Gateway/HTTPRoute readiness, and public routes using the Cluster Bootstrap role. No Argo CD API credentials are used."
+            echo "$message"
           } >> "$GITHUB_STEP_SUMMARY"
