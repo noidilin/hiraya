@@ -26,30 +26,6 @@ type ExposureFilterValue = ExposureBoundaryClassId | 'all'
 
 const exposureColumnId = 'exposureClass'
 
-const columns: ColumnDef<ExposureBoundaryRow>[] = [
-  {
-    accessorKey: 'surface',
-    header: 'Surface',
-    cell: ({ row }) => <span className="font-semibold text-foreground">{row.original.surface}</span>,
-  },
-  {
-    accessorKey: 'entryMechanism',
-    header: 'Entry mechanism',
-  },
-  {
-    accessorKey: 'boundaryReason',
-    header: 'Boundary reason',
-  },
-  {
-    accessorKey: 'devTradeoff',
-    header: 'Dev trade-off',
-  },
-  {
-    accessorKey: exposureColumnId,
-    header: 'Exposure class',
-    filterFn: 'equalsString',
-  },
-]
 
 function getExposureFilter(columnFilters: ColumnFiltersState): ExposureBoundaryClassId | undefined {
   const filterValue = columnFilters.find((filter) => filter.id === exposureColumnId)?.value
@@ -92,6 +68,33 @@ function ExposureBoundaryTable({ content }: { content: ExposureBoundaryContent }
     { id: exposureColumnId, value: content.defaultOpenGroupId },
   ])
 
+  const columns = useMemo<ColumnDef<ExposureBoundaryRow>[]>(
+    () => [
+      {
+        accessorKey: 'surface',
+        header: content.chrome.columns.surface,
+        cell: ({ row }) => <span className="font-semibold text-foreground">{row.original.surface}</span>,
+      },
+      {
+        accessorKey: 'entryMechanism',
+        header: content.chrome.columns.entryMechanism,
+      },
+      {
+        accessorKey: 'boundaryReason',
+        header: content.chrome.columns.boundaryReason,
+      },
+      {
+        accessorKey: 'devTradeoff',
+        header: content.chrome.columns.devTradeoff,
+      },
+      {
+        accessorKey: exposureColumnId,
+        header: content.chrome.columns.exposureClass,
+        filterFn: 'equalsString',
+      },
+    ],
+    [content.chrome.columns],
+  )
   const rows = useMemo(() => content.groups.flatMap((group) => group.rows), [content.groups])
   const selectedExposureClass = getExposureFilter(columnFilters)
   const selectedGroup = content.groups.find((group) => group.id === selectedExposureClass)
@@ -133,14 +136,14 @@ function ExposureBoundaryTable({ content }: { content: ExposureBoundaryContent }
       <div className="border-b border-border bg-background/70 px-5 py-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(13rem,0.28fr)_minmax(0,1fr)] lg:items-start">
           <div>
-            <p className="font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground">table filter</p>
-            <p className="mt-1 text-sm font-semibold tracking-normal text-foreground">Exposure class</p>
+            <p className="font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.filterEyebrow}</p>
+            <p className="mt-1 text-sm font-semibold tracking-normal text-foreground">{content.chrome.filterLabel}</p>
           </div>
 
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <ExposureFilterButton
               value="all"
-              label="All surfaces"
+              label={content.chrome.allSurfacesLabel}
               count={rows.length}
               active={!selectedExposureClass}
               onSelect={selectExposureFilter}
@@ -161,7 +164,7 @@ function ExposureBoundaryTable({ content }: { content: ExposureBoundaryContent }
 
       <div className="overflow-x-auto">
         <table className="min-w-[920px] w-full border-collapse text-left text-sm">
-          <caption className="sr-only">Reachability details for {selectedGroup?.label ?? 'all exposure classes'}</caption>
+          <caption className="sr-only">{selectedGroup?.label ?? content.chrome.captionAllLabel}</caption>
           <thead className="border-b border-border bg-muted/45">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
@@ -194,7 +197,7 @@ export function ArchitectureExposureBoundaryMatrix({ content, className }: Archi
   return (
     <HirayaSectionShell
       className={cn('overflow-hidden', className)}
-      eyebrow="Exposure boundary"
+      eyebrow={content.chrome.eyebrow}
       title={content.title}
       description={content.summary}
     >

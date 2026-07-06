@@ -49,11 +49,17 @@ function BoundaryStack({
   boundary,
   index,
   state,
+  ownerLabel,
+  boundaryStackLabel,
+  boundaryStackAriaSuffix,
   onSelect,
 }: {
   boundary: ArchitectureOwnershipBoundary
   index: number
   state: 'selected' | 'adjacent' | 'muted'
+  ownerLabel: string
+  boundaryStackLabel: string
+  boundaryStackAriaSuffix: string
   onSelect: () => void
 }) {
   return (
@@ -61,7 +67,7 @@ function BoundaryStack({
       tabIndex={0}
       onMouseEnter={onSelect}
       onFocus={onSelect}
-      aria-label={`${boundary.label} boundary stack. Owner: ${boundary.primaryOwner}`}
+      aria-label={`${boundary.label} ${boundaryStackAriaSuffix}. ${ownerLabel}: ${boundary.primaryOwner}`}
       className={cn(
         'relative h-full border bg-background/82 p-3 shadow-sm backdrop-blur-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35',
         state === 'selected' && 'border-primary/75 bg-primary/10 ring-1 ring-primary/25',
@@ -71,11 +77,11 @@ function BoundaryStack({
     >
       <div className="border-b border-border/75 pb-2">
         <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">
-          {String(index + 1).padStart(2, '0')} · boundary stack
+          {String(index + 1).padStart(2, '0')} · {boundaryStackLabel}
         </p>
         <h3 className="mt-1 text-sm font-semibold tracking-normal text-foreground xl:text-base">{boundary.label}</h3>
       </div>
-      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">Owner: {boundary.primaryOwner}</p>
+      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">{ownerLabel}: {boundary.primaryOwner}</p>
 
       <ol className="mt-3 grid gap-2">
         {boundary.layers.map((layer) => (
@@ -142,32 +148,33 @@ function DetailSection({ title, children, className }: { title: string; children
   )
 }
 
-function BoundaryDetail({ boundary }: { boundary: ArchitectureOwnershipBoundary }) {
+function BoundaryDetail({ boundary, content }: { boundary: ArchitectureOwnershipBoundary; content: ArchitectureOwnershipContent }) {
+  const { chrome } = content
   return (
     <aside className="border-t border-border bg-card/78 p-5">
       <div className="grid gap-5">
         <div className="grid gap-4 xl:grid-cols-[0.72fr_1fr_1fr] xl:items-stretch">
           <div className="border-r border-border/70 pr-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">selected boundary</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.selectedBoundaryLabel}</p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-foreground">{boundary.label}</h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Primary owner: <span className="font-medium text-foreground">{boundary.primaryOwner}</span>
+              {chrome.primaryOwnerLabel}: <span className="font-medium text-foreground">{boundary.primaryOwner}</span>
             </p>
           </div>
 
           <div className="border-l-2 border-primary pl-4">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">responsibility</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.responsibilityLabel}</p>
             <p className="mt-2 text-base leading-7 text-foreground">{boundary.responsibility}</p>
           </div>
 
           <div className="border-l-2 border-primary pl-4">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">design decision</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">{chrome.designDecisionLabel}</p>
             <p className="mt-2 text-base leading-7 text-foreground">{boundary.decision}</p>
           </div>
         </div>
 
         <div className="grid gap-5 border-t border-border pt-5 xl:grid-cols-[1.2fr_0.9fr_0.9fr]">
-          <DetailSection title="Owned/control layers">
+          <DetailSection title={chrome.ownedLayersLabel}>
             <ul className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-1">
               {boundary.layers.map((layer) => (
                 <li key={layer.id} className="flex gap-2 text-xs leading-5">
@@ -180,7 +187,7 @@ function BoundaryDetail({ boundary }: { boundary: ArchitectureOwnershipBoundary 
             </ul>
           </DetailSection>
 
-          <DetailSection title="Supporting mechanisms">
+          <DetailSection title={chrome.supportingMechanismsLabel}>
             <div className="flex flex-wrap gap-2">
               {boundary.supportingMechanisms.map((mechanism) => (
                 <HirayaTag key={mechanism}>{mechanism}</HirayaTag>
@@ -188,7 +195,7 @@ function BoundaryDetail({ boundary }: { boundary: ArchitectureOwnershipBoundary 
             </div>
           </DetailSection>
 
-          <DetailSection title="Does not own">
+          <DetailSection title={chrome.doesNotOwnLabel}>
             <ul className="grid gap-1">
               {boundary.doesNotOwn.map((item) => (
                 <li key={item} className="text-xs leading-5">
@@ -233,7 +240,7 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
   return (
     <HirayaSectionShell
       className={cn('overflow-hidden', className)}
-      eyebrow="Ownership explorer"
+      eyebrow={content.chrome.eyebrow}
       title={content.title}
       description={content.summary}
     >
@@ -259,6 +266,9 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
                     boundary={boundary}
                     index={index}
                     state={state}
+                    ownerLabel={content.chrome.ownerLabel}
+                    boundaryStackLabel={content.chrome.boundaryStackLabel}
+                    boundaryStackAriaSuffix={content.chrome.boundaryStackAriaSuffix}
                     onSelect={() => setSelectedBoundaryId(boundary.id)}
                   />
                 )
@@ -267,7 +277,7 @@ export function ArchitectureOwnershipExplorer({ content, className }: Architectu
           </div>
 
           <div className="relative">
-            <BoundaryDetail boundary={selectedBoundary} />
+            <BoundaryDetail boundary={selectedBoundary} content={content} />
           </div>
         </div>
       </TooltipProvider>

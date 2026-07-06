@@ -31,6 +31,70 @@ describe('Hiraya localized content parity', () => {
     }))
   })
 
+  it('keeps Architecture ownership structures aligned while localizing visitor-facing copy', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.architectureOwnership.title).toBe('把架構先設計成清楚的 Ownership Boundaries')
+    expect(zhTW.architectureOwnership.chrome.responsibilityLabel).toBe('責任範圍')
+    expect(zhTW.architectureOwnership.boundaries[0]?.layers[0]?.brief).toBe('定義 Accepted Desired State 可以進入的位置。')
+
+    expectStableListParity(zhTW.architectureOwnership.boundaries, en.architectureOwnership.boundaries, (boundary) => ({
+      id: boundary.id,
+      layerIds: boundary.layers.map((layer) => layer.id),
+      supportingMechanisms: boundary.supportingMechanisms,
+    }))
+    expectStableListParity(zhTW.architectureOwnership.connectors, en.architectureOwnership.connectors, (connector) => ({
+      from: connector.from,
+      to: connector.to,
+    }))
+  })
+
+  it('keeps Architecture exposure matrix structures aligned while localizing table copy', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.architectureExposureBoundaries.chrome.columns.boundaryReason).toBe('邊界理由')
+    expect(zhTW.architectureExposureBoundaries.groups[0]?.rows[0]?.boundaryReason).toBe('提供 public Storefront entry point，同時保持 backend services private。')
+
+    expectStableListParity(zhTW.architectureExposureBoundaries.groups, en.architectureExposureBoundaries.groups, (group) => ({
+      id: group.id,
+      rowIds: group.rows.map((row) => row.id),
+      exposureClasses: group.rows.map((row) => row.exposureClass),
+      rowCount: group.rows.length,
+    }))
+  })
+
+  it('keeps Architecture runtime interaction structures aligned while localizing request and secret explanations', () => {
+    const en = getHirayaRouteDesignContent('en')
+    const zhTW = getHirayaRouteDesignContent('zh-TW')
+
+    expect(zhTW.architectureRuntimeInteractions.chrome.requestGraphTitle).toBe('一條 visitor path，分支到多個 private services')
+    expect(zhTW.architectureRuntimeInteractions.secretMaterialization.nonClaims[0]).toBe('這張圖刻意只解釋 materialization，不展示 secret values 或 individual keys。')
+
+    expect(zhTW.architectureRuntimeInteractions.defaultTabId).toBe(en.architectureRuntimeInteractions.defaultTabId)
+    expectStableListParity(zhTW.architectureRuntimeInteractions.requestPaths.stages, en.architectureRuntimeInteractions.requestPaths.stages, (stage) => ({
+      id: stage.id,
+      boundary: stage.boundary,
+    }))
+    expectStableListParity(zhTW.architectureRuntimeInteractions.requestPaths.examples, en.architectureRuntimeInteractions.requestPaths.examples, (example) => ({
+      id: example.id,
+      path: example.path,
+      stages: example.stages,
+    }))
+    expectStableListParity(zhTW.architectureRuntimeInteractions.serviceBoundaries.services, en.architectureRuntimeInteractions.serviceBoundaries.services, (service) => ({
+      id: service.id,
+      name: service.name,
+      status: service.status,
+      port: service.port,
+      kubernetesType: service.kubernetesType,
+    }))
+    expectStableListParity(zhTW.architectureRuntimeInteractions.secretMaterialization.steps, en.architectureRuntimeInteractions.secretMaterialization.steps, (step) => ({
+      id: step.id,
+      sourceRef: step.sourceRef,
+    }))
+  })
+
   it('keeps WAF maturity judgment structures aligned while localizing visitor-facing copy', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')

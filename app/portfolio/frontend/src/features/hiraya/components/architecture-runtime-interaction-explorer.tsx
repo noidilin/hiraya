@@ -33,10 +33,6 @@ type SecretFlowNodeData = VisualFlowNodeData & {
 
 const visibleRuntimeTabIds = ['request-paths', 'secret-materialization'] as const satisfies readonly VisibleRuntimeTabId[]
 
-const tabLabels: Record<VisibleRuntimeTabId, string> = {
-  'request-paths': 'Request paths',
-  'secret-materialization': 'Secret materialization',
-}
 
 const statusClasses: Record<ServiceBoundaryStatus, string> = {
   active: 'border-primary/30 bg-primary/10 text-primary',
@@ -56,11 +52,11 @@ const runtimeFlowMarker = {
   color: 'var(--muted-foreground)',
 }
 
-function StatusTag({ status }: { status: ServiceBoundaryStatus }) {
-  return <span className={cn('border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal', statusClasses[status])}>{status.replace('-', ' ')}</span>
+function StatusTag({ status, content }: { status: ServiceBoundaryStatus; content: ArchitectureRuntimeInteractionsContent }) {
+  return <span className={cn('border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal', statusClasses[status])}>{content.chrome.statusLabels[status]}</span>
 }
 
-function CompactServiceBoundaryCard({ service, context, className }: { service: RuntimeServiceBoundary; context?: string; className?: string }) {
+function CompactServiceBoundaryCard({ service, context, content, className }: { service: RuntimeServiceBoundary; context?: string; content: ArchitectureRuntimeInteractionsContent; className?: string }) {
   return (
     <div className={cn('w-80 max-w-[calc(100vw-2rem)] border border-border bg-popover p-3 text-popover-foreground shadow-xl', className)}>
       <div className="flex items-start justify-between gap-3">
@@ -68,22 +64,22 @@ function CompactServiceBoundaryCard({ service, context, className }: { service: 
           <p className="font-mono text-[9px] font-semibold uppercase tracking-normal text-muted-foreground">{context ?? 'service boundary'}</p>
           <h4 className="mt-1 truncate text-sm font-semibold tracking-normal text-foreground">{service.name}</h4>
         </div>
-        <StatusTag status={service.status} />
+        <StatusTag status={service.status} content={content} />
       </div>
 
       <p className="mt-3 text-xs leading-5 text-muted-foreground">{service.responsibility}</p>
 
       <dl className="mt-3 grid gap-2 border-t border-border pt-3 text-[11px] leading-4 text-muted-foreground sm:grid-cols-3">
         <div>
-          <dt className="font-mono text-[9px] uppercase tracking-normal">Kubernetes</dt>
+          <dt className="font-mono text-[9px] uppercase tracking-normal">{content.chrome.kubernetesLabel}</dt>
           <dd className="mt-1 font-medium text-foreground">{service.kubernetesType}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[9px] uppercase tracking-normal">Port</dt>
-          <dd className="mt-1 font-medium text-foreground">{service.port ?? 'n/a'}</dd>
+          <dt className="font-mono text-[9px] uppercase tracking-normal">{content.chrome.portLabel}</dt>
+          <dd className="mt-1 font-medium text-foreground">{service.port ?? content.chrome.notApplicableLabel}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[9px] uppercase tracking-normal">Exposure</dt>
+          <dt className="font-mono text-[9px] uppercase tracking-normal">{content.chrome.exposureLabel}</dt>
           <dd className="mt-1 font-medium text-foreground">{service.exposure}</dd>
         </div>
       </dl>
@@ -105,7 +101,7 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
   const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null)
   const serviceById = useMemo(() => new Map(content.serviceBoundaries.services.map((service) => [service.id, service])), [content.serviceBoundaries.services])
   const hoveredService = hoveredServiceId ? serviceById.get(hoveredServiceId) : undefined
-  const hoveredContext = hoveredServiceId === 'frontend' ? 'frontend boundary behavior' : 'service boundary'
+  const hoveredContext = hoveredServiceId === 'frontend' ? content.chrome.frontendBoundaryContext : content.chrome.serviceBoundaryDefaultContext
 
   const nodes = useMemo<VisualFlowNode[]>(() => {
     const stageById = new Map(content.requestPaths.stages.map((stage) => [stage.id, stage]))
@@ -130,7 +126,7 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
       if (!stage) return undefined
 
       const service = serviceById.get(serviceIdByStageId.get(id) ?? '')
-      const context = id === 'static-assets' || id === 'api-proxy' ? 'frontend boundary behavior' : 'service boundary'
+      const context = id === 'static-assets' || id === 'api-proxy' ? content.chrome.frontendBoundaryContext : content.chrome.serviceBoundaryDefaultContext
 
       return {
         id,
@@ -161,7 +157,7 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
       buildNode('orders', 'flowSystem', { x: 1045, y: 294 }, { code: '3005', status: 'ClusterIP', Icon: Server, tone: 'muted' }),
       buildNode('vintage-postgres', 'flowEnvironment', { x: 1260, y: 170 }, { code: '5432', status: 'private data', Icon: Database, tone: 'muted' }),
     ].filter(Boolean) as VisualFlowNode[]
-  }, [content.requestPaths.stages, serviceById])
+  }, [content.chrome.frontendBoundaryContext, content.chrome.serviceBoundaryDefaultContext, content.requestPaths.stages, serviceById])
 
   const edges = useMemo<Edge[]>(() => {
     const buildEdge = (id: string, source: string, target: string, label: string): Edge => ({
@@ -222,7 +218,7 @@ function RuntimeFlowGraph({ content }: { content: ArchitectureRuntimeInteraction
         <Background color="var(--border)" gap={24} size={1} />
         {hoveredService ? (
           <Panel position="bottom-left" className="pointer-events-none max-w-[min(22rem,calc(100vw-2rem))]">
-            <CompactServiceBoundaryCard service={hoveredService} context={hoveredContext} className="w-full shadow-xl" />
+            <CompactServiceBoundaryCard service={hoveredService} context={hoveredContext} content={content} className="w-full shadow-xl" />
           </Panel>
         ) : null}
       </ReactFlow>
@@ -238,18 +234,18 @@ function RequestPathExplorer({ content }: { content: ArchitectureRuntimeInteract
           <header className="grid min-w-0 gap-2">
             <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
               <span className="shrink-0 border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
-                flow graph
+                {content.chrome.requestGraphEyebrow}
               </span>
               <span className="min-w-0 truncate border border-border/80 bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
-                same-origin → private services
+                {content.chrome.requestGraphKicker}
               </span>
             </div>
             <div className="w-full min-w-0">
               <h4 className="text-lg font-semibold leading-tight tracking-normal text-foreground">
-                One visitor path, multiple private branches
+                {content.chrome.requestGraphTitle}
               </h4>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground/86">
-                Storefront visitor traffic reaches only the Storefront route; API requests move through the Storefront proxy and gateway before selecting private services.
+                {content.chrome.requestGraphDescription}
               </p>
             </div>
           </header>
@@ -397,18 +393,18 @@ function SecretMaterializationExplorer({ content }: { content: ArchitectureRunti
           <header className="grid min-w-0 gap-2">
             <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-2">
               <span className="shrink-0 border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-normal text-primary">
-                materialization flow
+                {content.chrome.secretGraphEyebrow}
               </span>
               <span className="min-w-0 truncate border border-border/80 bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
-                external source → runtime secret → pods
+                {content.chrome.secretGraphKicker}
               </span>
             </div>
             <div className="w-full min-w-0">
               <h4 className="text-lg font-semibold leading-tight tracking-normal text-foreground">
-                Secrets move by reference, not by copying values into Git
+                {content.chrome.secretGraphTitle}
               </h4>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground/86">
-                Hover a node to inspect the owner, mechanism, and source reference behind each materialization handoff.
+                {content.chrome.secretGraphDescription}
               </p>
             </div>
           </header>
@@ -422,8 +418,8 @@ function SecretMaterializationExplorer({ content }: { content: ArchitectureRunti
                   <KeyRound className="size-4" aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">non-claims</p>
-                  <h4 className="mt-1 text-base font-semibold tracking-normal text-foreground">What this does not say</h4>
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.nonClaimsEyebrow}</p>
+                  <h4 className="mt-1 text-base font-semibold tracking-normal text-foreground">{content.chrome.nonClaimsTitle}</h4>
                 </div>
               </div>
               <ul className="grid gap-2">
@@ -449,11 +445,11 @@ export function ArchitectureRuntimeInteractionExplorer({ content, className }: A
   return (
     <HirayaSectionShell
       className={cn('overflow-hidden', className)}
-      eyebrow="Runtime interaction"
+      eyebrow={content.chrome.eyebrow}
       title={content.title}
       description={content.summary}
       tabs={{
-        items: visibleRuntimeTabIds.map((tabId) => ({ value: tabId, label: tabLabels[tabId] })),
+        items: visibleRuntimeTabIds.map((tabId) => ({ value: tabId, label: content.chrome.tabs[tabId] })),
         value: selectedTabId,
         onValueChange: (value) => setSelectedTabId(value as VisibleRuntimeTabId),
       }}
