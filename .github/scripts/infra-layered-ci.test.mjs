@@ -62,12 +62,14 @@ test('trusted PR planning covers Platform Core only', async () => {
   assert.doesNotMatch(planJob, /cluster-bootstrap/, 'Cluster Bootstrap must be excluded from PR planning');
 });
 
-test('deploy workflow applies Platform Core before Cluster Bootstrap and then smokes GitOps convergence', async () => {
+test('deploy workflow uses one approved job to apply Platform Core, then Cluster Bootstrap, then smoke', async () => {
   const workflow = await readFile(infraDeployWorkflowPath, 'utf8');
+  const deployGateCount = workflow.match(/^    environment: dev$/gm)?.length ?? 0;
 
-  assert.match(workflow, /apply-platform-core/, 'deploy should apply Platform Core first');
-  assert.match(workflow, /apply-cluster-bootstrap[\s\S]*needs: apply/, 'Cluster Bootstrap deploy should depend on Platform Core apply');
-  assert.match(workflow, /smoke-dev-platform[\s\S]*needs: apply-cluster-bootstrap/, 'smoke checks should run only after Cluster Bootstrap apply');
+  assert.equal(deployGateCount, 1, 'infra deploy should request exactly one dev environment approval');
+  assert.match(workflow, /apply-approved-dev-platform:[\s\S]*environment: dev/, 'the approved job should hold the single dev environment gate');
+  assert.match(workflow, /apply-approved-binary-plan[\s\S]*configure-aws-credentials-with-cluster-bootstrap-role/, 'Cluster Bootstrap should start only after Platform Core apply');
+  assert.match(workflow, /apply-cluster-bootstrap-binary-plan[\s\S]*run-platform-route-smoke-checks/, 'smoke checks should run only after Cluster Bootstrap apply');
   assert.match(workflow, /CLUSTER_BOOTSTRAP_ROLE_ARN/, 'Cluster Bootstrap should use its dedicated GitHub role');
   assert.match(workflow, /write-terraform-backend\.sh cluster-bootstrap/, 'Cluster Bootstrap should use the generic backend writer');
   assert.match(workflow, /terraform -chdir="\$\{CLUSTER_BOOTSTRAP_DIR\}" apply/, 'deploy should apply the Cluster Bootstrap state');
