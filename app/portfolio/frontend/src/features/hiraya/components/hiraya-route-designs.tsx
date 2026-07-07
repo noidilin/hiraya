@@ -323,6 +323,9 @@ function BriefVideoEvidence({
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         {t('hiraya.evidence.briefVideo.missingDescription')}
                       </p>
+                      <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                        {t('hiraya.evidence.briefVideo.workInProgressNotice')}
+                      </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-normal text-muted-foreground">
