@@ -57,6 +57,7 @@ export const resources = {
           status: {
             planned: 'planned',
             captured: 'captured',
+            ready: 'ready',
             deferred: 'deferred',
           },
           kind: {
@@ -66,31 +67,31 @@ export const resources = {
             externalLink: 'external link',
           },
           frame: {
-            video: 'Video walkthrough frame · 16:9',
-            screenshot: 'MacBook Pro 14-inch capture frame · 1512 × 982',
+            video: 'Portfolio evidence video',
+            screenshot: 'Portfolio evidence image',
           },
           placeholder: {
             videoSlot: 'Video evidence slot',
             videoDescription: 'Add a video source to the evidence manifest to turn this support card into a playable walkthrough.',
           },
           briefVideo: {
-            title: 'Primary portfolio walkthrough',
-            fallbackCaption: 'A focused recording keeps the Brief route proof-led without turning the overview into a long media gallery.',
-            stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollout + smoke'],
-            frameLabel: 'Brief proof video · delivery walkthrough',
-            missingTitle: 'Video evidence slot',
-            missingDescription: 'Drop the final walkthrough file into the evidence manifest and this frame becomes the playable Brief proof.',
-            walkthroughBadge: '16:9 walkthrough',
+            title: 'Project walkthrough on YouTube',
+            fallbackCaption: 'One focused external walkthrough keeps the Brief route proof-led without committing large video files to the portfolio repository.',
+            stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollback + destroy'],
+            frameLabel: 'Brief proof video · YouTube walkthrough',
+            missingTitle: 'YouTube walkthrough slot',
+            missingDescription: 'Add the final YouTube URL or embed ID to the content slot after the redacted walkthrough is uploaded.',
+            walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief route anchor',
+            youtubeBadge: 'YouTube',
           },
           carousels: {
             architecture: {
               title: 'Evidence behind the architecture decisions',
               description: 'Each capture anchors one architecture claim without turning the page into a detached screenshot gallery.',
               previews: {
-                publicIngress: ['Route 53 records', 'ALB target group health', 'Browser TLS and /api smoke test'],
+                publicIngress: ['Public HTTPS storefront', 'Shared ingress endpoints', 'Browser runtime proof'],
                 appOfApps: ['Root app Synced/Healthy', 'Platform child applications', 'Vintage resource tree'],
-                privateWorkloads: ['Private node group subnets', 'ClusterIP services', 'NAT and route table evidence'],
               },
             },
             cost: {
@@ -98,7 +99,6 @@ export const resources = {
               description: 'Financial proof stays close to the trade-off analysis, one operational capture at a time.',
               previews: {
                 destroyWorkflow: ['Destroy workflow run', 'Terraform destroy logs', 'AWS console cleanup check'],
-                privateWorkloads: ['kubectl pod density', 'Managed node group sizing', 'Scheduling headroom'],
               },
             },
             sdlc: {
@@ -246,6 +246,7 @@ export const resources = {
           status: {
             planned: '規劃中',
             captured: '已擷取',
+            ready: '已就緒',
             deferred: '延後',
           },
           kind: {
@@ -255,31 +256,31 @@ export const resources = {
             externalLink: '外部連結',
           },
           frame: {
-            video: '影片導覽畫面 · 16:9',
-            screenshot: 'MacBook Pro 14 吋擷取畫面 · 1512 × 982',
+            video: '證據影片',
+            screenshot: '證據圖片',
           },
           placeholder: {
             videoSlot: '影片證據槽',
             videoDescription: '把影片來源接到 evidence manifest 後，這張支援卡就會變成可播放的 walkthrough。',
           },
           briefVideo: {
-            title: '主要 portfolio walkthrough',
-            fallbackCaption: '聚焦的錄影讓 Brief route 維持證據導向，而不把 overview 變成冗長媒體相簿。',
-            stages: ['PR 驗證', '映像檔發布', 'Manifest 升版', 'Argo CD 同步', 'Rollout 與 smoke 檢查'],
-            frameLabel: 'Brief 證明影片 · 交付導覽',
-            missingTitle: '影片證據槽',
-            missingDescription: '把最終 walkthrough 檔案放進 evidence manifest 後，這個 frame 就會成為可播放的 Brief proof。',
-            walkthroughBadge: '16:9 導覽影片',
+            title: 'YouTube project walkthrough',
+            fallbackCaption: '單一外部 walkthrough 讓 Brief route 維持證據導向，同時避免把大型影片檔 commit 到 portfolio repo。',
+            stages: ['PR 驗證', '映像檔發布', 'Manifest 升版', 'Argo CD 同步', 'Rollback 與 destroy'],
+            frameLabel: 'Brief 證明影片 · YouTube walkthrough',
+            missingTitle: 'YouTube walkthrough slot',
+            missingDescription: '上傳 redacted walkthrough 後，把 YouTube URL 或 embed ID 加到 content slot。',
+            walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief 路由錨點',
+            youtubeBadge: 'YouTube',
           },
           carousels: {
             architecture: {
               title: '支撐架構決策的證據',
               description: '每張擷取畫面都錨定一個 architecture claim，而不是把頁面變成脫節的 screenshot gallery。',
               previews: {
-                publicIngress: ['Route 53 records', 'ALB target group health', 'Browser TLS 與 /api smoke test'],
+                publicIngress: ['Public HTTPS storefront', 'Shared ingress endpoints', 'Browser runtime proof'],
                 appOfApps: ['Root app Synced/Healthy', 'Platform child applications', 'Vintage resource tree'],
-                privateWorkloads: ['Private node group subnets', 'ClusterIP services', 'NAT 與 route table evidence'],
               },
             },
             cost: {
@@ -287,7 +288,6 @@ export const resources = {
               description: '財務證據貼近取捨分析，一次只展示一個 operational capture。',
               previews: {
                 destroyWorkflow: ['Destroy workflow run', 'Terraform destroy logs', 'AWS console cleanup check'],
-                privateWorkloads: ['kubectl pod density', 'Managed node group sizing', 'Scheduling headroom'],
               },
             },
             sdlc: {

@@ -46,13 +46,15 @@ export type HirayaMediaSlot = {
   title: string
   description: string
   evidenceRefs?: readonly string[]
+  externalUrl?: string
+  externalEmbedId?: string
 }
 
 export type HirayaEvidenceItem = {
   id: string
   priority: 'P0' | 'P1' | 'P2'
   title: string
-  suggestedFormat: 'screenshot' | 'short-video' | 'video'
+  suggestedFormat: 'screenshot' | 'video' | 'mixed-media'
   portfolioValue: string
   checklistSource: 'docs/evidence-checklist.md'
 }

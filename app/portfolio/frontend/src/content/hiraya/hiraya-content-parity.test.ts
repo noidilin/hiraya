@@ -245,11 +245,15 @@ describe('Hiraya localized content parity', () => {
 
     expectStableListParity(zhTW.evidenceAssets, en.evidenceAssets, (asset) => ({
       evidenceId: asset.evidenceId,
-      kind: asset.kind,
       status: asset.status,
       preferredUse: asset.preferredUse,
       routes: asset.routes,
-      src: asset.src,
+      assets: asset.assets.map((evidenceAsset) => ({
+        id: evidenceAsset.id,
+        kind: evidenceAsset.kind,
+        status: evidenceAsset.status,
+        src: evidenceAsset.src,
+      })),
     }))
   })
 

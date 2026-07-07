@@ -91,7 +91,7 @@ const sdlcDeliveryGuardrailsEn = [
     authorityBadge: 'reviewed-git',
     flowStageIds: ['manifest-promotion-pr', 'accepted-desired-state', 'gitops-runtime-convergence', 'deploy-smoke'],
     sourceRefs: ['gitops/apps/vintage/kustomization.yml', 'gitops/apps/vintage/k8s/**', '.github/workflows/image-ci.yml'],
-    evidenceRefs: ['p0-cicd-delivery-flow', 'p0-argocd-app-of-apps', 'p2-deploy-smoke'],
+    evidenceRefs: ['p0-cicd-delivery-flow', 'p0-argocd-app-of-apps', 'p0-public-ingress'],
     shortcutRisk: 'Bypassing reviewed Git removes the durable contract between delivery automation, Argo CD, and human review.',
   },
   {
