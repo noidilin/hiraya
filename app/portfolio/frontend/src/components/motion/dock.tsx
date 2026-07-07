@@ -1,7 +1,16 @@
 "use client"
 
 import { motion, useReducedMotion } from "motion/react"
-import { createContext, useContext, useId, useMemo, type ReactNode } from "react"
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useId,
+  useMemo,
+  type HTMLAttributes,
+  type ReactNode,
+  type Ref,
+} from "react"
 import { SPRING_LAYOUT } from "@/lib/ease"
 import { cn } from "@/lib/utils"
 
@@ -40,22 +49,24 @@ export function Dock({ children, size = 44, className }: DockProps) {
   )
 }
 
-export interface DockItemProps {
+export interface DockItemProps extends Omit<HTMLAttributes<HTMLElement>, "children" | "onClick"> {
   children: ReactNode
-  className?: string
   /** When set, the item renders as a <button>. Omit when children carry their own link or button. */
   onClick?: () => void
   active?: boolean
-  "aria-label"?: string
 }
 
-export function DockItem({
-  children,
-  className,
-  onClick,
-  active,
-  ...rest
-}: DockItemProps) {
+export const DockItem = forwardRef<HTMLButtonElement | HTMLDivElement, DockItemProps>(function DockItem(
+  {
+    children,
+    className,
+    onClick,
+    active,
+    style,
+    ...rest
+  },
+  ref,
+) {
   const dock = useContext(DockContext)
   const reduce = useReducedMotion()
   const size = dock?.size ?? 44
@@ -68,7 +79,7 @@ export function DockItem({
       className="absolute inset-0.5 -z-10 rounded-[inherit] bg-primary/5"
     />
   ) : null
-  const sharedStyle = { width: size, height: size }
+  const sharedStyle = { ...style, width: size, height: size }
   const sharedClass = cn(
     "relative flex shrink-0 items-center justify-center rounded-[10px] text-foreground",
     className,
@@ -77,9 +88,9 @@ export function DockItem({
   if (onClick) {
     return (
       <button
+        ref={ref as Ref<HTMLButtonElement>}
         type="button"
         onClick={onClick}
-        aria-label={rest["aria-label"]}
         aria-pressed={active}
         style={sharedStyle}
         className={cn(
@@ -87,6 +98,7 @@ export function DockItem({
           "cursor-pointer border-0 bg-transparent p-0 outline-none",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
+        {...(rest as HTMLAttributes<HTMLButtonElement>)}
       >
         {pill}
         {children}
@@ -96,12 +108,12 @@ export function DockItem({
 
   // Children carry their own link or button (and its accessible name).
   return (
-    <div style={sharedStyle} className={sharedClass}>
+    <div ref={ref as Ref<HTMLDivElement>} style={sharedStyle} className={sharedClass} {...(rest as HTMLAttributes<HTMLDivElement>)}>
       {pill}
       {children}
     </div>
   )
-}
+})
 
 export function DockSeparator({ className }: { className?: string }) {
   return (

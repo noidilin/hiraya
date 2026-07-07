@@ -27,15 +27,20 @@ const defaultLessonsHref = `/chapters/${firstLabTopic.chapterId}/topics/${firstL
 
 function DockTooltip({
   label,
+  description,
   children,
 }: {
-  label: string
+  label: React.ReactNode
+  description?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="bottom">{label}</TooltipContent>
+      <TooltipContent side="bottom" className={description ? "max-w-64 flex-col items-start gap-1.5" : undefined}>
+        <span>{label}</span>
+        {description ? <span className="max-w-56 text-[11px] leading-4 text-muted-foreground">{description}</span> : null}
+      </TooltipContent>
     </Tooltip>
   )
 }
@@ -53,10 +58,11 @@ export function GlobalDock({
   const localeLabel = locale === "en" ? "EN" : "TW"
   const localeAriaLabel =
     locale === "en" ? t("common.language.switchToTraditionalChinese") : t("common.language.switchToEnglish")
+  const localeTooltipWarning = t("common.language.zhTWMachineTranslationWarning")
 
   return (
     <Dock size={32} className={cn("gap-1 rounded-xl bg-card/92 px-1 py-0.5 shadow-xl", className)}>
-      <DockTooltip label={localeAriaLabel}>
+      <DockTooltip label={localeAriaLabel} description={localeTooltipWarning}>
         <DockItem
           aria-label={localeAriaLabel}
           onClick={() => onLocaleChange(nextLocale)}

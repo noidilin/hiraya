@@ -14,6 +14,7 @@ export const resources = {
         language: {
           switchToTraditionalChinese: 'Switch locale to Traditional Chinese',
           switchToEnglish: 'Switch locale to English',
+          zhTWMachineTranslationWarning: 'Note: zh-TW copy is LLM-translated and pending human review.',
         },
         nav: {
           chapters: 'Chapters',
@@ -81,6 +82,8 @@ export const resources = {
             frameLabel: 'Brief proof video · YouTube walkthrough',
             missingTitle: 'YouTube walkthrough slot',
             missingDescription: 'Add the final YouTube URL or embed ID to the content slot after the redacted walkthrough is uploaded.',
+            workInProgressNotice:
+              'Temporary note: this YouTube walkthrough is still a work in progress. Other routes already include video clips and screenshots as evidence previews.',
             walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief route anchor',
             youtubeBadge: 'YouTube',
@@ -203,6 +206,7 @@ export const resources = {
         language: {
           switchToTraditionalChinese: '切換語言為繁體中文',
           switchToEnglish: '切換語言為英文',
+          zhTWMachineTranslationWarning: '提醒：zh-TW 內容目前由 LLM 翻譯，尚待人工審閱。',
         },
         nav: {
           chapters: '章節',
@@ -270,6 +274,8 @@ export const resources = {
             frameLabel: 'Brief 證明影片 · YouTube walkthrough',
             missingTitle: 'YouTube walkthrough slot',
             missingDescription: '上傳 redacted walkthrough 後，把 YouTube URL 或 embed ID 加到 content slot。',
+            workInProgressNotice:
+              '暫時註記：這支 YouTube walkthrough 仍在製作中；其他路線已先放入影片片段與截圖作為證據預覽。',
             walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief 路由錨點',
             youtubeBadge: 'YouTube',
