@@ -161,17 +161,17 @@ function AuthorityLane({
 
   return (
     <section
-      className="grid gap-4 border border-border/75 bg-background/45 p-4 transition-colors"
+      className="grid min-w-0 gap-4 border border-border/75 bg-background/45 p-4 transition-colors"
       aria-label={`${lane.label} ${content.chrome.laneAriaSuffix}`}
     >
-      <div className="grid gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
-        <div className="border-b border-border/70 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <div className="min-w-0 border-b border-border/70 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{content.chrome.activePathLabel}</p>
           <h3 className="mt-1.5 text-lg font-semibold tracking-normal text-foreground">{lane.label}</h3>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{lane.summary}</p>
         </div>
 
-        <div className="overflow-x-auto pb-1">
+        <div className="min-w-0 overflow-x-auto pb-1">
           <StageTimeline stages={lane.stages} connectors={lane.connectors} activeConnectorIds={activeConnectorIds} />
           <div
             className="mt-3 grid min-w-[62rem] items-stretch gap-3"
@@ -287,7 +287,7 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
 
   return (
     <HirayaSectionShell
-      className={cn('overflow-hidden', className)}
+      className={cn('min-w-0 overflow-hidden', className)}
       eyebrow={content.chrome.eyebrow}
       title={content.title}
       description={content.summary}
@@ -300,7 +300,7 @@ export function SdlcAuthorityFlow({ content, className }: SdlcAuthorityFlowProps
       <div className="relative overflow-hidden bg-card/80">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border),transparent_64%)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border),transparent_70%)_1px,transparent_1px)] bg-[size:24px_24px] opacity-25" />
 
-        <div className="relative p-5">
+        <div className="relative min-w-0 p-5">
           <AuthorityLane
             lane={selectedLane}
             activeLaneId={activeLaneId}

@@ -39,14 +39,14 @@ export function SdlcDeliveryGuardrailBoard({ content, authorityFlow, className }
   const selectedGuardrailIndex = selectedGuardrail ? guardrails.findIndex((guardrail) => guardrail.id === selectedGuardrail.id) : -1
 
   return (
-    <HirayaSectionFrame className={className}>
+    <HirayaSectionFrame className={cn('min-w-0', className)}>
       <HirayaSectionHeader
         eyebrow={content.eyebrow}
         title={content.title}
         description={content.description}
       />
-      <div className="grid gap-4 p-5 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start">
-        <div className="grid gap-2">
+      <div className="grid min-w-0 gap-4 p-5 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start">
+        <div className="grid min-w-0 gap-2">
           {guardrails.map((guardrail, index) => {
             const expanded = guardrail.id === expandedId
 
@@ -82,7 +82,7 @@ export function SdlcDeliveryGuardrailBoard({ content, authorityFlow, className }
         {selectedGuardrail ? (
           <section
             id="guardrail-detail-panel"
-            className="border border-border bg-background/78 xl:sticky xl:top-24"
+            className="min-w-0 border border-border bg-background/78 xl:sticky xl:top-24"
             aria-label={`${selectedGuardrail.rule} details`}
           >
             <div className="border-b border-border bg-muted/35 p-4">

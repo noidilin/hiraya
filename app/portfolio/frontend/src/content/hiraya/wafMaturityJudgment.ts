@@ -154,7 +154,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
           title: 'Private backend boundary',
           summary:
             'The Storefront enters through the shared public edge while backend services and PostgreSQL stay behind private Kubernetes services.',
-          evidenceRefs: ['p0-public-ingress', 'p1-private-workloads'],
+          evidenceRefs: ['p0-public-ingress'],
           sourceRefs: ['docs/portfolio/ARCHITECTURE.md'],
         },
       ],
@@ -260,7 +260,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
           title: 'Inspectable service paths',
           summary:
             'Service decomposition, gateway aggregation, same-origin proxying, and public smoke checks make request behavior legible.',
-          evidenceRefs: ['p0-public-ingress', 'p2-deploy-smoke'],
+          evidenceRefs: ['p0-public-ingress'],
           sourceRefs: ['docs/portfolio/ARCHITECTURE.md', 'app/portfolio/frontend/docs/presentation-en.md'],
         },
         {

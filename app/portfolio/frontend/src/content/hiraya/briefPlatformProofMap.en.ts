@@ -392,7 +392,7 @@ export const briefPlatformProofMapContentEn = {
       role: 'proof',
       posture: 'release proof',
       position: { x: 1290, y: 495 },
-      sourceRefs: ['.github/workflows/deploy-smoke.yml', 'docs/evidence-checklist.md#p2-deploy-smoke'],
+      sourceRefs: ['.github/workflows/deploy-smoke.yml', 'docs/evidence-checklist.md#p0-public-ingress'],
     },
   ],
   edges: [
@@ -448,7 +448,7 @@ export const briefPlatformProofMapContentEn = {
         'private-runtime',
         'runtime-state',
       ],
-      evidenceRefs: ['p0-public-ingress', 'p1-private-workloads'],
+      evidenceRefs: ['p0-public-ingress'],
       nextRoute: 'arch',
     },
     {
@@ -467,7 +467,7 @@ export const briefPlatformProofMapContentEn = {
         'vintage-workload',
         'smoke-evidence',
       ],
-      evidenceRefs: ['p0-cicd-delivery-flow', 'p1-rollback-path', 'p2-deploy-smoke'],
+      evidenceRefs: ['p0-cicd-delivery-flow', 'p1-rollback-path'],
       nextRoute: 'sdlc',
     },
     {
@@ -507,7 +507,7 @@ export const briefPlatformProofMapContentEn = {
         'smoke-evidence',
         'storefront-endpoint',
       ],
-      evidenceRefs: ['p0-argocd-app-of-apps', 'p1-grafana', 'p2-deploy-smoke'],
+      evidenceRefs: ['p0-argocd-app-of-apps', 'p1-grafana'],
       nextRoute: 'waf',
     },
   ],
