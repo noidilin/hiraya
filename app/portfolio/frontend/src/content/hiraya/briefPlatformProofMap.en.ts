@@ -2,11 +2,11 @@ import type { BriefPlatformProofMapContent } from './briefPlatformProofMap'
 
 export const briefPlatformProofMapContentEn = {
   eyebrow: 'Platform Proof Map',
-  title: 'One map from source authority to public proof',
+  title: 'One map from source change to public proof',
   summary:
-    'The Brief route uses this graph to show why Hiraya is a rebuildable dev-platform demonstration rather than a static page or isolated app demo.',
+    'This graph shows why Hiraya is a rebuildable DevOps platform demonstration rather than a static page or isolated app demo.',
   mapClaim:
-    'Reviewed source changes can become artifacts, accepted GitOps desired state, EKS workloads, public HTTPS behavior, and observable evidence without making manual cluster mutation the default story.',
+    'Reviewed source changes become artifacts, accepted GitOps desired state, EKS workloads, public HTTPS behavior, and observable evidence without relying on manual cluster mutation.',
   zones: [
     {
       id: 'source-delivery',
@@ -41,7 +41,7 @@ export const briefPlatformProofMapContentEn = {
       id: 'repo-change',
       zoneId: 'source-delivery',
       label: 'Repository change',
-      detail: 'Application, GitOps, or infrastructure intent starts as reviewed source instead of a console mutation.',
+      detail: 'Application, GitOps, or infrastructure intent starts as reviewed source instead of console mutation.',
       code: 'git',
       kind: 'actor',
       role: 'authority',
@@ -297,7 +297,7 @@ export const briefPlatformProofMapContentEn = {
       id: 'portfolio-visitor',
       zoneId: 'platform-proof',
       label: 'Portfolio visitor',
-      detail: 'Reviewer or user who validates the public Storefront behavior through HTTPS without receiving operational access.',
+      detail: 'Reviewer who validates public Storefront behavior through HTTPS without receiving operational access.',
       code: 'user',
       kind: 'actor',
       role: 'proof',
@@ -321,7 +321,7 @@ export const briefPlatformProofMapContentEn = {
       id: 'vintage-workload',
       zoneId: 'platform-proof',
       label: 'Vintage workload',
-      detail: 'Compact proof that the platform runs a real application path. Internal microservice details are intentionally summarized here and expanded on the Architecture route.',
+      detail: 'Compact proof that the platform runs a real application path. Internal microservice details are summarized here and expanded on the Architecture route.',
       code: 'vintage',
       kind: 'system',
       role: 'runtime',
@@ -347,7 +347,7 @@ export const briefPlatformProofMapContentEn = {
       id: 'runtime-state',
       zoneId: 'platform-proof',
       label: 'Runtime state',
-      detail: 'vintage-postgres and materialized runtime dependencies prove the workload has state and backing services without making service internals the Brief-level focus.',
+      detail: 'vintage-postgres and materialized runtime dependencies show that the workload has state and backing services without making service internals the Brief-level focus.',
       code: 'db + refs',
       kind: 'environment',
       role: 'runtime',
