@@ -77,15 +77,15 @@ export const hirayaPagesZhTW = [
     eyebrow: '方案概覽',
     title: '可重建的 Hiraya DevOps 平台',
     summary:
-      'Hiraya 在 AWS 上展示二手古著電商微服務系統，整合 EKS、Terraform、GitHub Actions、Argo CD 與 Prometheus/Grafana。',
+      'Hiraya 是一個以古著電商 demo 為核心的可重建 AWS/EKS DevOps 平台，串起 Terraform、GitHub Actions、Argo CD 與 Prometheus/Grafana。',
     thesis:
-      '這是一個 portfolio 等級的 Dev 環境，透過可重建的微服務系統證明 cloud platform design、IaC、CI/CD、GitOps 與 observability 的落地能力。',
+      '這個專案呈現實務 platform engineering：在一個可重建的微服務環境中，整合 cloud architecture、IaC、CI/CD 權責邊界、GitOps 交付與 observability。',
     proofPoints: [
       {
         id: 'dev-platform-scope',
         title: 'Dev platform，而非 Production 包裝',
         summary:
-          '頁面應清楚定位 Hiraya 是 dev-only、可重建的 AWS/EKS platform，用來展示真實 platform engineering 決策，而不是過度宣稱 production readiness。',
+          'Hiraya 被刻意定位為 dev-only、可重建的 AWS/EKS platform：足以展示真實工程決策，但不宣稱 production readiness。',
       },
       {
         id: 'delivery-platform-proof',
@@ -98,7 +98,7 @@ export const hirayaPagesZhTW = [
         id: 'runtime-proof',
         title: 'Runtime 證明 cloud-native 邊界',
         summary:
-          'Public HTTPS endpoints、private ClusterIP services、shared ingress、Secrets Manager integration 與 Grafana dashboards，顯示這不只是 static frontend。',
+          'Public HTTPS endpoints、private ClusterIP services、shared ingress、Secrets Manager integration 與 Grafana dashboards，顯示這是一個可運作的 cloud platform，而不是 static site。',
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
@@ -109,7 +109,7 @@ export const hirayaPagesZhTW = [
         status: 'planned',
         title: 'YouTube project walkthrough 影片',
         description:
-          'Brief route 預留一個外部 walkthrough，串起 delivery、rollback 與 destroy/cost-governance proof，同時不把影片檔 commit 到 repository。',
+          '一支精簡的外部 walkthrough 會串起完整專案故事：delivery、rollback 與 destroy/cost-governance proof，同時避免把大型影片檔放進 repository。',
         evidenceRefs: ['p0-cicd-delivery-flow'],
       },
     ],
@@ -134,9 +134,9 @@ export const hirayaPagesZhTW = [
       {
         id: 'operating-principles',
         eyebrow: '設計理念',
-        title: '系統需要讓四個承諾變得可見',
+        title: '平台讓四個工程承諾變得可見',
         body:
-          '此路線應讓架構看起來像一套工程系統，而不是工具清單。每個頁面都應呈現一次變更如何被重建、檢查、觀測與回復。',
+          '架構被解釋成一套工程系統，而不是工具清單。每個頁面都呈現一次變更如何被重建、檢查、觀測與回復。',
         bullets: [
           'Rebuildability：Terraform 建置 AWS foundation、EKS、bootstrap resources、IRSA 與 secrets integration。',
           'Verifiability：GitHub Actions 驗證 pull requests、建置 images、render manifests，並記錄 deployment evidence。',
@@ -170,7 +170,7 @@ export const hirayaPagesZhTW = [
     summary:
       '整體架構結合 public HTTPS edge、private EKS workloads、GitOps 管理的 manifests、外部化 secrets，以及刻意界定範圍的 observability surfaces。',
     thesis:
-      'Hiraya 應呈現真實 cloud platform boundary：公網會經由 shared ingress path 進入 Storefront 與 review surfaces，而 backend services、data、secrets 與 raw metrics 保持在受控的 Kubernetes 與 AWS layers 之後。',
+      'Hiraya 展示清楚的 cloud boundaries：公網流量會經由 shared ingress path 進入 Storefront 與 review surfaces，而 backend services、data、secrets 與 raw metrics 保持在受控的 Kubernetes 與 AWS layers 之後。',
     metrics: [
       {
         label: 'Ownership model',
@@ -283,7 +283,7 @@ export const hirayaPagesZhTW = [
       {
         label: '24/7 estimate',
         value: '$180-215',
-        note: '流量與 data-transfer 變動前的粗估月費；實際值應以 Cost Explorer 檢查。',
+        note: '流量與 data-transfer 變動前的粗估月費；實際支出的 source of truth 是 Cost Explorer。',
       },
     ],
     sections: [
@@ -349,7 +349,7 @@ export const hirayaPagesZhTW = [
         eyebrow: '成本模型',
         title: '粗估 24/7 月成本',
         body:
-          '實際成本應透過 AWS Pricing Calculator、Cost Explorer UnblendedCost、AWS Budgets 與 right-sizing recommendations 驗證。',
+          '實際成本會透過 AWS Pricing Calculator、Cost Explorer UnblendedCost、AWS Budgets 與 right-sizing recommendations 驗證。',
         table: {
           columns: ['成本項目', '估算假設', '預估月費', '合理性說明'],
           rows: [
@@ -377,7 +377,7 @@ export const hirayaPagesZhTW = [
     summary:
       'Hiraya 將 validation、artifact publishing、manifest promotion、infrastructure delivery 與 rollback 分成責任清楚的控制路徑。',
     thesis:
-      '此路線強調 CI 不直接取得部署權限；CI 產生證據與 proposed desired-state changes，reviewed Git changes 合併後再由 Argo CD 收斂 cluster。',
+      'SDLC model 清楚呈現一件事：CI 產生證據與 proposed desired-state changes，而 reviewed Git 與 Argo CD 擁有通往 runtime deployment 的路徑。',
     metrics: [
       {
         label: 'Authority lanes',
@@ -443,9 +443,9 @@ export const hirayaPagesZhTW = [
     eyebrow: 'AWS Well-Architected',
     title: '以六大支柱檢視 Hiraya',
     summary:
-      'Well-Architected 對應說明每個設計選擇的重要性，以及 Dev 環境下一步應強化的位置。',
+      'Well-Architected 對應說明每個設計選擇的重要性，以及 Dev 環境下一步需要強化的位置。',
     thesis:
-      'WAF 路線將 implementation details 轉換為 engineering judgment：目前強項、刻意接受的 Dev 取捨，以及進入 Production 前需要改善的項目。',
+      'WAF 路線將 implementation details 轉換為 engineering judgment：目前強項、刻意接受的 Dev 取捨，以及進入 Production 前需要改善的位置。',
     metrics: [
       {
         label: 'Review scope',

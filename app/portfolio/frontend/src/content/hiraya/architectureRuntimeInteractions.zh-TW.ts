@@ -2,8 +2,8 @@ import type { ArchitectureRuntimeInteractionsContent } from './architectureRunti
 
 export const architectureRuntimeInteractionsContentZhTW: ArchitectureRuntimeInteractionsContent = {
   routeId: 'arch',
-  title: '讓 traffic、services 與 secrets 留在正確邊界內',
-  summary: '當 ownership 與 exposure 已經清楚後，這個 Runtime Interaction inspector 說明 public Storefront、private services 與 materialized runtime secrets 如何互動，而不是把每個 boundary 都公開。',
+  title: '讓 traffic、services 與 secrets 留在正確邊界',
+  summary: '當 ownership 與 exposure 已經清楚後，這個視圖說明 public Storefront、private services 與 materialized runtime secrets 如何互動，而不是把每個 boundary 都公開。',
   chrome: {
     eyebrow: 'Runtime interaction',
     tabs: { 'request-paths': 'Request paths', 'secret-materialization': 'Secret materialization' },
@@ -61,7 +61,7 @@ export const architectureRuntimeInteractionsContentZhTW: ArchitectureRuntimeInte
       { id: 'gateway', name: 'gateway', status: 'active', responsibility: '聚合 private services 的 backend API routing。', kubernetesType: 'Deployment + Service', port: '3001', exposure: 'ClusterIP', participatesIn: ['/api/auth/*', '/api/products', '/api/orders/*', '/api/users/*'] },
       { id: 'auth', name: 'auth', status: 'active', responsibility: '處理 login、registration 與 authentication responses。', kubernetesType: 'Deployment + Service', port: '3002', exposure: 'ClusterIP', participatesIn: ['/api/auth/*'] },
       { id: 'product-service', name: 'product-service', status: 'active', responsibility: '擁有 Hiraya Furugi Catalog API，提供 product browsing 與 detail data。', kubernetesType: 'Deployment + Service', port: '3003', exposure: 'ClusterIP', participatesIn: ['/api/products', 'orders product lookup'] },
-      { id: 'orders', name: 'orders', status: 'active', responsibility: '擁有 active Storefront checkout 與 order-history API contract。', kubernetesType: 'Deployment + Service', port: '3005', exposure: 'ClusterIP', participatesIn: ['/api/orders', '/api/orders/my-orders'], notes: '目前 dev contract 在部分 order ownership behavior 仍 client-gated；不要解讀成 production auth hardening。' },
+      { id: 'orders', name: 'orders', status: 'active', responsibility: '擁有 active Storefront checkout 與 order-history API contract。', kubernetesType: 'Deployment + Service', port: '3005', exposure: 'ClusterIP', participatesIn: ['/api/orders', '/api/orders/my-orders'], notes: '這個 dev contract 仍讓部分 order ownership behavior 維持 client-gated，因此 production-grade authorization 仍是 hardening item。' },
       { id: 'vintage-postgres', name: 'vintage-postgres', status: 'data', responsibility: '保存 authentication、catalog、users 與 orders 的 disposable dev data。', kubernetesType: 'StatefulSet + Headless Service + PVC', port: '5432', exposure: 'Private headless service', participatesIn: ['runtime database access'], notes: '對 rebuildable dev platform 有用；不是 production HA database claim。' },
     ],
   },
@@ -79,7 +79,7 @@ export const architectureRuntimeInteractionsContentZhTW: ArchitectureRuntimeInte
     nonClaims: [
       '這張圖刻意只解釋 materialization，不展示 secret values 或 individual keys。',
       'refreshInterval: 1h 是 reconciliation behavior，不是 rotation guarantee。',
-      '這個 component 不聲稱已具備 automated rotation，或超出 manifests 與 IAM policy 所示範圍的 production-grade audit hardening。',
+      '這個視圖示範 runtime materialization；automated rotation 與 production-grade audit hardening 仍是 future work。',
     ],
   },
 }

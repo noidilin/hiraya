@@ -264,18 +264,18 @@ export const resources = {
             screenshot: '證據圖片',
           },
           placeholder: {
-            videoSlot: '影片證據槽',
-            videoDescription: '把影片來源接到 evidence manifest 後，這張支援卡就會變成可播放的 walkthrough。',
+            videoSlot: '影片證據預覽',
+            videoDescription: '整理好的 video evidence 可用時，這張支援卡就會變成可播放的 walkthrough。',
           },
           briefVideo: {
             title: 'YouTube project walkthrough',
-            fallbackCaption: '單一外部 walkthrough 讓 Brief route 維持證據導向，同時避免把大型影片檔 commit 到 portfolio repo。',
+            fallbackCaption: '一支聚焦的外部 walkthrough 會把 Brief route 連到 delivery、rollback 與 cost-governance evidence。',
             stages: ['PR 驗證', '映像檔發布', 'Manifest 升版', 'Argo CD 同步', 'Rollback 與 destroy'],
             frameLabel: 'Brief 證明影片 · YouTube walkthrough',
-            missingTitle: 'YouTube walkthrough slot',
-            missingDescription: '上傳 redacted walkthrough 後，把 YouTube URL 或 embed ID 加到 content slot。',
+            missingTitle: 'Walkthrough 即將推出',
+            missingDescription: '一支精簡的 YouTube walkthrough 會在準備好後串起 delivery、rollback 與 cost-control evidence。',
             workInProgressNotice:
-              '暫時註記：這支 YouTube walkthrough 仍在製作中；其他路線已先放入影片片段與截圖作為證據預覽。',
+              'Architecture、SDLC、Cost 與 Well-Architected 區段已提供各路線的影片與截圖證據。',
             walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief 路由錨點',
             youtubeBadge: 'YouTube',
@@ -316,13 +316,13 @@ export const resources = {
         },
         proofPoints: {
           eyebrow: '證據重點',
-          title: '主張都連到可檢視的實作證據',
-          description: '每張卡片都把 portfolio 主張整理成可透過證據清單或未來媒體預覽檢查的內容。',
+          title: '主張都連到實作證據',
+          description: '每張卡片都把 portfolio 主張整理成 reviewers 可透過 implementation evidence 檢查的內容。',
         },
         mediaSlots: {
           eyebrow: '證據媒體',
-          title: '規劃中的媒體槽會以安全 placeholder 呈現',
-          description: '截圖、架構圖與影片是漸進增強項目。在整理好的素材存在前，頁面會顯示明確 placeholder，而不是載入破損 embed。',
+          title: '證據媒體保持明確且可審查',
+          description: '截圖、架構圖與影片在素材整理完成後支撐說明。在此之前，頁面會顯示清楚的可用狀態，而不是載入破損 embed。',
           status: {
             planned: '規劃中',
             placeholder: 'Placeholder',
@@ -335,7 +335,7 @@ export const resources = {
           },
           reservedArchitectureFrame: '預留架構圖框架',
           curatedMediaSlot: '策展媒體槽',
-          missingMediaDescription: '素材可在之後接上，不需要改動內容契約。缺少的媒體會刻意不載入。',
+          missingMediaDescription: '這個 media item 尚未可用；周圍說明仍可獨立閱讀。'
         },
         flow: {
           eyebrow: '交付流程',

@@ -2,8 +2,8 @@ import type { ExposureBoundaryContent } from './architectureExposureBoundaries'
 
 export const exposureBoundaryContentZhTW: ExposureBoundaryContent = {
   routeId: 'arch',
-  title: 'Architecture exposure boundary matrix',
-  summary: '釐清哪些 Hiraya surfaces 會透過 shared public Gateway 發佈，哪些維持 ClusterIP-only，以及哪些是為 portfolio review 刻意公開的 demo-facing operations surfaces。',
+  title: 'Exposure boundary matrix',
+  summary: '釐清哪些 Hiraya surfaces 會透過 shared Gateway 對外開放，哪些維持 ClusterIP-only，以及哪些只為 portfolio review 公開。',
   chrome: {
     eyebrow: 'Exposure boundary',
     filterEyebrow: 'table filter',
@@ -23,7 +23,7 @@ export const exposureBoundaryContentZhTW: ExposureBoundaryContent = {
     {
       id: 'public-user-entry',
       label: 'Public user entry',
-      summary: '提供給 Portfolio Visitors 與一般 demo usage 的 surfaces。',
+      summary: '提供給 Portfolio Visitors 與一般 demo 使用的 surfaces。',
       rows: [
         {
           id: 'hiraya-furugi-storefront',
@@ -71,7 +71,7 @@ export const exposureBoundaryContentZhTW: ExposureBoundaryContent = {
       label: 'Private service',
       summary: '與 portfolio 相關的 application services 透過 Kubernetes service discovery 在 cluster 內可達，不直接從 internet 進入。',
       rows: [
-        { id: 'gateway', surface: 'gateway', exposureClass: 'private-service', entryMechanism: 'ClusterIP Service on 3001 behind the Storefront nginx /api proxy', boundaryReason: '聚合 backend APIs，但不成為 public LoadBalancer。', devTradeoff: '適合 demo scope 的 simple internal gateway。' },
+        { id: 'gateway', surface: 'gateway', exposureClass: 'private-service', entryMechanism: 'ClusterIP Service on 3001 behind the Storefront nginx /api proxy', boundaryReason: '聚合 backend APIs，但不成為 public LoadBalancer。', devTradeoff: '符合 demo scope 的 simple internal gateway。' },
         { id: 'auth', surface: 'auth', exposureClass: 'private-service', entryMechanism: 'ClusterIP service', boundaryReason: 'Authentication service 只允許 internal callers 觸達。', devTradeoff: 'Demo auth boundary；production 會深化 identity/session controls。' },
         { id: 'product-service', surface: 'product-service', exposureClass: 'private-service', entryMechanism: 'ClusterIP service', boundaryReason: 'Catalog API 維持在 gateway path 後方 private。', devTradeoff: '為 platform demonstration 最佳化，而不是獨立 public API exposure。' },
         { id: 'orders', surface: 'orders', exposureClass: 'private-service', entryMechanism: 'ClusterIP Service on 3005, selected by gateway /api/orders routes', boundaryReason: '擁有 active Storefront checkout 與 order-history API，但不直接公開。', devTradeoff: 'Active demo contract；server-side order authorization 仍是 hardening item。' },

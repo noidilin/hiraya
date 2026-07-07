@@ -27,7 +27,7 @@ const zoneCopy: Record<BriefProofMapZoneId, Pick<BriefPlatformProofMapContent['z
 const nodeCopy: Record<BriefProofMapNodeId, Pick<BriefPlatformProofMapContent['nodes'][number], 'label' | 'detail' | 'posture'>> = {
   'repo-change': {
     label: 'Repository change',
-    detail: 'Application、GitOps 或 infrastructure intent 先從可 review 的 source 開始，而不是 console mutation。',
+    detail: 'Application、GitOps 或 infrastructure intent 先從可 review 的 source 開始，而不是從 console mutation 開始。',
     posture: 'reviewable source',
   },
   'github-actions': {
@@ -127,7 +127,7 @@ const nodeCopy: Record<BriefProofMapNodeId, Pick<BriefPlatformProofMapContent['n
   },
   'portfolio-visitor': {
     label: 'Portfolio Visitor',
-    detail: 'Reviewer 或 visitor 透過 HTTPS 驗證 public Storefront behavior，但不取得 operational access。',
+    detail: 'Reviewer 透過 HTTPS 驗證 public Storefront behavior，但不取得 operational access。',
     posture: 'public client',
   },
   'storefront-endpoint': {
@@ -137,7 +137,7 @@ const nodeCopy: Record<BriefProofMapNodeId, Pick<BriefPlatformProofMapContent['n
   },
   'vintage-workload': {
     label: 'Vintage workload',
-    detail: '證明平台確實執行 real application path 的精簡節點。內部 microservice details 在 Brief 先摘要，Architecture route 再展開。',
+    detail: '精簡呈現平台確實執行 real application path。內部 microservice details 在 Brief 先摘要，Architecture route 再展開。',
     posture: 'application behavior',
   },
   'private-runtime': {
@@ -147,7 +147,7 @@ const nodeCopy: Record<BriefProofMapNodeId, Pick<BriefPlatformProofMapContent['n
   },
   'runtime-state': {
     label: 'Runtime state',
-    detail: 'vintage-postgres 與 materialized runtime dependencies 證明 workload 有 state 與 backing services，但 Brief 不把 service internals 當焦點。',
+    detail: 'vintage-postgres 與 materialized runtime dependencies 顯示 workload 有 state 與 backing services，但 Brief 不把 service internals 當焦點。',
     posture: 'private data',
   },
   'vintage-secrets': {
@@ -227,11 +227,11 @@ const lensCopy: Record<BriefProofMapLensId, Pick<BriefPlatformProofMapContent['l
 
 export const briefPlatformProofMapContentZhTW = {
   eyebrow: 'Platform Proof Map',
-  title: '從 source authority 到 public proof 的一張地圖',
+  title: '從 source change 到 public proof 的一張地圖',
   summary:
-    'Brief route 用這張 graph 說明 Hiraya 為什麼是可重建的 dev-platform demonstration，而不是 static page 或孤立的 app demo。',
+    '這張 graph 說明 Hiraya 為什麼是可重建的 DevOps platform demonstration，而不是 static page 或孤立的 app demo。',
   mapClaim:
-    'Reviewed source changes 可以變成 artifacts、accepted GitOps desired state、EKS workloads、public HTTPS behavior 與 observable evidence；預設故事不需要 manual cluster mutation。',
+    'Reviewed source changes 會變成 artifacts、accepted GitOps desired state、EKS workloads、public HTTPS behavior 與 observable evidence，而不依賴 manual cluster mutation。',
   zones: briefPlatformProofMapContentEn.zones.map((zone) => ({
     ...zone,
     ...zoneCopy[zone.id],

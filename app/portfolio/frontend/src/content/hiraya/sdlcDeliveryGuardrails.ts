@@ -153,14 +153,14 @@ const guardrailZhTW: Record<SdlcDeliveryGuardrailId, Pick<SdlcDeliveryGuardrail,
     allowedAction: 'Pull request automation 可以分類變更、執行 checks、驗證 rendered manifests，並產生 review evidence。',
     forbiddenShortcut: '不要讓 PR checks 擁有 cloud write authority，也不要讓未審查 branches 變更 AWS、ECR、GitOps state 或 live cluster。',
     handoffResult: '一份可審查的證據包，可支援 merge decision，但本身不成為 deployment authority。',
-    shortcutRisk: '如果 validation jobs 可以寫入 cloud 或 cluster state，受入侵或錯誤的 PR path 就可能繞過 review，把證據收集變成 mutation。',
+    shortcutRisk: '如果 validation jobs 可以寫入 cloud 或 cluster state，受入侵或錯誤的 PR path 就可能繞過 review，把 checks 變成 mutation。',
   },
   'immutable-artifacts-first': {
     rule: '先發布 immutable artifacts，再部署',
     allowedAction: 'Image workflow 可以 assume scoped OIDC role、建置受影響服務，並將 commit-SHA images 推送到 ECR。',
     forbiddenShortcut: '不要讓 image publishing 同時核准 runtime desired state、patch Kubernetes，或取代 reviewed manifest promotion。',
     handoffResult: '一個可部署 image reference，promotion automation 可將它轉成 GitOps manifest proposal。',
-    shortcutRisk: 'Artifact creation 與 deployment approval 是不同權力；合併兩者會讓每次成功 build 都可能變成 runtime change。',
+    shortcutRisk: 'Artifact creation 與 deployment approval 是不同權力；合併兩者可能讓每次成功 build 都變成 runtime change。',
   },
   'git-as-deployment-contract': {
     rule: 'Git 是 deployment 契約',
@@ -187,9 +187,9 @@ const guardrailZhTW: Record<SdlcDeliveryGuardrailId, Pick<SdlcDeliveryGuardrail,
 
 const sdlcDeliveryGuardrailContentZhTW: SdlcDeliveryGuardrailBoardContent = {
   eyebrow: 'Delivery Guardrails',
-  title: '五項避免 CI 變成部署權限的 Delivery Guardrails',
+  title: '五項避免 CI 變成部署權限的決策',
   description:
-    '每項 guardrail 都說明 delivery actor 可以做什麼、刻意禁止哪個 shortcut，以及哪個 handoff result 證明權責仍留在正確邊界。',
+    '每項 guardrail 都說明 delivery actor 可以做什麼、禁止哪個 shortcut，以及哪個 handoff result 證明權責仍留在正確邊界。',
   chrome: {
     eyebrow: 'Delivery Guardrails',
     guardrailLabel: 'Guardrail',

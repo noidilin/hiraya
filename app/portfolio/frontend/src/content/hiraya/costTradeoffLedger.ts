@@ -256,7 +256,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
   ...costCapacityTradeoffLedgerContentEn,
   title: '容量取捨帳本',
   summary:
-    'Hiraya 為 managed Kubernetes、private-subnet egress 與 public HTTPS proof 付出固定成本；透過 Spot capacity、shared ingress 與可重建性節省支出；並在加入更多平台能力前，讓 pod-density risk 保持可見。',
+    'Hiraya 明確呈現成本決策：為 managed Kubernetes、private-subnet egress 與 public HTTPS proof 付出固定成本；透過 Spot capacity、shared ingress 與可重建性節省支出；並在加入更多平台能力前，讓 pod-density risk 保持可見。',
   tabs: {
     tradeoffAnalysis: { label: '取捨分析' },
     estimateDetails: { label: '估算細節' },
@@ -309,9 +309,9 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
       podsUnitLabel: '個 Pod',
       slotsUnitLabel: '個槽位',
       capacityWord: 'capacity',
-      gapTitle: '需要持續看見的缺口',
+      gapTitle: '需要觀察的容量缺口',
       gapDescription:
-        'Desired size 已經指向三台節點，但 minSize 仍是 2、maxSize 仍是 3。這代表 scale-down 可能移除唯一安全的 pod-density floor，而且沒有第四台節點可作為 Spot replacement 或 rollout overlap 的緩衝。',
+        'Desired size 已經指向三台節點，但 minSize 仍是 2、maxSize 仍是 3。因此 scale-down 可能移除安全的 pod-density floor，而且沒有第四台節點可作為 Spot replacement 或 rollout overlap 的緩衝。'
     },
   },
   tradeoffs: [
@@ -319,7 +319,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
       ...costCapacityTradeoffLedgerContentEn.tradeoffs[0],
       label: 'EKS control plane',
       monthlyEstimate: '約 73 美元',
-      acceptedBenefit: '證明 Hiraya 跑在真實 managed Kubernetes control plane，而不是只能在本機展示的 demo。',
+      acceptedBenefit: '呈現 Hiraya 跑在真實 managed Kubernetes control plane，而不是只能在本機展示的 demo。',
       remainingRisk: '即使 application traffic 接近零，這筆成本仍會存在；因此環境必須刻意維持 dev scope 且可銷毀。',
     },
     {
@@ -356,7 +356,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
       label: 'Destroy workflow',
       acceptedBenefit: '讓 cost control 成為 disposable dev platform 的 operating model 一部分。',
       savingsMechanism: '透過可重建性與刻意 teardown 控制支出，而不是假裝平台是 production-always-on。',
-      remainingRisk: 'Destroyability 必須保留足夠 evidence 與 runbook clarity，避免 teardown 把 architecture proof 一起藏掉。',
+      remainingRisk: 'Destroyability 必須保留足夠 evidence 與 runbook clarity，避免 teardown 抹掉 architecture story。'
     },
   ],
   estimateRows: [
@@ -372,7 +372,7 @@ export const costCapacityTradeoffLedgerContentZhTW: CostCapacityTradeoffLedgerCo
   capacity: {
     ...costCapacityTradeoffLedgerContentEn.capacity,
     cpuMemoryPressureSummary:
-      'CPU 與記憶體目前不是最有意義的壓力訊號；t3.medium nodes 上的 Pod/IP density 才是。',
+      'CPU 與記憶體目前不是限制訊號；t3.medium nodes 上的 Pod/IP density 才是。',
     recommendedNextDecision: [
       '目前 functional testing setup 維持三台 t3.medium Spot nodes。',
       '考慮將 minSize 設為 3，避免 scale-down 到兩台節點後造成 pods 無處可排。',

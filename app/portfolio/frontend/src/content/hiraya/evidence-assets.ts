@@ -359,7 +359,7 @@ export const hirayaEvidenceAssetManifest = [
 const evidenceAssetZhTWText: Partial<Record<HirayaEvidenceItem['id'], Pick<HirayaEvidenceAsset, 'title' | 'caption'>>> = {
   'p0-cicd-delivery-flow': {
     title: '完整 CI/CD 交付流程',
-    caption: '以整理後的證據素材呈現 PR checks、image publishing、manifest promotion、Argo CD rollout 與 smoke verification。',
+    caption: '證據涵蓋 PR checks、image publishing、manifest promotion、Argo CD rollout 與 smoke verification。',
   },
   'p0-argocd-app-of-apps': {
     title: 'Argo CD App-of-Apps health',
@@ -387,7 +387,7 @@ const evidenceAssetZhTWText: Partial<Record<HirayaEvidenceItem['id'], Pick<Hiray
   },
   'p2-cost-destroy-workflow': {
     title: 'Cost control 與 destroy workflow',
-    caption: '支撐 dev platform 可銷毀、durable foundations 保留的 cost-governance proof。',
+    caption: '支撐 dev platform 可被銷毀、同時保留 durable foundations 的 cost-governance proof。',
   },
 }
 
