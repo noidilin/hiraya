@@ -392,9 +392,9 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
 
 const wafZhTWText = {
   eyebrow: 'Well-Architected 成熟度判斷',
-  title: '區分已被證明的強項、可接受的 dev 取捨，以及下一步強化路徑',
+  title: '已證明的強項、接受的取捨與強化路徑',
   summary:
-    'Hiraya 把六大支柱當成判斷板：每一列都說明目前有證據支持的強項、作為可拋棄 dev 平台刻意接受的限制，以及進入 production 前需要補強的方向。',
+    'Hiraya 把六大支柱當成判斷板：每一列都說明目前的強項、作為可拋棄 dev 平台接受的限制，以及進入 production 前需要補強的位置。',
   stateCopy: {
     'strong-now': {
       label: '目前強項',
@@ -419,7 +419,7 @@ const wafZhTWText = {
     pillarSwitcherLabel: 'Well-Architected 支柱切換器',
     detailPanelAriaSuffix: '成熟度細節',
     evidenceCarouselTitle: 'Well-Architected review 背後的證據',
-    evidenceCarouselDescription: '支柱 review 維持以判斷為主，截圖與影片則一次支撐一個 implementation claim。',
+    evidenceCarouselDescription: '支柱 review 維持以判斷為主，每個截圖或影片一次支撐一個 implementation claim。'
   },
 } satisfies Pick<WafMaturityJudgmentContent, 'eyebrow' | 'title' | 'summary' | 'stateCopy' | 'chrome'>
 
@@ -469,11 +469,11 @@ const wafItemZhTW: Record<string, Pick<WafMaturityItem, 'title' | 'summary'>> = 
   },
   'ops-dev-evidence-scope': {
     title: '證據優先，而非完整營運平台',
-    summary: '目前營運敘事強調 GitOps health、smoke checks 與 Grafana，而不是完整 incident automation 或 log ingestion。',
+    summary: '目前營運敘事強調 GitOps health、smoke checks 與 Grafana；完整 incident automation 與 log ingestion 仍是 future work。',
   },
   'ops-harden-incident-signals': {
     title: '擴充營運訊號',
-    summary: '在宣稱 production operations maturity 前，重新導入 deliberate log ingestion、alert routing、runbooks 與更強的 incident evidence。',
+    summary: '在宣稱 production operations maturity 前，加入 deliberate log ingestion、alert routing、runbooks 與更強的 incident evidence。',
   },
   'security-identity-boundaries': {
     title: '有範圍的 cloud 與 runtime identity',

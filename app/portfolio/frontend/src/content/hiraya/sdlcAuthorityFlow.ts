@@ -393,7 +393,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
 const sdlcAuthorityFlowZhTWText = {
   title: '從驗證證據到 Runtime State 的 Authority Flow',
   summary:
-    'Hiraya 將驗證變更、發布 artifact、提出 desired state、接受 Git state、收斂 runtime、變更 infrastructure 與恢復服務狀態的權責分開。',
+    'Hiraya 讓 delivery authority 容易被審查：validation、artifact publishing、desired-state proposals、Git acceptance、runtime convergence、infrastructure mutation 與 rollback 都有明確 owner。',
   chrome: {
     eyebrow: 'Authority Flow',
     activePathLabel: '目前權責路徑',
@@ -411,20 +411,20 @@ const sdlcAuthorityFlowZhTWText = {
 const laneZhTW: Record<SdlcAuthorityLaneId, Pick<SdlcAuthorityLane, 'label' | 'summary'>> = {
   'application-delivery': {
     label: 'Application 交付',
-    summary: 'Application 變更先產生無雲端寫入權限的 PR 證據，經 reviewed Git state 接受後，再由 Argo CD 與 Kubernetes 收斂 runtime。',
+    summary: 'Application 變更先從低風險 PR evidence 前進到 reviewed Git state，再由 Argo CD 與 Kubernetes 更新 runtime。',
   },
   'infrastructure-delivery': {
     label: 'Infrastructure 交付',
-    summary: '高權限 cloud 變更保留在 Terraform 路徑，將 plan evidence、environment approval 與 bootstrap handoff 與 application delivery 分離。',
+    summary: '高權限 cloud 變更保留在 Terraform 路徑，並將 plan evidence、environment approval 與 bootstrap handoff 和 application delivery 分離。',
   },
   rollback: {
     label: 'Rollback',
-    summary: '復原沿用同一套 reviewed GitOps 權責模型：驗證目標 image、提出 manifest diff、接受 Git state，並讓 Argo CD 收斂。',
+    summary: '復原沿用同一套 reviewed GitOps 權責模型：驗證目標 image、提出 manifest diff、接受 Git state，並讓 Argo CD 收斂 runtime。',
   },
 }
 
 const stageZhTW: Record<SdlcAuthorityStageId, Partial<SdlcAuthorityStage>> = {
-  'pr-validation-evidence': { label: 'PR 驗證證據', shortLabel: 'PR', authorityHolder: 'GitHub Actions PR checks', inputState: 'Pull request 中提出的 code、manifest 或 infrastructure 變更。', allowedAction: '分類變更、執行 application checks、驗證 rendered manifests，並在沒有 cloud write access 的情況下產生審查證據。', outputState: '可供 review 的證據包，用來判斷變更是否足夠安全可 merge。', credentialPosture: { label: '無 AWS', tone: 'safe' }, evidence: ['測試結果', 'Docker 可建置性', 'GitOps render output', 'static infra checks'], doesNotOwn: ['發布 ECR images', '變更 accepted Git state', 'runtime convergence', 'Terraform apply'] },
+  'pr-validation-evidence': { label: 'PR 驗證證據', shortLabel: 'PR', authorityHolder: 'GitHub Actions PR checks', inputState: 'Pull request 中提出的 code、manifest 或 infrastructure 變更。', allowedAction: '分類變更、執行 application checks、驗證 rendered manifests，並在沒有 cloud write access 的情況下產生審查證據。', outputState: '可供 review 的證據包，幫助 reviewers 判斷變更是否安全可 merge。', credentialPosture: { label: '無 AWS', tone: 'safe' }, evidence: ['測試結果', 'Docker 可建置性', 'GitOps render output', 'static infra checks'], doesNotOwn: ['發布 ECR images', '變更 accepted Git state', 'runtime convergence', 'Terraform apply'] },
   'image-publishing': { label: 'SHA image artifact', shortLabel: 'Image', authorityHolder: 'Image publishing workflow', inputState: '已通過 baseline checks 的 protected-main commit。', allowedAction: '透過 OIDC assume scoped image role，建置受影響服務，並將 immutable commit-SHA images 推送到 ECR。', outputState: '以 commit SHA tags 參照的可部署 ECR artifacts。', credentialPosture: { label: 'OIDC image role', tone: 'scoped' }, evidence: ['ECR push 紀錄', 'commit SHA tags', 'image scan report'], doesNotOwn: ['核准 runtime desired state', '同步 Kubernetes', '高權限 infrastructure mutation'] },
   'manifest-promotion-pr': { label: 'Manifest promotion PR', shortLabel: 'Promote', authorityHolder: 'Promotion automation + reviewer', inputState: '新發布的 image tag 與目前 GitOps workload manifests。', allowedAction: '建立 manifest change proposal，讓指定 workloads 指向新的 immutable image tag。', outputState: '包含 proposed desired-state diff 的 pull request。', credentialPosture: { label: 'Git proposal', tone: 'neutral' }, evidence: ['promotion PR diff', 'render validation', '受影響服務清單'], doesNotOwn: ['未經 review policy 直接 merge', '直接 patch cluster', 'post-merge convergence'] },
   'accepted-desired-state': { label: 'Accepted Desired State', shortLabel: 'Accepted', authorityHolder: 'Reviewed Git state', inputState: '已通過 checks 與 review expectations 的 promotion PR。', allowedAction: '將核准的 workload manifest 變更記錄為 Argo CD 可以 reconcile 的狀態。', outputState: 'GitOps repository path 中的 Accepted Desired State。', credentialPosture: { label: 'reviewed Git', tone: 'gitops' }, evidence: ['merged PR', 'Git manifest history', 'review trail'], doesNotOwn: ['自行運行 pods', '繞過 Argo CD', '手動 Kubernetes mutation'] },

@@ -37,10 +37,10 @@ describe('Hiraya localized content parity', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')
 
-    expect(zhTW.briefPlatformProofMap.title).toBe('從 source authority 到 public proof 的一張地圖')
+    expect(zhTW.briefPlatformProofMap.title).toBe('從 source change 到 public proof 的一張地圖')
     expect(zhTW.briefPlatformProofMap.lenses[0]?.label).toBe('Visitor request 證據')
     expect(zhTW.briefPlatformProofMap.nodes.find((node) => node.id === 'repo-change')?.detail).toBe(
-      'Application、GitOps 或 infrastructure intent 先從可 review 的 source 開始，而不是 console mutation。',
+      'Application、GitOps 或 infrastructure intent 先從可 review 的 source 開始，而不是從 console mutation 開始。',
     )
 
     expectStableListParity(zhTW.briefPlatformProofMap.zones, en.briefPlatformProofMap.zones, (zone) => ({
@@ -76,7 +76,7 @@ describe('Hiraya localized content parity', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')
 
-    expect(zhTW.architectureOwnership.title).toBe('把架構先設計成清楚的 Ownership Boundaries')
+    expect(zhTW.architectureOwnership.title).toBe('透過 Ownership 解釋架構')
     expect(zhTW.architectureOwnership.chrome.responsibilityLabel).toBe('責任範圍')
     expect(zhTW.architectureOwnership.boundaries[0]?.layers[0]?.brief).toBe('定義 Accepted Desired State 可以進入的位置。')
 
@@ -140,7 +140,7 @@ describe('Hiraya localized content parity', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')
 
-    expect(zhTW.wafMaturityJudgment.title).toBe('區分已被證明的強項、可接受的 dev 取捨，以及下一步強化路徑')
+    expect(zhTW.wafMaturityJudgment.title).toBe('已證明的強項、接受的取捨與強化路徑')
     expect(zhTW.wafMaturityJudgment.stateCopy['strong-now'].label).toBe('目前強項')
     expect(zhTW.wafMaturityJudgment.chrome.evidenceSupportLabel).toBe('證據支撐')
 
@@ -194,7 +194,7 @@ describe('Hiraya localized content parity', () => {
     const en = getHirayaRouteDesignContent('en')
     const zhTW = getHirayaRouteDesignContent('zh-TW')
 
-    expect(zhTW.sdlcDeliveryGuardrails.title).toBe('五項避免 CI 變成部署權限的 Delivery Guardrails')
+    expect(zhTW.sdlcDeliveryGuardrails.title).toBe('五項避免 CI 變成部署權限的決策')
     expect(zhTW.sdlcDeliveryGuardrails.chrome.authorityFlowStagesLabel).toBe('Authority Flow 階段')
     expect(zhTW.sdlcDeliveryGuardrails.authorityBadges['no-aws'].label).toBe('無 AWS 寫入權限')
     expect(zhTW.sdlcDeliveryGuardrails.guardrails[0]?.rule).toBe('先驗證，後授權')

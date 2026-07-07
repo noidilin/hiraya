@@ -6,9 +6,9 @@ export const briefProofPathOverviewContentZhTW = [
     label: '設計目標',
     value: '4',
     note: '可重建、可驗證、可觀測、可回復。',
-    detailTitle: '系統需要讓四個承諾變得可見',
+    detailTitle: '讓四個工程承諾變得可見',
     detailSummary:
-      'Brief route 將 Hiraya 定位為一套工程系統：重要變更都應該能被重建、檢查、觀測與回復。',
+      'Hiraya 被定位為一套工程系統：重要變更都能被重建、檢查、觀測與回復。',
     detailBullets: [
       'Rebuildability：Terraform 建置 AWS foundation、EKS、bootstrap resources、IRSA 與 secrets integration。',
       'Verifiability：GitHub Actions 驗證 pull requests、建置 images、render manifests，並記錄 deployment evidence。',
@@ -38,9 +38,9 @@ export const briefProofPathOverviewContentZhTW = [
     label: '交付模型',
     value: 'GitOps',
     note: 'Argo CD 從 Git 收斂 application 與 platform 的期望狀態。',
-    detailTitle: '交付系統是最強的 portfolio proof',
+    detailTitle: '交付系統是最強的證據',
     detailSummary:
-      'CI 產生 evidence 與 artifacts，reviewed Git 接受 desired state，Argo CD 收斂 runtime，而不是讓 CI 直接修改 cluster。',
+      'CI 產生 evidence 與 artifacts，reviewed Git 接受 desired state，Argo CD 收斂 runtime，而不是允許 CI 直接修改 cluster。',
     detailBullets: [
       'PR validation 在使用 cloud write authority 前，先檢查 application、Docker、GitOps render 與 infrastructure evidence。',
       'Image publishing 建立 SHA-tagged artifacts 到 ECR，並開出 manifest promotion PR。',
@@ -53,13 +53,13 @@ export const briefProofPathOverviewContentZhTW = [
     id: 'proof-path',
     label: 'Proof path',
     value: 'Evidence-led',
-    note: '媒體支援 platform claim，但不是預設說明本身。',
+    note: '媒體支援 platform claim；架構故事本身先成立。',
     detailTitle: '為什麼 Hiraya 讀起來是 platform demonstration',
     detailSummary:
-      '預設說明應該在截圖之前就能成立：Hiraya 是 dev-only、可重建的平台，並用 evidence media 證明 delivery 與 runtime claims。',
+      '說明本身先於截圖成立：Hiraya 是 dev-only、可重建的平台，並用 evidence media 證明 delivery 與 runtime claims。',
     detailBullets: [
       'Dev platform，而非 production 包裝：專案展示真實決策，但不過度宣稱 production readiness。',
-      'Delivery proof：端到端影片應展示 validation、image publishing、promotion、Argo CD sync、rollout 與 smoke verification。',
+      'Delivery proof：端到端影片涵蓋 validation、image publishing、promotion、Argo CD sync、rollout 與 smoke verification。',
       'Runtime proof：public HTTPS endpoints、private services、shared ingress、secrets integration 與 Grafana dashboards 展示 cloud-native boundaries。',
     ],
     evidenceRefs: ['p0-cicd-delivery-flow', 'p0-public-ingress', 'p1-secrets', 'p1-grafana'],

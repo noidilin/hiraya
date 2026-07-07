@@ -2,9 +2,9 @@ import type { ArchitectureOwnershipContent } from './architectureOwnership'
 
 export const architectureOwnershipContentZhTW: ArchitectureOwnershipContent = {
   routeId: 'arch',
-  title: '把架構先設計成清楚的 Ownership Boundaries',
+  title: '透過 Ownership 解釋架構',
   summary:
-    'Hiraya 先用權責邊界解釋架構：Delivery 提出並證明變更，AWS 提供可重建的基礎，GitOps 管理平台能力並開放被選定的 Runtime Path，Observation 則把結果回饋到決策迴圈。',
+    'Hiraya 依責任邊界組織架構：Delivery 提出並證明變更，AWS 提供可重建的基礎，GitOps 管理平台能力並開放被選定的 Runtime Path，Observation 則關閉 feedback loop。',
   chrome: {
     eyebrow: 'Ownership explorer',
     boundaryStackLabel: '權責堆疊',
@@ -33,7 +33,7 @@ export const architectureOwnershipContentZhTW: ArchitectureOwnershipContent = {
         { id: 'infrastructure-approval-gate', label: 'Infrastructure approval gate', brief: '把高權限 apply 與一般交付分開。' },
       ],
       responsibility: '控制 application 與 infrastructure 變更如何被提出、驗證、核准，並交給擁有 runtime 或 cloud state 的邊界。',
-      decision: 'CI 負責產生證據與 proposed desired-state changes；它不直接變成不受限制的 runtime authority。',
+      decision: 'CI 負責產生證據與 proposed desired-state changes，而 reviewed Git 與 Argo CD 讓 runtime authority 維持受控。',
       doesNotOwn: ['cluster runtime convergence', 'public route exposure', 'workload business behavior', 'cloud resources after apply'],
     },
     {
@@ -87,7 +87,7 @@ export const architectureOwnershipContentZhTW: ArchitectureOwnershipContent = {
         { id: 'service-owned-routes', label: 'Service HTTPRoutes', brief: '讓 Vintage、Grafana 與 Argo CD access 擁有自己的 route intent。' },
       ],
       responsibility: '控制 shared public HTTPS boundary 與 route-admission policy，同時讓各 service owner 宣告自己的 public route。',
-      decision: '使用一個 shared Gateway 搭配 namespace admission，而不是每個服務各自建立 public LoadBalancer，或由中央團隊擁有所有 HTTPRoute。',
+      decision: '使用一個 shared Gateway 搭配 namespace admission，而不是每個服務各自建立 public LoadBalancer，或由單一中央團隊擁有所有 HTTPRoute。',
       doesNotOwn: ['private backend service logic', 'image publishing', 'secret source values', 'service-specific route intent'],
     },
     {
@@ -122,7 +122,7 @@ export const architectureOwnershipContentZhTW: ArchitectureOwnershipContent = {
         { id: 'release-evidence', label: 'Release evidence', brief: '把 runtime result 連回 delivery decisions。' },
       ],
       responsibility: '用 feedback 與 verification signals 解釋 runtime 和 release decisions 是否有效。',
-      decision: '把 observability 當成 portfolio explanation 的一部分，而不只是安裝 monitoring tools。',
+      decision: '把 observability 當成決策回饋，而不只是已安裝的 monitoring tools。',
       doesNotOwn: ['workload deployment authority', 'AWS infrastructure provisioning', 'public route publication', 'business feature decisions'],
     },
   ],
