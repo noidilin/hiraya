@@ -77,28 +77,28 @@ export const hirayaPagesEn = [
     eyebrow: 'Solution overview',
     title: 'Rebuildable DevOps Platform for Hiraya',
     summary:
-      'Hiraya demonstrates a second-hand vintage e-commerce system on AWS using EKS, Terraform, GitHub Actions, Argo CD, and Prometheus/Grafana.',
+      'Hiraya is a rebuildable AWS/EKS DevOps platform built around a vintage e-commerce demo, with Terraform, GitHub Actions, Argo CD, and Prometheus/Grafana working together.',
     thesis:
-      'The project is a portfolio-grade dev environment that proves cloud platform design, infrastructure as code, CI/CD, GitOps, and observability through a rebuildable microservice system.',
+      'The project shows practical platform engineering: cloud architecture, infrastructure as code, CI/CD authority boundaries, GitOps delivery, and observability in one rebuildable microservice environment.',
     proofPoints: [
       {
         id: 'dev-platform-scope',
         title: 'Dev platform, not production theater',
         summary:
-          'The site should clearly frame Hiraya as a dev-only, rebuildable AWS/EKS platform built to demonstrate real platform engineering decisions without overclaiming production readiness.',
+          'Hiraya is intentionally presented as a dev-only, rebuildable AWS/EKS platform: strong enough to show real engineering decisions, without claiming production readiness.',
       },
       {
         id: 'delivery-platform-proof',
         title: 'The portfolio proof is the delivery system',
         summary:
-          'The strongest evidence is the path from PR validation to image publishing, manifest promotion, Argo CD sync, rollout, and smoke verification.',
+          'The strongest evidence is the full change path: PR validation, image publishing, manifest promotion, Argo CD sync, rollout, and smoke verification.',
         evidenceRefs: ['p0-cicd-delivery-flow'],
       },
       {
         id: 'runtime-proof',
         title: 'The runtime proves cloud-native boundaries',
         summary:
-          'Public HTTPS endpoints, private ClusterIP services, shared ingress, Secrets Manager integration, and Grafana dashboards show this is more than a static frontend.',
+          'Public HTTPS endpoints, private ClusterIP services, shared ingress, Secrets Manager integration, and Grafana dashboards show this is a working cloud platform, not a static site.',
         evidenceRefs: ['p0-public-ingress', 'p1-secrets', 'p1-grafana'],
       },
     ],
@@ -109,7 +109,7 @@ export const hirayaPagesEn = [
         status: 'planned',
         title: 'Project walkthrough video on YouTube',
         description:
-          'The Brief route reserves one external walkthrough for the full project story: delivery, rollback, and destroy/cost-governance proof without committing video files to the repository.',
+          'A concise external walkthrough will connect the full project story: delivery, rollback, and destroy/cost-governance proof, while keeping large video files outside the repository.',
         evidenceRefs: ['p0-cicd-delivery-flow'],
       },
     ],
@@ -134,9 +134,9 @@ export const hirayaPagesEn = [
       {
         id: 'operating-principles',
         eyebrow: 'Design principles',
-        title: 'Four promises the system needs to make visible',
+        title: 'Four engineering promises the platform makes visible',
         body:
-          'The route should make the architecture legible as an engineering system, not a list of tools. Every page should show how a change can be rebuilt, checked, observed, and recovered.',
+          'The architecture is explained as an engineering system, not a tool inventory. Each page shows how a change is rebuilt, checked, observed, and recovered.',
         bullets: [
           'Rebuildability: Terraform provisions AWS foundation, EKS, bootstrap resources, IRSA, and secrets integration.',
           'Verifiability: GitHub Actions validates pull requests, builds images, renders manifests, and records deployment evidence.',
@@ -168,9 +168,9 @@ export const hirayaPagesEn = [
     eyebrow: 'Overall architecture',
     title: 'Public Edge, Private Workloads, GitOps Runtime',
     summary:
-      'The architecture combines a public HTTPS edge with private EKS workloads, GitOps-managed manifests, externalized secrets, and deliberately scoped observability surfaces.',
+      'The architecture combines a public HTTPS edge, private EKS workloads, GitOps-managed manifests, externalized secrets, and deliberately scoped observability surfaces.',
     thesis:
-      'Hiraya should read as a real cloud platform boundary: the public internet reaches the shared ingress path for the Storefront and review surfaces, while backend services, data, secrets, and raw metrics remain behind controlled Kubernetes and AWS layers.',
+      'Hiraya demonstrates clear cloud boundaries: public traffic reaches the shared ingress path for the Storefront and review surfaces, while backend services, data, secrets, and raw metrics stay behind controlled Kubernetes and AWS layers.',
     metrics: [
       {
         label: 'Ownership model',
@@ -283,7 +283,7 @@ export const hirayaPagesEn = [
       {
         label: '24/7 estimate',
         value: '$180-215',
-        note: 'Rough monthly range before traffic/data-transfer variance; actuals should be checked in Cost Explorer.',
+        note: 'Rough monthly range before traffic/data-transfer variance; Cost Explorer is the source of truth for actual spend.',
       },
     ],
     sections: [
@@ -349,7 +349,7 @@ export const hirayaPagesEn = [
         eyebrow: 'Cost model',
         title: 'Rough 24/7 monthly estimate',
         body:
-          'Actual cost should be validated with AWS Pricing Calculator, Cost Explorer UnblendedCost, AWS Budgets, and right-sizing recommendations.',
+          'Actual cost is validated with AWS Pricing Calculator, Cost Explorer UnblendedCost, AWS Budgets, and right-sizing recommendations.',
         table: {
           columns: ['Cost item', 'Estimate assumption', 'Monthly estimate', 'Justification'],
           rows: [
@@ -377,7 +377,7 @@ export const hirayaPagesEn = [
     summary:
       'Hiraya separates validation, artifact publishing, manifest promotion, infrastructure delivery, and rollback into clear control paths.',
     thesis:
-      'The route should show that CI does not directly become deployment authority. CI creates evidence and proposed desired-state changes; Argo CD converges the cluster after reviewed Git changes.',
+      'The SDLC model makes one point clear: CI creates evidence and proposed desired-state changes, while reviewed Git and Argo CD own the path to runtime deployment.',
     metrics: [
       {
         label: 'Authority lanes',
@@ -443,9 +443,9 @@ export const hirayaPagesEn = [
     eyebrow: 'AWS Well-Architected',
     title: 'Six-Pillar Reading of Hiraya',
     summary:
-      'The Well-Architected mapping explains why the design choices matter and where the dev environment should harden next.',
+      'The Well-Architected mapping explains why the design choices matter and where the dev environment needs hardening next.',
     thesis:
-      'The WAF route should translate implementation details into engineering judgment: what is strong now, what is an intentional dev trade-off, and what should improve before production.',
+      'The WAF route translates implementation details into engineering judgment: what is strong now, what is an intentional dev trade-off, and what needs to improve before production.',
     metrics: [
       {
         label: 'Review scope',

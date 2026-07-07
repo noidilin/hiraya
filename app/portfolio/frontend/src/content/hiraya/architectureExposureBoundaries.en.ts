@@ -33,9 +33,9 @@ export type ExposureBoundaryContent = {
 
 export const exposureBoundaryContentEn = {
   routeId: 'arch',
-  title: 'Architecture exposure boundary matrix',
+  title: 'Exposure boundary matrix',
   summary:
-    'Clarifies which Hiraya surfaces are published through the shared public Gateway, which remain ClusterIP-only, and which are intentionally demo-facing for portfolio review.',
+    'Clarifies which Hiraya surfaces are public through the shared Gateway, which remain ClusterIP-only, and which are exposed only for portfolio review.',
   chrome: {
     eyebrow: 'Exposure boundary',
     filterEyebrow: 'table filter',
@@ -55,7 +55,7 @@ export const exposureBoundaryContentEn = {
     {
       id: 'public-user-entry',
       label: 'Public user entry',
-      summary: 'Surfaces intended for portfolio visitors and normal demo usage.',
+      summary: 'Surfaces intended for portfolio visitors and normal demo use.',
       rows: [
         {
           id: 'hiraya-furugi-storefront',
@@ -109,7 +109,7 @@ export const exposureBoundaryContentEn = {
           exposureClass: 'private-service',
           entryMechanism: 'ClusterIP Service on 3001 behind the Storefront nginx /api proxy',
           boundaryReason: 'Aggregates backend APIs without becoming a public LoadBalancer.',
-          devTradeoff: 'Simple internal gateway for demo scope.',
+          devTradeoff: 'Simple internal gateway that fits the demo scope.',
         },
         {
           id: 'auth',

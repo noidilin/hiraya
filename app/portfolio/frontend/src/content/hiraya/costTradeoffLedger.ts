@@ -40,7 +40,7 @@ export type CostCapacitySnapshot = {
     minSize: number
     maxSize: number
     instanceTypes: readonly string[]
-    capacityType: 'SPOT' | 'ON_DEMAND'
+    capacityType: 'SPOT' | 'ON_DEMAND',
   }
   recommendedNextDecision: readonly string[]
   sourceRefs: readonly string[]
@@ -106,7 +106,7 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
   routeId: 'cost',
   title: 'Capacity Trade-off Ledger',
   summary:
-    'Hiraya pays for managed Kubernetes, private-subnet egress, and public HTTPS proof; saves with Spot capacity, shared ingress, and rebuildability; and keeps pod-density risk visible before adding more platform features.',
+    'Hiraya makes cost decisions explicit: it pays for managed Kubernetes, private-subnet egress, and public HTTPS proof; saves with Spot capacity, shared ingress, and rebuildability; and keeps pod-density risk visible before adding more platform features.',
   tabs: {
     tradeoffAnalysis: { label: 'Trade-off analysis' },
     estimateDetails: { label: 'Estimate details' },
@@ -159,9 +159,9 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
       podsUnitLabel: 'pods',
       slotsUnitLabel: 'slots',
       capacityWord: 'capacity',
-      gapTitle: 'Gap to keep visible',
+      gapTitle: 'Capacity gap to watch',
       gapDescription:
-        'Desired size already targets three nodes, but minSize is still 2 and maxSize is still 3. That means scale-down can remove the only safe pod-density floor, and there is no fourth-node buffer for Spot replacement or rollout overlap.',
+        'Desired size already targets three nodes, but minSize is still 2 and maxSize is still 3. Scale-down can therefore remove the safe pod-density floor, and there is no fourth-node buffer for Spot replacement or rollout overlap.',
     },
   },
   tradeoffs: [
@@ -170,7 +170,7 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
       label: 'EKS control plane',
       monthlyEstimate: 'About 73 USD',
       tradeoffClass: 'fixed-floor',
-      acceptedBenefit: 'Proves Hiraya runs on a real managed Kubernetes control plane instead of a local-only demo.',
+      acceptedBenefit: 'Shows Hiraya running on a real managed Kubernetes control plane instead of a local-only demo.',
       remainingRisk: 'This cost exists even when application traffic is near zero, so the environment must stay intentionally dev-scoped and destroyable.',
       sourceRefs: ['infra/modules/eks/main.tf', 'app/portfolio/frontend/src/content/hiraya/en.ts'],
     },
@@ -219,7 +219,7 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
       tradeoffClass: 'governance-lever',
       acceptedBenefit: 'Makes cost control part of the operating model for a disposable dev platform.',
       savingsMechanism: 'Spend is controlled by rebuildability and intentional teardown rather than pretending the platform is production-always-on.',
-      remainingRisk: 'Destroyability must preserve enough evidence and runbook clarity so teardown does not hide architecture proof.',
+      remainingRisk: 'Destroyability must preserve enough evidence and runbook clarity so teardown does not erase the architecture story.',
       sourceRefs: ['docs/evidence-checklist.md', '.github/workflows'],
     },
   ],
@@ -240,7 +240,7 @@ export const costCapacityTradeoffLedgerContentEn: CostCapacityTradeoffLedgerCont
     currentRunningPods: 42,
     remainingPodSlots: 9,
     cpuMemoryPressureSummary:
-      'CPU and memory pressure are not the meaningful pressure signal right now; pod/IP density on t3.medium nodes is.',
+      'CPU and memory are not the limiting signals right now; pod/IP density on t3.medium nodes is.',
     currentTerraformSizing: { desiredSize: 3, minSize: 2, maxSize: 3, instanceTypes: ['t3.medium'], capacityType: 'SPOT' },
     recommendedNextDecision: [
       'Keep three t3.medium Spot nodes for the current functional testing setup.',

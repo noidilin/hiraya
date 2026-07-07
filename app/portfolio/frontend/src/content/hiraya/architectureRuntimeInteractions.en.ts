@@ -11,7 +11,7 @@ export type ArchitectureRuntimeFact = {
 export type RuntimePathStage = {
   id: string
   label: string
-  boundary: 'public-internet' | 'public-edge' | 'application-runtime' | 'private-data'
+  boundary: 'public-internet' | 'public-edge' | 'application-runtime' | 'private-data',
   mechanism: string
   description: string
 }
@@ -27,7 +27,7 @@ export type RuntimeRequestExample = {
 export type RuntimeServiceBoundary = {
   id: string
   name: string
-  status: 'active' | 'legacy' | 'data' | 'platform-support'
+  status: 'active' | 'legacy' | 'data' | 'platform-support',
   responsibility: string
   kubernetesType: string
   port?: string
@@ -47,9 +47,9 @@ export type SecretMaterializationStep = {
 
 export const architectureRuntimeInteractionsContentEn: ArchitectureRuntimeInteractionsContent = {
   routeId: 'arch',
-  title: 'How traffic, services, and secrets stay inside the right boundaries',
+  title: 'How traffic, services, and secrets stay in the right boundaries',
   summary:
-    'After ownership and exposure are clear, this runtime inspector shows how the public Storefront, private services, and materialized runtime secrets interact without making every boundary public.',
+    'After ownership and exposure are clear, this view shows how the public Storefront, private services, and materialized runtime secrets interact without making every boundary public.',
   chrome: {
     eyebrow: 'Runtime interaction',
     tabs: {
@@ -258,7 +258,7 @@ export const architectureRuntimeInteractionsContentEn: ArchitectureRuntimeIntera
         port: '3005',
         exposure: 'ClusterIP',
         participatesIn: ['/api/orders', '/api/orders/my-orders'],
-        notes: 'Current dev contract remains client-gated for some order ownership behavior; do not read it as production auth hardening.',
+        notes: 'This dev contract keeps some order ownership behavior client-gated, so production-grade authorization remains a hardening item.',
       },
       {
         id: 'vintage-postgres',
@@ -329,7 +329,7 @@ export const architectureRuntimeInteractionsContentEn: ArchitectureRuntimeIntera
     nonClaims: [
       'The diagram intentionally explains materialization, not the secret values or individual keys.',
       'refreshInterval: 1h is reconciliation behavior, not a rotation guarantee.',
-      'This component does not claim automated rotation or production-grade audit hardening beyond the manifests and IAM policy shown here.',
+      'This view demonstrates runtime materialization; automated rotation and production-grade audit hardening remain future work.',
     ],
   },
 }

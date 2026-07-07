@@ -47,14 +47,14 @@ export const hirayaEvidenceAssetManifest = [
     preferredUse: 'carousel-slide',
     routes: ['sdlc'],
     title: 'Complete CI/CD delivery flow',
-    caption: 'Curated evidence covering PR checks, image publishing, manifest promotion, Argo CD rollout, and smoke verification.',
+    caption: 'Evidence covering PR checks, image publishing, manifest promotion, Argo CD rollout, and smoke verification.',
     assets: [
       {
         id: '00-cover-next-FE-site-preview',
         kind: 'screenshot',
         status: 'ready',
-        title: 'Next frontend preview',
-        caption: 'The delivered frontend change is visible before following the delivery pipeline evidence.',
+        title: 'Next Storefront preview',
+        caption: 'The delivered Storefront change is visible before the pipeline evidence begins.',
         src: evidenceSrc('p0-cicd-delivery-flow', '00-cover-next-FE-site-preview.webp'),
         aspectRatio: '1999 / 1356',
       },
@@ -331,7 +331,7 @@ export const hirayaEvidenceAssetManifest = [
     preferredUse: 'carousel-slide',
     routes: ['cost', 'waf'],
     title: 'Cost control and destroy workflow',
-    caption: 'Cost-governance proof for an intentionally destroyable dev platform with durable foundations retained.',
+    caption: 'Cost-governance proof for a dev platform that can be destroyed while durable foundations are retained.',
     assets: [
       {
         id: '00-cover-destroy-workflow',

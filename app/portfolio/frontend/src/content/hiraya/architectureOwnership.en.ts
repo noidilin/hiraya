@@ -42,9 +42,9 @@ export type ArchitectureOwnershipContent = {
 
 export const architectureOwnershipContentEn = {
   routeId: 'arch',
-  title: 'Architecture as ownership design',
+  title: 'Architecture explained through ownership',
   summary:
-    'Hiraya is explained as ownership boundaries first: delivery proposes and proves change, AWS provides the rebuildable substrate, GitOps-owned platform capabilities expose selected runtime paths, and observation closes the decision loop.',
+    'Hiraya is organized by responsibility boundaries: delivery proposes and proves changes, AWS provides the rebuildable substrate, GitOps-owned platform capabilities expose selected runtime paths, and observation closes the feedback loop.',
   chrome: {
     eyebrow: 'Ownership explorer',
     boundaryStackLabel: 'boundary stack',
@@ -101,7 +101,7 @@ export const architectureOwnershipContentEn = {
       responsibility:
         'Control how application and infrastructure changes are proposed, validated, approved, and handed to the owning runtime or cloud boundary.',
       decision:
-        'CI creates evidence and proposed desired-state changes; it does not directly become unrestricted runtime authority.',
+        'CI creates evidence and proposed desired-state changes, while reviewed Git and Argo CD keep runtime authority controlled.',
       doesNotOwn: ['cluster runtime convergence', 'public route exposure', 'workload business behavior', 'cloud resources after apply'],
     },
     {
@@ -255,7 +255,7 @@ export const architectureOwnershipContentEn = {
       responsibility:
         'Control the shared public HTTPS boundary and route-admission policy while letting each service owner declare its own public route.',
       decision:
-        'Use one shared Gateway with namespace admission instead of independent public LoadBalancers or a central team owning every HTTPRoute.',
+        'Use one shared Gateway with namespace admission instead of independent public LoadBalancers or one central team owning every HTTPRoute.',
       doesNotOwn: ['private backend service logic', 'image publishing', 'secret source values', 'service-specific route intent'],
     },
     {
@@ -341,7 +341,7 @@ export const architectureOwnershipContentEn = {
       ],
       responsibility:
         'Explain whether runtime and release decisions are working through feedback and verification signals.',
-      decision: 'Make observability part of the portfolio explanation rather than merely installing monitoring tools.',
+      decision: 'Treat observability as decision feedback, not just as installed monitoring tools.',
       doesNotOwn: ['workload deployment authority', 'AWS infrastructure provisioning', 'public route publication', 'business feature decisions'],
     },
   ],

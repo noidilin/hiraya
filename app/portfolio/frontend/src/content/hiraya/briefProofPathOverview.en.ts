@@ -6,9 +6,9 @@ export const briefProofPathOverviewContentEn = [
     label: 'Design goals',
     value: '4',
     note: 'Rebuildability, verifiability, observability, and recoverability.',
-    detailTitle: 'Four promises the system makes visible',
+    detailTitle: 'Four engineering promises made visible',
     detailSummary:
-      'The Brief route frames Hiraya as an engineering system: every important change should be rebuildable, checked, observable, and recoverable.',
+      'Hiraya is framed as an engineering system: important changes are rebuildable, checked, observable, and recoverable.',
     detailBullets: [
       'Rebuildability: Terraform provisions AWS foundation, EKS, bootstrap resources, IRSA, and secrets integration.',
       'Verifiability: GitHub Actions validates pull requests, builds images, renders manifests, and records deployment evidence.',
@@ -38,9 +38,9 @@ export const briefProofPathOverviewContentEn = [
     label: 'Delivery model',
     value: 'GitOps',
     note: 'Argo CD reconciles the desired application and platform state from Git.',
-    detailTitle: 'The delivery system is the strongest portfolio proof',
+    detailTitle: 'The delivery system is the strongest proof',
     detailSummary:
-      'CI creates evidence and artifacts, reviewed Git accepts desired state, and Argo CD converges the runtime instead of letting CI mutate the cluster directly.',
+      'CI creates evidence and artifacts, reviewed Git accepts desired state, and Argo CD converges the runtime instead of allowing direct CI-to-cluster mutation.',
     detailBullets: [
       'PR validation checks application, Docker, GitOps render, and infrastructure evidence before cloud write authority is used.',
       'Image publishing creates SHA-tagged artifacts in ECR and opens a manifest promotion PR.',
@@ -53,13 +53,13 @@ export const briefProofPathOverviewContentEn = [
     id: 'proof-path',
     label: 'Proof path',
     value: 'Evidence-led',
-    note: 'Media supports the platform claim; it is not the default explanation.',
+    note: 'Media supports the platform claim; the architecture story comes first.',
     detailTitle: 'Why Hiraya reads as a platform demonstration',
     detailSummary:
-      'The default explanation should stand before screenshots: Hiraya is a dev-only, rebuildable platform that uses evidence media to prove delivery and runtime claims.',
+      'The explanation stands before the screenshots: Hiraya is a dev-only, rebuildable platform that uses evidence media to prove delivery and runtime claims.',
     detailBullets: [
       'Dev platform, not production theater: the project demonstrates real decisions without overclaiming production readiness.',
-      'Delivery proof: the end-to-end video should show validation, image publishing, promotion, Argo CD sync, rollout, and smoke verification.',
+      'Delivery proof: the end-to-end video covers validation, image publishing, promotion, Argo CD sync, rollout, and smoke verification.',
       'Runtime proof: public HTTPS endpoints, private services, shared ingress, secrets integration, and Grafana dashboards show cloud-native boundaries.',
     ],
     evidenceRefs: ['p0-cicd-delivery-flow', 'p0-public-ingress', 'p1-secrets', 'p1-grafana'],

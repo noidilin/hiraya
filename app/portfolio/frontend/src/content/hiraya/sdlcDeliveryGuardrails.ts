@@ -68,7 +68,7 @@ const sdlcDeliveryGuardrailsEn = [
     flowStageIds: ['pr-validation-evidence', 'infra-static-checks'],
     sourceRefs: ['.github/workflows/app-pr-baseline.yml', 'docs/portfolio/CICD.md'],
     evidenceRefs: ['p0-cicd-delivery-flow', 'p0-infra-approval-gate'],
-    shortcutRisk: 'If validation jobs can write to cloud or cluster state, a compromised or mistaken PR path can bypass review and turn evidence collection into mutation.',
+    shortcutRisk: 'If validation jobs can write to cloud or cluster state, a compromised or mistaken PR path can bypass review and turn checks into mutation.',
   },
   {
     id: 'immutable-artifacts-first',
@@ -80,7 +80,7 @@ const sdlcDeliveryGuardrailsEn = [
     flowStageIds: ['image-publishing', 'manifest-promotion-pr'],
     sourceRefs: ['.github/workflows/image-ci.yml', '.github/utils/services.json', '.github/scripts/dist/detect-changed-services.mjs'],
     evidenceRefs: ['p0-cicd-delivery-flow'],
-    shortcutRisk: 'Artifact creation and deployment approval are different powers; combining them makes every successful build a potential runtime change.',
+    shortcutRisk: 'Artifact creation and deployment approval are different powers; combining them could turn every successful build into a runtime change.',
   },
   {
     id: 'git-as-deployment-contract',
@@ -122,9 +122,9 @@ const sdlcDeliveryGuardrailsEn = [
 
 const sdlcDeliveryGuardrailContentEn: SdlcDeliveryGuardrailBoardContent = {
   eyebrow: 'Delivery Guardrails',
-  title: 'Five authority decisions that keep CI from becoming deployment authority',
+  title: 'Five decisions that keep CI from becoming deployment authority',
   description:
-    'Each guardrail states what a delivery actor may do, which shortcut is intentionally forbidden, and what handoff proves authority stayed in the correct boundary.',
+    'Each guardrail explains what a delivery actor may do, which shortcut is forbidden, and what handoff proves authority stayed in the correct boundary.',
   chrome: {
     eyebrow: 'Delivery Guardrails',
     guardrailLabel: 'Guardrail',

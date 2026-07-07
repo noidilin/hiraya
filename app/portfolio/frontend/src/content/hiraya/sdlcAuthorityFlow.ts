@@ -100,12 +100,12 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
   routeId: 'sdlc',
   title: 'Authority flow from evidence to runtime state',
   summary:
-    'Hiraya separates who may validate a change, publish an artifact, propose desired state, accept Git state, converge runtime, mutate infrastructure, and recover service state.',
+    'Hiraya makes delivery authority easy to review: validation, artifact publishing, desired-state proposals, Git acceptance, runtime convergence, infrastructure mutation, and rollback each have a defined owner.',
   lanes: [
     {
       id: 'application-delivery',
       label: 'Application delivery',
-      summary: 'Application changes move from credentialless PR evidence to reviewed Git state before Argo CD and Kubernetes converge runtime.',
+      summary: 'Application changes move from low-risk PR evidence to reviewed Git state before Argo CD and Kubernetes update the runtime.',
       defaultStageId: 'pr-validation-evidence',
       stages: [
         {
@@ -115,9 +115,9 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
           authorityHolder: 'GitHub Actions PR checks',
           inputState: 'A proposed code, manifest, or infrastructure change in a pull request.',
           allowedAction: 'Classify the change, run application checks, validate rendered manifests, and produce review evidence without cloud write access.',
-          outputState: 'A reviewable evidence bundle that says whether the proposed change is safe enough to merge.',
+          outputState: 'A reviewable evidence bundle that helps reviewers decide whether the change is safe to merge.',
           credentialPosture: { label: 'no AWS', tone: 'safe' },
-          evidence: ['測試結果', 'Docker 可建置性', 'GitOps render output', 'static infra checks'],
+          evidence: ['Test results', 'Docker buildability', 'GitOps render output', 'static infra checks'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['publishing ECR images', 'changing accepted Git state', 'runtime convergence', 'Terraform apply'],
         },
@@ -130,7 +130,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
           allowedAction: 'Assume the scoped image role through OIDC, build affected services, and push immutable commit-SHA images to ECR.',
           outputState: 'Deployable ECR artifacts referenced by commit SHA tags.',
           credentialPosture: { label: 'OIDC image role', tone: 'scoped' },
-          evidence: ['ECR push 紀錄', 'commit SHA tags', 'image scan report'],
+          evidence: ['ECR push records', 'commit SHA tags', 'image scan report'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['approving runtime desired state', 'synchronizing Kubernetes', 'high-permission infrastructure mutation'],
         },
@@ -143,7 +143,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
           allowedAction: 'Create a manifest change proposal that points selected workloads at the new immutable image tag.',
           outputState: 'A pull request containing the proposed desired-state diff.',
           credentialPosture: { label: 'Git proposal', tone: 'neutral' },
-          evidence: ['promotion PR diff', 'render validation', '受影響服務清單'],
+          evidence: ['promotion PR diff', 'render validation', 'affected service list'],
           evidenceRefs: ['p0-cicd-delivery-flow'],
           doesNotOwn: ['merging without review policy', 'direct cluster patching', 'post-merge convergence'],
         },
@@ -201,7 +201,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
     {
       id: 'infrastructure-delivery',
       label: 'Infrastructure delivery',
-      summary: 'High-permission cloud changes stay on the Terraform path, where plan evidence, environment approval, and bootstrap handoff are separate from application delivery.',
+      summary: 'High-permission cloud changes stay on the Terraform path, with plan evidence, environment approval, and bootstrap handoff kept separate from application delivery.',
       defaultStageId: 'infra-static-checks',
       stages: [
         {
@@ -295,7 +295,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
     {
       id: 'rollback',
       label: 'Rollback',
-      summary: 'Recovery follows the same reviewed GitOps authority model: verify the target image, propose a manifest diff, accept Git state, and let Argo CD converge.',
+      summary: 'Recovery follows the same reviewed GitOps authority model: verify the target image, propose a manifest diff, accept Git state, and let Argo CD converge the runtime.',
       defaultStageId: 'rollback-request',
       stages: [
         {
@@ -307,7 +307,7 @@ const sdlcAuthorityFlowContentEn: SdlcAuthorityFlowContent = {
           allowedAction: 'Start a controlled recovery proposal with explicit target and reason metadata.',
           outputState: 'A traceable rollback intent for one service/image selection.',
           credentialPosture: { label: 'manual trigger', tone: 'gated' },
-          evidence: ['選定服務', 'target image tag', 'rollback reason'],
+          evidence: ['selected service', 'target image tag', 'rollback reason'],
           evidenceRefs: ['p1-rollback-path'],
           doesNotOwn: ['patching live deployments', 'skipping Git review', 'creating new image artifacts'],
         },

@@ -72,18 +72,18 @@ export const resources = {
             screenshot: 'Portfolio evidence image',
           },
           placeholder: {
-            videoSlot: 'Video evidence slot',
-            videoDescription: 'Add a video source to the evidence manifest to turn this support card into a playable walkthrough.',
+            videoSlot: 'Video evidence preview',
+            videoDescription: 'This support card becomes a playable walkthrough when curated video evidence is available.',
           },
           briefVideo: {
             title: 'Project walkthrough on YouTube',
-            fallbackCaption: 'One focused external walkthrough keeps the Brief route proof-led without committing large video files to the portfolio repository.',
+            fallbackCaption: 'One focused external walkthrough connects the Brief route to delivery, rollback, and cost-governance evidence.',
             stages: ['PR validation', 'Image publishing', 'Manifest promotion', 'Argo CD sync', 'Rollback + destroy'],
             frameLabel: 'Brief proof video · YouTube walkthrough',
-            missingTitle: 'YouTube walkthrough slot',
-            missingDescription: 'Add the final YouTube URL or embed ID to the content slot after the redacted walkthrough is uploaded.',
+            missingTitle: 'Walkthrough coming soon',
+            missingDescription: 'A concise YouTube walkthrough will connect delivery, rollback, and cost-control evidence once it is ready.',
             workInProgressNotice:
-              'Temporary note: this YouTube walkthrough is still a work in progress. Other routes already include video clips and screenshots as evidence previews.',
+              'Route-specific videos and screenshots are already available in the Architecture, SDLC, Cost, and Well-Architected sections.',
             walkthroughBadge: 'YouTube walkthrough',
             routeAnchorBadge: 'Brief route anchor',
             youtubeBadge: 'YouTube',
@@ -126,13 +126,13 @@ export const resources = {
           eyebrow: 'Proof points',
           title: 'Claims are connected to implementation evidence',
           description:
-            'Each card frames a portfolio claim as something that can be inspected through the evidence checklist or future media previews.',
+            'Each card frames a portfolio claim as something reviewers can inspect through implementation evidence.',
         },
         mediaSlots: {
           eyebrow: 'Evidence media',
-          title: 'Planned media slots render as safe placeholders',
+          title: 'Evidence media stays explicit and reviewable',
           description:
-            'Screenshots, diagrams, and videos are progressive enhancements. Until curated assets exist, the route shows explicit placeholders instead of broken embeds.',
+            'Screenshots, diagrams, and videos support the explanation when they are curated. Until then, the page shows clear availability states instead of broken embeds.',
           status: {
             planned: 'Planned',
             placeholder: 'Placeholder',
@@ -146,7 +146,7 @@ export const resources = {
           reservedArchitectureFrame: 'Reserved architecture frame',
           curatedMediaSlot: 'Curated media slot',
           missingMediaDescription:
-            'Assets can be attached later without changing the content contract. Missing media is intentionally not loaded.',
+            'This media item is not available yet; the surrounding explanation remains usable without it.',
         },
         flow: {
           eyebrow: 'Delivery flow',

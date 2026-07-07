@@ -60,9 +60,9 @@ export type WafMaturityJudgmentContent = {
 const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
   routeId: 'waf',
   eyebrow: 'Well-Architected Maturity Judgment',
-  title: 'Separate proven strengths, accepted dev trade-offs, and hardening path',
+  title: 'Proven strengths, accepted trade-offs, and hardening path',
   summary:
-    'Hiraya uses the six pillars as a judgment board: each row shows what is demonstrably strong now, which limitation is intentionally accepted for a disposable dev platform, and what would need hardening before production.',
+    'Hiraya uses the six pillars as a judgment board: each row shows what is strong today, which limitations are accepted for a disposable dev platform, and what needs hardening before production.',
   stateCopy: {
     'strong-now': {
       label: 'Strong now',
@@ -87,7 +87,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
     pillarSwitcherLabel: 'Well-Architected pillar switcher',
     detailPanelAriaSuffix: 'maturity details',
     evidenceCarouselTitle: 'Evidence behind the Well-Architected review',
-    evidenceCarouselDescription: 'The pillar review stays judgment-led while captures support one implementation claim at a time.',
+    evidenceCarouselDescription: 'The pillar review stays judgment-led while each capture supports one implementation claim at a time.',
   },
   pillars: [
     {
@@ -114,7 +114,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
           state: 'dev-tradeoff',
           title: 'Evidence first, not full ops platform',
           summary:
-            'The current operations story emphasizes GitOps health, smoke checks, and Grafana rather than full incident automation or log ingestion.',
+            'The current operations story emphasizes GitOps health, smoke checks, and Grafana, while full incident automation and log ingestion remain future work.',
           sourceRefs: ['docs/portfolio/ARCHITECTURE.md', 'docs/portfolio/DECISIONS.md'],
         },
       ],
@@ -124,7 +124,7 @@ const wafMaturityJudgmentContentEn: WafMaturityJudgmentContent = {
           state: 'harden-next',
           title: 'Expand operational signals',
           summary:
-            'Reintroduce deliberate log ingestion, alert routing, runbooks, and stronger incident evidence before claiming production operations maturity.',
+            'Add deliberate log ingestion, alert routing, runbooks, and stronger incident evidence before claiming production operations maturity.',
           evidenceRefs: ['p1-grafana'],
           sourceRefs: ['docs/portfolio/ARCHITECTURE.md'],
         },
