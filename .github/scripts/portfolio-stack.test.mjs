@@ -35,6 +35,17 @@ test('Portfolio Stack Terraform defines durable SPA and health API routing', asy
   assert.doesNotMatch(main, /custom_error_response[\s\S]*response_page_path\s+=\s+"\/index\.html"/, 'SPA fallback must not be distribution-wide');
 });
 
+test('Portfolio Stack shares its Terraform-managed origin secret directly with CloudFront and Lambda', async () => {
+  const main = await readFile(portfolioMain, 'utf8');
+
+  assert.match(main, /resource "random_password" "origin_secret"/, 'Terraform should generate the origin secret');
+  assert.match(main, /GUIDE_ORIGIN_SECRET\s+=\s+random_password\.origin_secret\.result/, 'Lambda should receive the generated origin secret directly');
+  assert.match(main, /custom_header[\s\S]*name\s+=\s+"x-hiraya-origin-secret"[\s\S]*value\s+=\s+random_password\.origin_secret\.result/, 'CloudFront should inject the same generated origin secret');
+  assert.doesNotMatch(main, /GUIDE_ORIGIN_SECRET_ARN/, 'Lambda should not receive a Secrets Manager ARN for the origin secret');
+  assert.doesNotMatch(main, /aws_secretsmanager_secret(?:_version)?" "origin_secret"/, 'the origin-secret control should not provision Secrets Manager resources');
+  assert.doesNotMatch(main, /secretsmanager:GetSecretValue/, 'Lambda should not have Secrets Manager access for the origin-secret control');
+});
+
 test('Portfolio Terraform validation is included in credential-free infra CI', async () => {
   const workflow = await readFile(infraCiWorkflow, 'utf8');
 
