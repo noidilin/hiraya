@@ -4,7 +4,7 @@ run "creates_scoped_infra_oidc_roles" {
   variables {
     github_repository = "example/hiraya"
     state_bucket_name = "hiraya-tf-state"
-    repositories      = ["hiraya-frontend"]
+    repositories      = { hiraya-frontend = {} }
 
     skip_aws_credentials_validation = true
   }
@@ -20,6 +20,14 @@ run "creates_scoped_infra_oidc_roles" {
     target = data.aws_iam_openid_connect_provider.github
     values = {
       arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    }
+  }
+
+  override_data {
+    target = data.aws_route53_zone.portfolio_public
+    values = {
+      arn     = "arn:aws:route53:::hostedzone/Z1234567890"
+      zone_id = "Z1234567890"
     }
   }
 

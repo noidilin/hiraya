@@ -23,17 +23,20 @@ variable "state_bucket_name" {
 }
 
 variable "repositories" {
-  description = "Durable ECR repositories preserved outside the disposable EKS stack."
-  type        = list(string)
-  default = [
-    "hiraya-frontend",
-    "hiraya-gateway",
-    "hiraya-auth",
-    "hiraya-order-service",
-    "hiraya-orders",
-    "hiraya-product-service",
-    "hiraya-user-service"
-  ]
+  description = "Durable ECR repositories and tagged-image retention counts preserved outside the disposable EKS stack."
+  type = map(object({
+    tagged_image_count  = optional(number, 5)
+    untagged_image_days = optional(number, 7)
+  }))
+  default = {
+    hiraya-frontend        = {}
+    hiraya-gateway         = {}
+    hiraya-auth            = {}
+    hiraya-order-service   = { tagged_image_count = 2 }
+    hiraya-orders          = {}
+    hiraya-product-service = {}
+    hiraya-user-service    = { tagged_image_count = 2 }
+  }
 }
 
 variable "github_repository" {

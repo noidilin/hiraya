@@ -10,14 +10,14 @@ github_repository = "noidilin/hiraya"
 # Increment intentionally to rotate the durable Vintage Storefront dev secret.
 vintage_secret_rotation_epoch = "1"
 
-repositories = [
-  "hiraya-frontend",
-  "hiraya-gateway",
-  "hiraya-auth",
-  "hiraya-order-service",
-  "hiraya-orders",
-  "hiraya-product-service",
-  "hiraya-user-service"
-]
+repositories = {
+  hiraya-frontend        = {}
+  hiraya-gateway         = {}
+  hiraya-auth            = {}
+  hiraya-order-service   = { tagged_image_count = 2 }
+  hiraya-orders          = {}
+  hiraya-product-service = {}
+  hiraya-user-service    = { tagged_image_count = 2 }
+}
 
 tags = {}
