@@ -19,7 +19,6 @@ locals {
   api_origin_id             = "portfolio-guide-api"
   domain_name               = trimsuffix(var.domain_name, ".")
   api_origin_domain         = replace(aws_apigatewayv2_api.guide.api_endpoint, "https://", "")
-  origin_secret_name        = "/hiraya/${var.environment}/portfolio/origin-secret"
   runtime_boundary_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/lab-devops-permissions-boundary"
   guide_model_arn           = coalesce(var.guide_model_arn, "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-lite-v1:0")
   guide_embedding_model_arn = coalesce(var.guide_embedding_model_arn, "arn:aws:bedrock:${var.region}::foundation-model/amazon.titan-embed-text-v2:0")
@@ -302,18 +301,6 @@ resource "random_password" "origin_secret" {
   special = false
 }
 
-resource "aws_secretsmanager_secret" "origin_secret" {
-  name        = local.origin_secret_name
-  description = "CloudFront-to-Guide API origin header secret for Hiraya Portfolio."
-
-  tags = local.common_tags
-}
-
-resource "aws_secretsmanager_secret_version" "origin_secret" {
-  secret_id     = aws_secretsmanager_secret.origin_secret.id
-  secret_string = random_password.origin_secret.result
-}
-
 resource "aws_iam_role" "guide_api" {
   name                 = "${local.name_prefix}-guide-api"
   permissions_boundary = local.runtime_boundary_arn
@@ -345,13 +332,6 @@ resource "aws_iam_role_policy" "guide_api" {
           "logs:PutLogEvents"
         ]
         Resource = "${aws_cloudwatch_log_group.guide_api.arn}:*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = aws_secretsmanager_secret.origin_secret.arn
       },
       {
         Effect = "Allow"
@@ -415,7 +395,7 @@ resource "aws_lambda_function" "guide_api" {
 
   environment {
     variables = {
-      GUIDE_ORIGIN_SECRET_ARN        = aws_secretsmanager_secret.origin_secret.arn
+      GUIDE_ORIGIN_SECRET            = random_password.origin_secret.result
       CITATION_MANIFEST_BUCKET       = aws_s3_bucket.knowledge.bucket
       CITATION_MANIFEST_KEY          = "manifests/citations.json"
       BEDROCK_KNOWLEDGE_BASE_ID      = aws_bedrockagent_knowledge_base.guide.id
@@ -431,7 +411,6 @@ resource "aws_lambda_function" "guide_api" {
   depends_on = [
     aws_cloudwatch_log_group.guide_api,
     aws_iam_role_policy.guide_api,
-    aws_secretsmanager_secret_version.origin_secret,
   ]
 
   tags = local.common_tags

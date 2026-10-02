@@ -21,8 +21,7 @@ This is a lightweight index of environment variables mentioned by local commands
 | `BEDROCK_MAX_OUTPUT_TOKENS` | `app/portfolio/guide-api/`, `infra/portfolio/` | Maximum generated answer tokens. Defaults to `700`. |
 | `BEDROCK_GUARDRAIL_ID` / `BEDROCK_GUARDRAIL_VERSION` | `app/portfolio/guide-api/`, `infra/portfolio/` | Optional Bedrock Guardrail binding for Guide answers. |
 | `CITATION_MANIFEST_BUCKET` / `CITATION_MANIFEST_KEY` | `app/portfolio/guide-api/`, Portfolio deploy workflow | Optional citation-label manifest lookup. The deploy workflow writes `manifests/citations.json`. |
-| `GUIDE_ORIGIN_SECRET_ARN` | `app/portfolio/guide-api/`, `infra/portfolio/` | Secrets Manager reference used by Lambda to verify same-origin Guide API requests. Do not document the secret value. |
-| `GUIDE_ORIGIN_SECRET` | Local Guide API tests/dev only | Local secret override for request verification. Do not commit real values. |
+| `GUIDE_ORIGIN_SECRET` | `app/portfolio/guide-api/`, `infra/portfolio/` | Terraform-generated value shared by CloudFront and Lambda to verify same-origin Guide API requests. Do not document the secret value. |
 | `GUIDE_API_FORCE_ERROR` / `GUIDE_API_NOT_READY` | Guide API smoke/testing paths | Test toggles for forced error and not-ready responses. |
 
 ## Terraform / AWS
